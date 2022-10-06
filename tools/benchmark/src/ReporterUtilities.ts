@@ -5,7 +5,7 @@
 
 import Benchmark from "benchmark";
 import { assert } from "chai";
-import { Suite } from "mocha";
+import type { Suite } from "mocha";
 import { benchmarkTypes, performanceTestSuiteTag, testTypes, userCategoriesSplitter } from "./Configuration";
 
 /**

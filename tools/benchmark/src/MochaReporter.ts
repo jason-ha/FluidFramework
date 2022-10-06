@@ -3,8 +3,9 @@
  * Licensed under the MIT License.
  */
 
-import { Runner, Suite, Test } from "mocha";
+import type { Runner, Suite, Test } from "mocha";
 import { isChildProcess, ReporterOptions } from "./Configuration";
+import { MochaRunnerConstants } from "./MochaConstants";
 import { BenchmarkData, BenchmarkReporter, failedData } from "./Reporter";
 import { red, getName, getSuiteName } from "./ReporterUtilities";
 
@@ -25,7 +26,7 @@ module.exports = class {
         const benchmarkReporter = new BenchmarkReporter(options?.reporterOptions?.reportDir);
         const data: Map<Test, BenchmarkData> = new Map();
         runner
-            .on(Runner.constants.EVENT_TEST_BEGIN, (test: Test) => {
+            .on(MochaRunnerConstants.EVENT_TEST_BEGIN, (test: Test) => {
                 // Forward results from `benchmark end` to BenchmarkReporter.
                 test.on("benchmark end", (benchmark: BenchmarkData) => {
                     // There are (at least) two ways a benchmark can fail:
@@ -36,10 +37,10 @@ module.exports = class {
                     data.set(test, benchmark);
                 });
             })
-            .on(Runner.constants.EVENT_TEST_FAIL, (test, err) => {
+            .on(MochaRunnerConstants.EVENT_TEST_FAIL, (test, err) => {
                 console.error(red(`Test ${test.fullTitle()} failed with error: '${err.message}'`));
             })
-            .on(Runner.constants.EVENT_TEST_END, (test: Test) => {
+            .on(MochaRunnerConstants.EVENT_TEST_END, (test: Test) => {
                 // Type signature for `Test.state` indicates it will never be 'pending',
                 // but that is incorrect: skipped tests have state 'pending' here.
                 // See: https://github.com/mochajs/mocha/issues/4079
@@ -80,12 +81,12 @@ module.exports = class {
                     benchmarkReporter.recordTestResult(suite, getName(test.title), benchmark);
                 }
             })
-            .on(Runner.constants.EVENT_SUITE_END, (suite: Suite) => {
+            .on(MochaRunnerConstants.EVENT_SUITE_END, (suite: Suite) => {
                 if (!isChildProcess) {
                     benchmarkReporter.recordSuiteResults(getSuiteName(suite));
                 }
             })
-            .once(Runner.constants.EVENT_RUN_END, () => {
+            .once(MochaRunnerConstants.EVENT_RUN_END, () => {
                 if (!isChildProcess) {
                     benchmarkReporter.recordResultsSummary();
                 }

@@ -6,7 +6,7 @@
 import * as path from "path";
 import * as fs from "fs";
 import Table from "easy-table";
-import { Runner, Suite, Test } from "mocha";
+import type { Runner, Suite, Test } from "mocha";
 import { isChildProcess } from "./Configuration";
 import {
     bold,
@@ -20,6 +20,7 @@ import {
     getSuiteName,
 } from "./ReporterUtilities";
 import { MemoryBenchmarkStats } from "./MemoryTestRunner";
+import { MochaRunnerConstants } from "./MochaConstants";
 
 /**
  * Custom mocha reporter for memory tests. It can be used by passing the JavaScript version of this file to
@@ -47,7 +48,7 @@ class MochaMemoryTestReporter {
         const data: Map<Test, MemoryBenchmarkStats> = new Map();
 
         runner
-            .on(Runner.constants.EVENT_TEST_BEGIN, (test: Test) => {
+            .on(MochaRunnerConstants.EVENT_TEST_BEGIN, (test: Test) => {
                 // Forward results from `benchmark end` to BenchmarkReporter.
                 test.on("benchmark end", (memoryTestStats: MemoryBenchmarkStats) => {
                     // There are (at least) two ways a benchmark can fail:
@@ -58,10 +59,10 @@ class MochaMemoryTestReporter {
                     data.set(test, memoryTestStats);
                 });
             })
-            .on(Runner.constants.EVENT_TEST_FAIL, (test, err) => {
+            .on(MochaRunnerConstants.EVENT_TEST_FAIL, (test, err) => {
                 console.info(red(`Test ${test.fullTitle()} failed with error: '${err.message}'`));
             })
-            .on(Runner.constants.EVENT_TEST_END, (test: Test) => {
+            .on(MochaRunnerConstants.EVENT_TEST_END, (test: Test) => {
                 // Type signature for `Test.state` indicates it will never be 'pending',
                 // but that is incorrect: skipped tests have state 'pending' here.
                 // See: https://github.com/mochajs/mocha/issues/4079
@@ -105,7 +106,7 @@ class MochaMemoryTestReporter {
                     suiteData.push([getName(test.title), memoryTestStats]);
                 }
             })
-            .on(Runner.constants.EVENT_SUITE_END, (suite: Suite) => {
+            .on(MochaRunnerConstants.EVENT_SUITE_END, (suite: Suite) => {
                 if (!isChildProcess) {
                     const suiteName = getSuiteName(suite);
                     const suiteData = this.inProgressSuites.get(suiteName);
@@ -151,7 +152,7 @@ class MochaMemoryTestReporter {
                     this.inProgressSuites.delete(suiteName);
                 }
             })
-            .once(Runner.constants.EVENT_RUN_END, () => { });
+            .once(MochaRunnerConstants.EVENT_RUN_END, () => { });
     }
 
     private writeCompletedBenchmarks(suiteName: string): string {

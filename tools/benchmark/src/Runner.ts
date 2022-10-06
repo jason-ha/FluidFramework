@@ -5,7 +5,7 @@
 
 import Benchmark from "benchmark";
 import { assert } from "chai";
-import { Test } from "mocha";
+import type { Test } from "mocha";
 import {
     BenchmarkType,
     BenchmarkArguments,
