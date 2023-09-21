@@ -1,0 +1,71 @@
+{
+	"name": "@fluid-internal/rotation-tools",
+	"version": "0.0.1",
+	"private": true,
+	"homepage": "https://fluidframework.com",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/microsoft/FluidFramework.git",
+		"directory": "tools/rotation-tools"
+	},
+	"license": "MIT",
+	"author": "Microsoft and contributors",
+	"main": "dist/index.js",
+	"typings": "dist/platform-support-rotation-tools.d.ts",
+	"bin": {
+		"create-work-items": "dist/create-work-items/create-work-items.script.js"
+	},
+	"files": [
+		"dist/*",
+		"!dist/**/*.tsbuildinfo",
+		"!dist/**/test/**",
+		"src/**/*.ts",
+		"!src/**/test/**",
+		"README.md",
+		"ado-project-config.json"
+	],
+	"scripts": {
+		"build": "run-s build:code",
+		"build-and-test": "run-s build test",
+		"build-clean": "run-s clean build",
+		"build:code": "run-s build:tsc build:copy-resources",
+		"build:copy-resources": "copyfiles \"src/**/*.{js,d.ts}\" dist --up 1",
+		"build:tsc": "tsc --pretty",
+		"clean": "run-s clean:*",
+		"clean:code": "rimraf dist",
+		"clean:test-artifacts": "rimraf test-results.xml coverage .nyc_output",
+		"create-work-items": "node ./dist/create-work-items/create-work-items.script.js --config ./ado-project-config.json --",
+		"fix-lint": "run-s fix:*",
+		"fix:code": "pnpm lint:code --fix",
+		"lint": "run-s lint:*",
+		"lint:code": "eslint .",
+		"test": "nyc mocha \"./dist/**/*.{test,tests}.js\" --config ./.mocharc.js"
+	},
+	"dependencies": {
+		"azure-devops-node-api": "^10.2.2",
+		"yargs": "^16.2.0"
+	},
+	"devDependencies": {
+		"@fluidframework/build-common": "^2.0.0",
+		"@fluidframework/build-tools": "^0.22.0",
+		"@fluidframework/eslint-config-fluid": "^2.0.0",
+		"@fluidframework/mocha-test-setup": "~2.0.0-internal.6.2.0",
+		"@types/chai": "^4.3.6",
+		"@types/mocha": "^8.2.3",
+		"@types/node": "^18.17.1",
+		"@types/yargs": "^16.0.5",
+		"chai": "^4.3.8",
+		"copyfiles": "^2.4.1",
+		"eslint": "^8.49.0",
+		"fast-json-patch": "^3.1.1",
+		"mocha": "^8.4.0",
+		"mocha-multi-reporters": "^1.5.1",
+		"module-alias": "^2.2.3",
+		"npm-run-all": "^4.1.5",
+		"nyc": "^15.1.0",
+		"rimraf": "^4.4.0",
+		"source-map-support": "^0.5.21",
+		"ts-node": "^10.9.1",
+		"typescript": "^4.9.5"
+	}
+}

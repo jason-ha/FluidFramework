@@ -1,0 +1,6 @@
+{
+	"_comment": "This configuration is used for creating rotation work items. See the contents of this package for more information.",
+	"organizationName": "fluidframework",
+	"projectName": "internal",
+	"areaPath": "internal\\Backlog"
+}
