@@ -59,8 +59,8 @@
   },
   "dependencies": {
     "@fluidframework/common-definitions": "^0.20.1",
-    "@fluidframework/core-interfaces": "^1.4.0",
-    "@fluidframework/driver-definitions": "^1.4.0",
+    "@fluidframework/core-interfaces": "workspace:~",
+    "@fluidframework/driver-definitions": "workspace:~",
     "@fluidframework/protocol-definitions": "^0.1028.2000",
     "uuid": "^8.3.1"
   },

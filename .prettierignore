@@ -2,6 +2,9 @@
 **/package-lock.json
 **/pnpm-lock.yaml
 
+# pnpm workspace
+pnpm-workspace.yaml
+
 # Boilerplate files
 CODE_OF_CONDUCT.md
 PACKAGES.md

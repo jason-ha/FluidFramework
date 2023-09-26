@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@fluidframework/common-definitions": "^0.20.1",
-    "@fluidframework/test-driver-definitions": "^1.4.0",
+    "@fluidframework/test-driver-definitions": "workspace:~",
     "mocha": "^10.0.0"
   },
   "devDependencies": {

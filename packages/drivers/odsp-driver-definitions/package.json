@@ -35,7 +35,7 @@
     "typetests:prepare": "flub generate typetests --prepare --dir . --pin"
   },
   "dependencies": {
-    "@fluidframework/driver-definitions": "^1.4.0"
+    "@fluidframework/driver-definitions": "workspace:~"
   },
   "devDependencies": {
     "@fluidframework/build-common": "^0.24.0",

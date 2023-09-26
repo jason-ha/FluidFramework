@@ -32,11 +32,11 @@
     "tsfmt:fix": "tsfmt --replace"
   },
   "dependencies": {
-    "@fluidframework/cell": "^1.4.0",
+    "@fluidframework/cell": "workspace:~",
     "@fluidframework/common-definitions": "^0.20.1",
     "@fluidframework/common-utils": "^0.32.1",
-    "@fluidframework/merge-tree": "^1.4.0",
-    "@fluidframework/sequence": "^1.4.0",
+    "@fluidframework/merge-tree": "workspace:~",
+    "@fluidframework/sequence": "workspace:~",
     "react": "^16.10.2"
   },
   "devDependencies": {
