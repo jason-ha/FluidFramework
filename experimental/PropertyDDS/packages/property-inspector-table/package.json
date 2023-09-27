@@ -45,10 +45,13 @@
     "classnames": "^2.2.6",
     "lodash.debounce": "^4.0.8",
     "memoize-one": "^5.0.0",
+    "react": "^16.10.2",
     "react-base-table": "1.0.2",
+    "react-dom": "^16.10.2",
     "react-loading-skeleton": "^1.1.2",
     "react-select": "^2.4.3",
-    "react-virtualized-auto-sizer": "^1.0.2"
+    "react-virtualized-auto-sizer": "^1.0.2",
+		"require-from-string": "^2.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.12.10",
