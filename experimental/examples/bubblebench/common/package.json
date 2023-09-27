@@ -54,7 +54,7 @@
     "temp-directory": "nyc/.nyc_output"
   },
   "dependencies": {
-    "@fluid-experimental/tree": "^1.4.0",
+    "@fluid-experimental/tree": "workspace:~",
     "@fluidframework/aqueduct": "workspace:~",
     "@fluidframework/container-definitions": "workspace:~",
     "@fluidframework/core-interfaces": "workspace:~",

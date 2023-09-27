@@ -32,8 +32,8 @@ importers:
 
   examples/apps/collaborative-textarea:
     specifiers:
-      '@fluid-experimental/get-container': ^1.4.0
-      '@fluid-experimental/react-inputs': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
+      '@fluid-experimental/react-inputs': workspace:~
       '@fluid-tools/webpack-fluid-loader': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
@@ -121,7 +121,7 @@ importers:
 
   examples/apps/contact-collection:
     specifiers:
-      '@fluid-experimental/get-container': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/common-definitions': ^0.20.1
@@ -210,7 +210,7 @@ importers:
       '@fluid-example/multiview-coordinate-model': workspace:~
       '@fluid-example/multiview-slider-coordinate-view': workspace:~
       '@fluid-example/prosemirror': workspace:~
-      '@fluid-experimental/get-container': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/common-definitions': ^0.20.1
@@ -323,7 +323,7 @@ importers:
 
   examples/apps/view-framework-sampler:
     specifiers:
-      '@fluid-experimental/get-container': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/common-definitions': ^0.20.1
@@ -480,7 +480,7 @@ importers:
   examples/data-objects/clicker:
     specifiers:
       '@fluid-example/example-utils': workspace:~
-      '@fluid-experimental/task-manager': ^1.4.0
+      '@fluid-experimental/task-manager': workspace:~
       '@fluid-tools/webpack-fluid-loader': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
@@ -1332,7 +1332,7 @@ importers:
 
   examples/data-objects/presence-tracker:
     specifiers:
-      '@fluid-experimental/data-objects': ^1.4.0
+      '@fluid-experimental/data-objects': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/common-definitions': ^0.20.1
       '@fluidframework/common-utils': ^0.32.1
@@ -1814,8 +1814,8 @@ importers:
 
   examples/data-objects/task-selection:
     specifiers:
-      '@fluid-experimental/get-container': ^1.4.0
-      '@fluid-experimental/task-manager': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
+      '@fluid-experimental/task-manager': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/common-definitions': ^0.20.1
@@ -1899,7 +1899,7 @@ importers:
 
   examples/data-objects/todo:
     specifiers:
-      '@fluid-experimental/react-inputs': ^1.4.0
+      '@fluid-experimental/react-inputs': workspace:~
       '@fluid-tools/webpack-fluid-loader': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
@@ -1992,7 +1992,7 @@ importers:
       '@fluid-example/codemirror': workspace:~
       '@fluid-example/prosemirror': workspace:~
       '@fluid-example/spaces': workspace:~
-      '@fluid-experimental/last-edited': ^1.4.0
+      '@fluid-experimental/last-edited': workspace:~
       '@fluid-tools/webpack-fluid-loader': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
@@ -2208,7 +2208,7 @@ importers:
 
   examples/hosts/app-integration/container-views:
     specifiers:
-      '@fluid-experimental/get-container': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/common-definitions': ^0.20.1
@@ -2297,7 +2297,7 @@ importers:
 
   examples/hosts/app-integration/external-views:
     specifiers:
-      '@fluid-experimental/get-container': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/common-definitions': ^0.20.1
@@ -2368,9 +2368,9 @@ importers:
 
   examples/hosts/app-integration/schema-upgrade:
     specifiers:
-      '@fluid-experimental/get-container': ^1.4.0
-      '@fluid-experimental/react-inputs': ^1.4.0
-      '@fluid-experimental/task-manager': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
+      '@fluid-experimental/react-inputs': workspace:~
+      '@fluid-experimental/task-manager': workspace:~
       '@fluid-internal/quorum': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
@@ -2559,7 +2559,7 @@ importers:
   examples/hosts/iframe-host:
     specifiers:
       '@fluid-example/todo': workspace:~
-      '@fluid-experimental/get-container': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/container-definitions': workspace:~
       '@fluidframework/container-loader': workspace:~
@@ -2721,15 +2721,15 @@ importers:
 
   experimental/PropertyDDS/examples/partial-checkout:
     specifiers:
-      '@fluid-experimental/get-container': ^1.4.0
-      '@fluid-experimental/property-binder': ^1.4.0
-      '@fluid-experimental/property-changeset': ^1.4.0
-      '@fluid-experimental/property-common': ^1.4.0
-      '@fluid-experimental/property-dds': ^1.4.0
-      '@fluid-experimental/property-inspector-table': ^1.4.0
-      '@fluid-experimental/property-properties': ^1.4.0
-      '@fluid-experimental/property-proxy': ^1.4.0
-      '@fluid-experimental/schemas': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
+      '@fluid-experimental/property-binder': workspace:~
+      '@fluid-experimental/property-changeset': workspace:~
+      '@fluid-experimental/property-common': workspace:~
+      '@fluid-experimental/property-dds': workspace:~
+      '@fluid-experimental/property-inspector-table': workspace:~
+      '@fluid-experimental/property-properties': workspace:~
+      '@fluid-experimental/property-proxy': workspace:~
+      '@fluid-experimental/schemas': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/common-utils': ^0.32.1
       '@fluidframework/container-definitions': workspace:~
@@ -2836,15 +2836,15 @@ importers:
 
   experimental/PropertyDDS/examples/property-inspector:
     specifiers:
-      '@fluid-experimental/get-container': ^1.4.0
-      '@fluid-experimental/property-binder': ^1.4.0
-      '@fluid-experimental/property-changeset': ^1.4.0
-      '@fluid-experimental/property-common': ^1.4.0
-      '@fluid-experimental/property-dds': ^1.4.0
-      '@fluid-experimental/property-inspector-table': ^1.4.0
-      '@fluid-experimental/property-properties': ^1.4.0
-      '@fluid-experimental/property-proxy': ^1.4.0
-      '@fluid-experimental/schemas': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
+      '@fluid-experimental/property-binder': workspace:~
+      '@fluid-experimental/property-changeset': workspace:~
+      '@fluid-experimental/property-common': workspace:~
+      '@fluid-experimental/property-dds': workspace:~
+      '@fluid-experimental/property-inspector-table': workspace:~
+      '@fluid-experimental/property-properties': workspace:~
+      '@fluid-experimental/property-proxy': workspace:~
+      '@fluid-experimental/schemas': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/common-utils': ^0.32.1
       '@fluidframework/container-definitions': workspace:~
@@ -2994,9 +2994,9 @@ importers:
       '@babel/plugin-transform-runtime': ^7.2.0
       '@babel/preset-env': ^7.2.0
       '@babel/runtime': ^7.13.7
-      '@fluid-experimental/property-changeset': ^1.4.0
-      '@fluid-experimental/property-dds': ^1.4.0
-      '@fluid-experimental/property-properties': ^1.4.0
+      '@fluid-experimental/property-changeset': workspace:~
+      '@fluid-experimental/property-dds': workspace:~
+      '@fluid-experimental/property-properties': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/test-runtime-utils': workspace:~
       '@fluidframework/test-utils': workspace:~
@@ -3070,7 +3070,7 @@ importers:
 
   experimental/PropertyDDS/packages/property-changeset:
     specifiers:
-      '@fluid-experimental/property-common': ^1.4.0
+      '@fluid-experimental/property-common': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/mocha-test-setup': workspace:~
       '@rushstack/eslint-config': ^2.5.1
@@ -3193,9 +3193,9 @@ importers:
 
   experimental/PropertyDDS/packages/property-dds:
     specifiers:
-      '@fluid-experimental/property-changeset': ^1.4.0
-      '@fluid-experimental/property-common': ^1.4.0
-      '@fluid-experimental/property-properties': ^1.4.0
+      '@fluid-experimental/property-changeset': workspace:~
+      '@fluid-experimental/property-common': workspace:~
+      '@fluid-experimental/property-properties': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/common-utils': ^0.32.1
       '@fluidframework/container-definitions': workspace:~
@@ -3288,11 +3288,11 @@ importers:
       '@babel/eslint-parser': ^7.16.5
       '@babel/plugin-transform-runtime': ^7.2.0
       '@babel/preset-env': ^7.2.0
-      '@fluid-experimental/property-binder': ^1.4.0
-      '@fluid-experimental/property-changeset': ^1.4.0
-      '@fluid-experimental/property-dds': ^1.4.0
-      '@fluid-experimental/property-properties': ^1.4.0
-      '@fluid-experimental/property-proxy': ^1.4.0
+      '@fluid-experimental/property-binder': workspace:~
+      '@fluid-experimental/property-changeset': workspace:~
+      '@fluid-experimental/property-dds': workspace:~
+      '@fluid-experimental/property-properties': workspace:~
+      '@fluid-experimental/property-proxy': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@hig/fonts': ^1.0.2
       '@material-ui/core': ^4.0.0
@@ -3429,8 +3429,8 @@ importers:
 
   experimental/PropertyDDS/packages/property-properties:
     specifiers:
-      '@fluid-experimental/property-changeset': ^1.4.0
-      '@fluid-experimental/property-common': ^1.4.0
+      '@fluid-experimental/property-changeset': workspace:~
+      '@fluid-experimental/property-common': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/mocha-test-setup': workspace:~
       '@types/mocha': ^9.1.1
@@ -3483,8 +3483,8 @@ importers:
       '@babel/core': ^7.12.10
       '@babel/plugin-transform-runtime': ^7.2.0
       '@babel/preset-env': ^7.2.0
-      '@fluid-experimental/property-changeset': ^1.4.0
-      '@fluid-experimental/property-properties': ^1.4.0
+      '@fluid-experimental/property-changeset': workspace:~
+      '@fluid-experimental/property-properties': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/eslint-config-fluid': ^0.28.2000
       '@rushstack/eslint-config': ^2.5.1
@@ -3527,9 +3527,9 @@ importers:
 
   experimental/PropertyDDS/packages/property-query:
     specifiers:
-      '@fluid-experimental/property-changeset': ^1.4.0
-      '@fluid-experimental/property-common': ^1.4.0
-      '@fluid-experimental/property-properties': ^1.4.0
+      '@fluid-experimental/property-changeset': workspace:~
+      '@fluid-experimental/property-common': workspace:~
+      '@fluid-experimental/property-properties': workspace:~
       '@fluidframework/mocha-test-setup': workspace:~
       ajv: 7.1.1
       async: ^3.2.0
@@ -3572,11 +3572,11 @@ importers:
 
   experimental/PropertyDDS/services/property-query-service:
     specifiers:
-      '@fluid-experimental/property-changeset': ^1.4.0
-      '@fluid-experimental/property-common': ^1.4.0
-      '@fluid-experimental/property-dds': ^1.4.0
-      '@fluid-experimental/property-properties': ^1.4.0
-      '@fluid-experimental/property-query': ^1.4.0
+      '@fluid-experimental/property-changeset': workspace:~
+      '@fluid-experimental/property-common': workspace:~
+      '@fluid-experimental/property-dds': workspace:~
+      '@fluid-experimental/property-properties': workspace:~
+      '@fluid-experimental/property-query': workspace:~
       '@fluidframework/common-utils': ^0.32.1
       '@fluidframework/local-driver': workspace:~
       '@fluidframework/mocha-test-setup': workspace:~
@@ -3756,7 +3756,7 @@ importers:
 
   experimental/dds/ot/sharejs/json1:
     specifiers:
-      '@fluid-experimental/ot': ^1.4.0
+      '@fluid-experimental/ot': workspace:~
       '@fluid-experimental/sharejs-json1-previous': npm:@fluid-experimental/sharejs-json1@1.3.1
       '@fluid-internal/test-dds-utils': workspace:~
       '@fluidframework/build-common': ^0.24.0
@@ -3912,7 +3912,7 @@ importers:
 
   experimental/dds/tree-graphql:
     specifiers:
-      '@fluid-experimental/tree': ^1.4.0
+      '@fluid-experimental/tree': workspace:~
       '@fluid-experimental/tree-graphql-previous': npm:@fluid-experimental/tree-graphql@1.3.1
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/common-utils': ^0.32.1
@@ -4046,7 +4046,7 @@ importers:
 
   experimental/examples/bubblebench/common:
     specifiers:
-      '@fluid-experimental/tree': ^1.4.0
+      '@fluid-experimental/tree': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/container-definitions': workspace:~
@@ -4109,7 +4109,7 @@ importers:
     specifiers:
       '@fluid-example/bubblebench-common': workspace:~
       '@fluid-example/example-utils': workspace:~
-      '@fluid-experimental/sharejs-json1': ^1.4.0
+      '@fluid-experimental/sharejs-json1': workspace:~
       '@fluid-tools/webpack-fluid-loader': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
@@ -4192,7 +4192,7 @@ importers:
     specifiers:
       '@fluid-example/bubblebench-common': workspace:~
       '@fluid-example/example-utils': workspace:~
-      '@fluid-experimental/tree': ^1.4.0
+      '@fluid-experimental/tree': workspace:~
       '@fluid-tools/webpack-fluid-loader': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
@@ -6600,7 +6600,7 @@ importers:
 
   packages/framework/fluid-static:
     specifiers:
-      '@fluid-experimental/get-container': ^1.4.0
+      '@fluid-experimental/get-container': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/build-tools': ^0.6.0-110101
@@ -8409,7 +8409,7 @@ importers:
 
   packages/test/test-service-load:
     specifiers:
-      '@fluid-experimental/task-manager': ^1.4.0
+      '@fluid-experimental/task-manager': workspace:~
       '@fluidframework/aqueduct': workspace:~
       '@fluidframework/build-common': ^0.24.0
       '@fluidframework/build-tools': ^0.6.0-110101

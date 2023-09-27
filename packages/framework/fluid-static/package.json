@@ -52,7 +52,7 @@
     "@fluidframework/runtime-utils": "workspace:~"
   },
   "devDependencies": {
-    "@fluid-experimental/get-container": "^1.4.0",
+    "@fluid-experimental/get-container": "workspace:~",
     "@fluidframework/build-common": "^0.24.0",
     "@fluidframework/build-tools": "^0.6.0-110101",
     "@fluidframework/eslint-config-fluid": "^0.28.2000",

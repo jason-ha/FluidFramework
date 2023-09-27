@@ -44,7 +44,7 @@
   "dependencies": {
     "@fluid-example/bubblebench-common": "workspace:~",
     "@fluid-example/example-utils": "workspace:~",
-    "@fluid-experimental/tree": "^1.4.0",
+    "@fluid-experimental/tree": "workspace:~",
     "@fluidframework/aqueduct": "workspace:~",
     "@fluidframework/common-definitions": "^0.20.1",
     "@fluidframework/container-definitions": "workspace:~",

@@ -60,7 +60,7 @@
     "temp-directory": "nyc/.nyc_output"
   },
   "dependencies": {
-    "@fluid-experimental/ot": "^1.4.0",
+    "@fluid-experimental/ot": "workspace:~",
     "@fluidframework/common-utils": "^0.32.1",
     "@fluidframework/core-interfaces": "workspace:~",
     "@fluidframework/datastore-definitions": "workspace:~",

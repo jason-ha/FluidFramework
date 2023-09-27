@@ -61,7 +61,7 @@
     "temp-directory": "nyc/.nyc_output"
   },
   "dependencies": {
-    "@fluid-experimental/property-common": "^1.4.0",
+    "@fluid-experimental/property-common": "workspace:~",
     "ajv": "7.1.1",
     "ajv-keywords": "4.0.0",
     "async": "^3.2.0",
