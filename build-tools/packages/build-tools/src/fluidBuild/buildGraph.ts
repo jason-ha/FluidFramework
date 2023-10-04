@@ -195,7 +195,7 @@ export class BuildGraph {
             for (const { name, version } of node.pkg.combinedDependencies) {
                 const child = this.buildPackages.get(name);
                 if (child) {
-                    if (semver.satisfies(child.pkg.version, version)) {
+                    if (version.startsWith("workspace:") || semver.satisfies(child.pkg.version, version)) {
                         if (depFilter(child.pkg)) {
                             logVerbose(`Package dependency: ${node.pkg.nameColored} => ${child.pkg.nameColored}`);
                             node.dependentPackages.push(child);
