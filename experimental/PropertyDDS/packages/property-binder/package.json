@@ -68,7 +68,8 @@
     "@fluid-experimental/property-changeset": "workspace:~",
     "@fluid-experimental/property-dds": "workspace:~",
     "@fluid-experimental/property-properties": "workspace:~",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "underscore": "^1.12.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.10",
@@ -80,6 +81,8 @@
     "@fluidframework/test-utils": "workspace:~",
     "@rushstack/eslint-config": "^2.5.1",
     "@types/jest": "22.2.3",
+    "@types/lodash": "^4.14.118",
+    "@types/underscore": "^1.9.1",
     "async": "^3.2.0",
     "babel-eslint": "^10.0.1",
     "babel-loader": "^8.0.5",

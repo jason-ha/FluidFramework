@@ -74,7 +74,10 @@
   "devDependencies": {
     "@fluidframework/build-common": "^0.24.0",
     "@fluidframework/mocha-test-setup": "workspace:~",
+    "@types/lodash": "^4.14.118",
     "@types/mocha": "^9.1.1",
+    "@types/node": "^14.18.0",
+    "@types/semver": "^7.3.6",
     "chai": "^4.2.0",
     "concurrently": "^6.2.0",
     "cross-env": "^7.0.2",

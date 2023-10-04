@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@fluid-experimental/schemas-previous": "npm:@fluid-experimental/schemas@1.3.1",
+    "@fluidframework/build-common": "^0.24.0",
     "@rushstack/eslint-config": "^2.5.1",
     "eslint": "~8.6.0",
     "eslint-plugin-editorconfig": "~3.2.0",

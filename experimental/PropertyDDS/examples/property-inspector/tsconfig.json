@@ -8,9 +8,7 @@
         "jsx": "react",
         "types": [
             "jest",
-            "puppeteer",
-            "jest-environment-puppeteer",
-            "expect-puppeteer"
+            "puppeteer"
         ]
     },
     "include": [
