@@ -11,32 +11,32 @@
 	"license": "MIT",
 	"author": "Microsoft and contributors",
 	"sideEffects": false,
-	"type": "commonjs",
+	"type": "module",
 	"exports": {
 		".": {
 			"import": {
-				"types": "./lib/index.d.mts",
-				"default": "./lib/index.mjs"
+				"types": "./lib/index.d.ts",
+				"default": "./lib/index.js"
 			},
 			"require": {
-				"types": "./dist/index.d.ts",
-				"default": "./dist/index.js"
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
 			}
 		}
 	},
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
+	"main": "dist/index.cjs",
+	"types": "dist/index.d.cts",
 	"scripts": {
 		"api": "fluid-build . --task api",
-		"api-extractor:commonjs": "api-extractor run --local",
-		"api-extractor:esnext": "api-extractor run --config ./api-extractor-esm.json",
+		"api-extractor:commonjs": "api-extractor run --config ./api-extractor-cjs.json",
+		"api-extractor:esnext": "api-extractor run --local --config ./api-extractor-esm.json",
 		"bench": "mocha --timeout 999999 --perfMode --parentProcess --fgrep @Benchmark --reporter @fluid-tools/benchmark/dist/MochaReporter.js",
 		"bench:profile": "mocha --v8-prof --v8-logfile=profile.log --v8-no-logfile-per-isolate --timeout 999999 --perfMode --fgrep @Benchmark --reporter @fluid-tools/benchmark/dist/MochaReporter.js && node --prof-process profile.log > profile.txt && rimraf profile.log && echo See results in profile.txt",
 		"build": "fluid-build . --task build",
-		"build:commonjs": "fluid-build . --task commonjs",
+		"build:commonjs": "tsc-multi --config ./tsc-multi.cjs.json",
 		"build:compile": "fluid-build . --task compile",
 		"build:docs": "fluid-build . --task api",
-		"build:esnext": "tsc-multi --config ../../../common/build/build-common/tsc-multi.esm.json",
+		"build:esnext": "tsc",
 		"build:test": "tsc --project ./src/test/tsconfig.json",
 		"check:are-the-types-wrong": "attw --pack",
 		"check:release-tags": "api-extractor run --local --config ./api-extractor-lint.json",
