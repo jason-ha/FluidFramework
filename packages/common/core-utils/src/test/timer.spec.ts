@@ -5,17 +5,18 @@
 
 import { strict as assert } from "node:assert";
 import process from "node:process";
-import { SinonFakeTimers, SinonSandbox, SinonSpy, useFakeTimers, createSandbox } from "sinon";
+import sinon from "sinon";
 import { PromiseTimer, Timer, IPromiseTimerResult } from "@fluidframework/core-utils";
+const { useFakeTimers, createSandbox } = sinon;
 
 const flushPromises = async (): Promise<void> =>
 	new Promise((resolve) => process.nextTick(resolve));
 type PromiseTimerResultString = IPromiseTimerResult["timerResult"];
 
 describe("Timers", () => {
-	let clock: SinonFakeTimers;
-	let sandbox: SinonSandbox;
-	let timeoutSpy: SinonSpy;
+	let clock: sinon.SinonFakeTimers;
+	let sandbox: sinon.SinonSandbox;
+	let timeoutSpy: sinon.SinonSpy;
 
 	before(() => {
 		clock = useFakeTimers();

@@ -4,8 +4,9 @@
  */
 
 import { strict as assert } from "node:assert";
-import { SinonFakeTimers, useFakeTimers } from "sinon";
+import sinon from "sinon";
 import { PromiseCache } from "@fluidframework/core-utils";
+const { useFakeTimers } = sinon;
 
 describe("PromiseCache", () => {
 	describe("Basic Cache Mechanism", () => {
@@ -236,7 +237,7 @@ describe("PromiseCache", () => {
 	});
 
 	describe("Garbage Collection and Expiry", () => {
-		let clock: SinonFakeTimers;
+		let clock: sinon.SinonFakeTimers;
 		let pc: PromiseCache<number, string> | undefined;
 
 		// Useful for debugging the tests

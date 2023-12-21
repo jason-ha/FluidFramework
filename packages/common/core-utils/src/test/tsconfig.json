@@ -11,7 +11,8 @@
 	],
 	"compilerOptions": {
 		"rootDir": "./",
-		"outDir": "../../dist/test",
+		"outDir": "../../lib/test",
 		"types": ["mocha", "node"],
+		"module": "Node16",
 	},
 }
