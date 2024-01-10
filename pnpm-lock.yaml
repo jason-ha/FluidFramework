@@ -609,6 +609,7 @@ importers:
       '@biomejs/biome': ^1.6.2
       '@fluid-example/example-utils': workspace:~
       '@fluid-experimental/data-objects': workspace:~
+      '@fluid-experimental/independent-state': workspace:~
       '@fluid-internal/client-utils': workspace:~
       '@fluid-tools/build-cli': ^0.38.0
       '@fluidframework/build-common': ^2.0.3
@@ -650,6 +651,7 @@ importers:
     dependencies:
       '@fluid-example/example-utils': link:../../utils/example-utils
       '@fluid-experimental/data-objects': link:../../../experimental/framework/data-objects
+      '@fluid-experimental/independent-state': link:../../../experimental/framework/independent-state
       '@fluid-internal/client-utils': link:../../../packages/common/client-utils
       '@fluidframework/container-definitions': link:../../../packages/common/container-definitions
       '@fluidframework/container-runtime-definitions': link:../../../packages/runtime/container-runtime-definitions

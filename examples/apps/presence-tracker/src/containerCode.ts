@@ -5,6 +5,7 @@
 
 import { ModelContainerRuntimeFactory, getDataStoreEntryPoint } from "@fluid-example/example-utils";
 import { Signaler } from "@fluid-experimental/data-objects";
+import { IndependentMapFactory } from "@fluid-experimental/independent-state/alpha";
 import { IContainer } from "@fluidframework/container-definitions/internal";
 import { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
 import { createServiceAudience } from "@fluidframework/fluid-static/internal";
@@ -27,33 +28,50 @@ class TrackerAppModel implements ITrackerAppModel {
 
 const signalerId = "signaler";
 
+function createIndependentMapFactory() {
+	return new IndependentMapFactory({});
+}
+
 export class TrackerContainerRuntimeFactory extends ModelContainerRuntimeFactory<ITrackerAppModel> {
+	private readonly independentMapFactory: ReturnType<typeof createIndependentMapFactory>;
 	constructor() {
+		const independentMapFactory = createIndependentMapFactory();
 		super(
-			new Map([Signaler.factory.registryEntry]), // registryEntries
+			new Map([
+				// registryEntries
+				Signaler.factory.registryEntry,
+				independentMapFactory.registryEntry,
+			]),
 		);
+		this.independentMapFactory = independentMapFactory;
 	}
 
 	/**
 	 * {@inheritDoc ModelContainerRuntimeFactory.containerInitializingFirstTime}
 	 */
 	protected async containerInitializingFirstTime(runtime: IContainerRuntime) {
-		const signaler = await runtime.createDataStore(Signaler.factory.type);
-		await signaler.trySetAlias(signalerId);
+		await Promise.all([
+			runtime
+				.createDataStore(Signaler.factory.type)
+				.then(async (signaler) => signaler.trySetAlias(signalerId)),
+			this.independentMapFactory.initializingFirstTime(runtime),
+		]);
 	}
 
 	protected async createModel(runtime: IContainerRuntime, container: IContainer) {
-		const signaler = await getDataStoreEntryPoint<Signaler>(runtime, signalerId);
+		const focusTracker = getDataStoreEntryPoint<Signaler>(runtime, signalerId).then(
+			(signaler) => new FocusTracker(container, audience, signaler),
+		);
+
+		const mouseTracker = this.independentMapFactory
+			.getMap(runtime)
+			.then((map) => new MouseTracker(audience, map));
 
 		const audience = createServiceAudience({
 			container,
 			createServiceMember: createMockServiceMember,
 		});
 
-		const focusTracker = new FocusTracker(container, audience, signaler);
-
-		const mouseTracker = new MouseTracker(audience, signaler);
-
-		return new TrackerAppModel(focusTracker, mouseTracker);
+		return new TrackerAppModel(await focusTracker, await mouseTracker);
 	}
 }
