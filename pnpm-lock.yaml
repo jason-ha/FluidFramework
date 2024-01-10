@@ -886,6 +886,9 @@ importers:
       '@fluid-experimental/data-objects':
         specifier: workspace:~
         version: link:../../../experimental/framework/data-objects
+      '@fluid-experimental/independent-state':
+        specifier: workspace:~
+        version: link:../../../experimental/framework/independent-state
       '@fluid-internal/client-utils':
         specifier: workspace:~
         version: link:../../../packages/common/client-utils
