@@ -35,6 +35,7 @@ tools/pipelines/
 **/_api-extractor-temp/*
 **/api-report/*
 **/*.api.md
+tsdoc-metadata.json
 
 # Templates
 .changeset/templates/

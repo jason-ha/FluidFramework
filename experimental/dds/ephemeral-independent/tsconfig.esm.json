@@ -3,5 +3,6 @@
 	"compilerOptions": {
 		"outDir": "./lib",
 		"module": "Node16",
+		"moduleResolution": "Node16",
 	},
 }
