@@ -18,7 +18,7 @@ export interface ValueState<TValue> {
  * @internal
  */
 export interface ValueElement<TValue> {
-	[id: string]: ValueState<TValue>;
+	[Id: string]: ValueState<TValue>;
 }
 
 /**

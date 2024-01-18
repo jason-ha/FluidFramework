@@ -63,15 +63,15 @@ export interface LatestValueManager<T> extends IEventProvider<LatestValueManager
 	clientValue(clientId: ClientId): LatestValueData<T>;
 }
 
-class LatestValueManagerImpl<T, Path extends string>
+class LatestValueManagerImpl<T, Key extends string>
 	extends TypedEventEmitter<LatestValueManagerEvents<T>>
 	implements LatestValueManager<T>, ValueManager<T>
 {
 	public readonly value: ValueState<T>;
 
 	public constructor(
-		private readonly path: Path,
-		private readonly datastore: IndependentDatastore<Record<Path, T>>,
+		private readonly key: Key,
+		private readonly datastore: IndependentDatastore<Record<Key, T>>,
 		value: Serializable<T>,
 	) {
 		super();
@@ -86,7 +86,7 @@ class LatestValueManagerImpl<T, Path extends string>
 		this.value.rev += 1;
 		this.value.timestamp = Date.now();
 		this.value.value = value;
-		this.datastore.localUpdate(this.path, /* forceUpdate */ false);
+		this.datastore.localUpdate(this.key, /* forceUpdate */ false);
 	}
 
 	clientValues(): IterableIterator<LatestValueClientData<T>> {
@@ -94,14 +94,14 @@ class LatestValueManagerImpl<T, Path extends string>
 	}
 
 	clients(): ClientId[] {
-		const allKnownStates = this.datastore.knownValues(this.path);
+		const allKnownStates = this.datastore.knownValues(this.key);
 		return Object.keys(allKnownStates.states).filter(
 			(clientId) => clientId !== allKnownStates.self,
 		);
 	}
 
 	clientValue(clientId: ClientId): LatestValueData<T> {
-		const allKnownStates = this.datastore.knownValues(this.path);
+		const allKnownStates = this.datastore.knownValues(this.key);
 		if (clientId in allKnownStates.states) {
 			const { value, rev: revision } = allKnownStates.states[clientId];
 			return { value, metadata: { revision, timestamp: Date.now() } };
@@ -110,14 +110,14 @@ class LatestValueManagerImpl<T, Path extends string>
 	}
 
 	update(clientId: string, revision: number, timestamp: number, value: RoundTrippable<T>): void {
-		const allKnownStates = this.datastore.knownValues(this.path);
+		const allKnownStates = this.datastore.knownValues(this.key);
 		if (clientId in allKnownStates.states) {
 			const currentState = allKnownStates.states[clientId];
 			if (currentState.rev >= revision) {
 				return;
 			}
 		}
-		this.datastore.update(this.path, clientId, revision, timestamp, value);
+		this.datastore.update(this.key, clientId, revision, timestamp, value);
 		this.emit("update", { clientId, value, metadata: { revision, timestamp } });
 	}
 }
@@ -125,16 +125,16 @@ class LatestValueManagerImpl<T, Path extends string>
 /**
  * @alpha
  */
-export function Latest<T extends object, Path extends string>(
+export function Latest<T extends object, Key extends string>(
 	initialValue: Serializable<T> & object,
-): ManagerFactory<Path, T, LatestValueManager<T>> {
+): ManagerFactory<Key, T, LatestValueManager<T>> {
 	// LatestValueManager takes ownership of initialValue but makes a shallow
 	// copy for basic protection.
 	const value = { ...initialValue };
-	return (path: Path, datastoreHandle: IndependentDatastoreHandle<Path, T>) => ({
+	return (key: Key, datastoreHandle: IndependentDatastoreHandle<Key, T>) => ({
 		value,
 		manager: brandIVM(
-			new LatestValueManagerImpl(path, datastoreFromHandle(datastoreHandle), value),
+			new LatestValueManagerImpl(key, datastoreFromHandle(datastoreHandle), value),
 		),
 	});
 }

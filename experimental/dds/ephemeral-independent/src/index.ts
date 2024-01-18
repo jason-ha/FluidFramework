@@ -6,11 +6,11 @@
 export type {
 	ClientId,
 	IndependentDatastoreHandle,
-	IndependentDirectory,
-	IndependentDirectoryMethods,
-	IndependentDirectoryNode,
-	IndependentDirectoryNodeSchema,
-	IndependentDirectoryPaths,
+	IndependentMap,
+	IndependentMapMethods,
+	IndependentMapEntry,
+	IndependentMapSchema,
+	IndependentMapKeys,
 	IndependentValue,
 	IndependentValueBrand,
 	ManagerFactory,
@@ -18,15 +18,15 @@ export type {
 } from "./types.js";
 
 export {
-	type EmptyIndependentDirectory,
+	type EmptyIndependentMap,
 	EphemeralIndependentDirectory,
-} from "./independentDirectory/index.js";
+} from "./ephemeralIndependentDirectory.js";
 
 export {
 	Latest,
 	type LatestValueClientData,
 	type LatestValueData,
-	type LatestValueManagerEvents,
 	type LatestValueManager,
+	type LatestValueManagerEvents,
 	type LatestValueMetadata,
 } from "./latestValueManager.js";

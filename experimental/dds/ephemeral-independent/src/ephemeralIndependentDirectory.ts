@@ -9,15 +9,15 @@ import {
 	PureDataObjectFactory,
 } from "@fluidframework/aqueduct";
 
-import type { IndependentDirectory } from "../types.js";
+import type { IndependentMap } from "./types.js";
 
-import { createEphemeralIndependentDirectory } from "./independentDirectory.js";
+import { createEphemeralIndependentMap } from "./independentMap.js";
 
 /**
  * @alpha
  */
 // eslint-disable-next-line @typescript-eslint/ban-types
-export type EmptyIndependentDirectory = IndependentDirectory<{}>;
+export type EmptyIndependentMap = IndependentMap<{}>;
 
 /**
  * @alpha
@@ -32,10 +32,13 @@ export class EphemeralIndependentDirectory extends PureDataObject {
 		{},
 	);
 
-	public readonly directory: EmptyIndependentDirectory;
+	/**
+	 * Provides access to the values at this directory level as a map.
+	 */
+	public readonly map: EmptyIndependentMap;
 
 	public constructor(props: IDataObjectProps) {
 		super(props);
-		this.directory = createEphemeralIndependentDirectory(props.runtime, {});
+		this.map = createEphemeralIndependentMap(props.runtime, {});
 	}
 }

@@ -7,20 +7,20 @@
 import type { IFluidDataStoreRuntime, Serializable } from "@fluidframework/datastore-definitions";
 
 // Proper clients use EphemeralIndependentDirectory from @fluid-experimental/ephemeral-independent
-import { createEphemeralIndependentDirectory } from "../independentDirectory/independentDirectory.js";
+import { createEphemeralIndependentMap } from "../independentMap.js";
 
 import type { IndependentDatastoreHandle, IndependentValue, RoundTrippable } from "../index.js";
 
-declare function createValueManager<T, Path extends string>(
+declare function createValueManager<T, Key extends string>(
 	initial: Serializable<T>,
 ): (
-	path: Path,
-	datastoreHandle: IndependentDatastoreHandle<Path, T>,
+	key: Key,
+	datastoreHandle: IndependentDatastoreHandle<Key, T>,
 ) => { value: RoundTrippable<T>; manager: IndependentValue<RoundTrippable<T>> };
 
 // ---- test (example) code ----
 
-const dirImplX = createEphemeralIndependentDirectory(
+const mapImplX = createEphemeralIndependentMap(
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	{} as IFluidDataStoreRuntime,
 	{
@@ -33,15 +33,15 @@ const dirImplX = createEphemeralIndependentDirectory(
 	},
 );
 // Workaround ts(2775): Assertions require every name in the call target to be declared with an explicit type annotation.
-const dirImpl: typeof dirImplX = dirImplX;
+const mapImpl: typeof mapImplX = mapImplX;
 
 const initialCaret = { id: "", pos: 0 };
-dirImpl.add("caret", createValueManager(initialCaret));
+mapImpl.add("caret", createValueManager(initialCaret));
 
-const fakeAdd = dirImpl.camera.z + dirImpl.cursor.x + dirImpl.caret.pos;
+const fakeAdd = mapImpl.camera.z + mapImpl.cursor.x + mapImpl.caret.pos;
 
 // @ts-expect-error should error on typo detection
-console.log(dirImpl.curso.x); // error to highlight typo detection (proper typing in effect)
+console.log(mapImpl.curso.x); // error to highlight typo detection (proper typing in effect)
 
-// example of second add at existing path - results in union of types (should throw at runtime)
-dirImpl.add("caret", createValueManager({ dupe: 0 }));
+// example of second add at existing key - results in union of types (should throw at runtime)
+mapImpl.add("caret", createValueManager({ dupe: 0 }));

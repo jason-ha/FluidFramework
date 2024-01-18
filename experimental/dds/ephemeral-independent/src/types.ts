@@ -42,17 +42,17 @@ export type IndependentValue<T> = T & IndependentValueBrand<T>;
 /**
  * @alpha
  */
-export declare class IndependentDatastoreHandle<TPath, TValue> {
-	private readonly IndependentDirectoryHandle: IndependentDatastoreHandle<TPath, TValue>;
+export declare class IndependentDatastoreHandle<TKey, TValue> {
+	private readonly IndependentDatastoreHandle: IndependentDatastoreHandle<TKey, TValue>;
 }
 
 /**
  * Package internal function declaration for value manager instantiation.
  * @alpha
  */
-export type ManagerFactory<TPath extends string, TValue, TManager> = (
-	path: TPath,
-	datastoreHandle: IndependentDatastoreHandle<TPath, TValue>,
+export type ManagerFactory<TKey extends string, TValue, TManager> = (
+	key: TKey,
+	datastoreHandle: IndependentDatastoreHandle<TKey, TValue>,
 ) => {
 	value: RoundTrippable<TValue>;
 	manager: IndependentValue<TManager>;
@@ -61,62 +61,61 @@ export type ManagerFactory<TPath extends string, TValue, TManager> = (
 /**
  * @alpha
  */
-export type IndependentDirectoryNode<
-	TPath extends string,
+export type IndependentMapEntry<
+	TKey extends string,
 	TValue = RoundTrippable<unknown>,
 	TManager = unknown,
-> = ManagerFactory<TPath, TValue, TManager>;
+> = ManagerFactory<TKey, TValue, TManager>;
 
 /**
  * @alpha
  */
-export interface IndependentDirectoryNodeSchema {
-	// [path: string]: <T, M>(initialValue: Serializable<M>) => IndependentDirectoryNode<IndependentValue<T>>;
+export interface IndependentMapSchema {
+	// [Key: string]: <T, M>(initialValue: Serializable<M>) => IndependentMapEntry<IndependentValue<T>>;
 	// inference gobbledegook with no basis to work
-	// [Path: string]: <P1 extends string, P2,R>(a: P1, b: P2) => R extends ManagerFactory<typeof Path, infer TValue, infer TManager> ? ManagerFactory<typeof Path, TValue, TManager> : never;
+	// [Key: string]: <P1 extends string, P2,R>(a: P1, b: P2) => R extends ManagerFactory<typeof Key, infer TValue, infer TManager> ? ManagerFactory<typeof Key, TValue, TManager> : never;
 	// Comes super close to working, but the instantiation is not viable as factory can be invoked with arbitrary TValue and TManager.
-	// [Path: string]: <TPath extends typeof Path & string, TValue, TManager>(
-	// 	path: TPath,
-	// 	datastoreHandle: IndependentDatastoreHandle<TPath, TValue>,
+	// [Key: string]: <TKey extends typeof Key & string, TValue, TManager>(
+	// 	key: TKey,
+	// 	datastoreHandle: IndependentDatastoreHandle<TKey, TValue>,
 	// ) => {
 	// 	value: RoundTrippable<TValue>;
 	// 	manager: IndependentValue<TManager>;
 	// };
 	// Defaults don't help
-	// [Path: string]: <TValue = unknown, TManager = unknown>(
-	// 	path: typeof Path,
-	// 	datastoreHandle: IndependentDatastoreHandle<typeof Path, TValue>,
+	// [Key: string]: <TValue = unknown, TManager = unknown>(
+	// 	key: typeof Key,
+	// 	datastoreHandle: IndependentDatastoreHandle<typeof Key, TValue>,
 	// ) => {
 	// 	value: RoundTrippable<TValue>;
 	// 	manager: IndependentValue<TManager>;
 	// };
-	[path: string]: IndependentDirectoryNode<typeof path>;
+	[Key: string]: IndependentMapEntry<typeof Key>;
 }
 
 /**
  * @alpha
  */
-export type IndependentDirectoryPaths<TSchema extends IndependentDirectoryNodeSchema> = {
-	readonly [path in Exclude<
-		keyof TSchema,
-		keyof IndependentDirectoryMethods<TSchema>
-	>]: ReturnType<TSchema[path]>["manager"];
+export type IndependentMapKeys<TSchema extends IndependentMapSchema> = {
+	readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<
+		TSchema[Key]
+	>["manager"];
 };
 
 /**
  * @alpha
  */
-export interface IndependentDirectoryMethods<TSchema extends IndependentDirectoryNodeSchema> {
-	add<TPath extends string, TValue, TManager>(
-		path: TPath,
-		manager: ManagerFactory<TPath, TValue, TManager>,
-	): asserts this is IndependentDirectory<
-		TSchema & Record<TPath, ManagerFactory<TPath, TValue, TManager>>
+export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
+	add<TKey extends string, TValue, TManager>(
+		key: TKey,
+		manager: ManagerFactory<TKey, TValue, TManager>,
+	): asserts this is IndependentMap<
+		TSchema & Record<TKey, ManagerFactory<TKey, TValue, TManager>>
 	>;
 }
 
 /**
  * @alpha
  */
-export type IndependentDirectory<TSchema extends IndependentDirectoryNodeSchema> =
-	IndependentDirectoryPaths<TSchema> & IndependentDirectoryMethods<TSchema>;
+export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapKeys<TSchema> &
+	IndependentMapMethods<TSchema>;

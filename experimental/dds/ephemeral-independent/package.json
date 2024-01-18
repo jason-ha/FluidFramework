@@ -24,6 +24,11 @@
 			}
 		}
 	},
+	"files": [
+		"dist/**/*",
+		"lib/**/*",
+		"!**/test/**"
+	],
 	"scripts": {
 		"api": "fluid-build . --task api",
 		"api-extractor:commonjs": "api-extractor run --config ./api-extractor-cjs.json",

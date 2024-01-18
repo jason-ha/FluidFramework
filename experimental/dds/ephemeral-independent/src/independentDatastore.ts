@@ -16,11 +16,11 @@ import type { ClientId, IndependentDatastoreHandle, RoundTrippable } from "./typ
  */
 export interface IndependentDatastoreSchema {
 	// This type is very odd. It may not be doing much and may
-	// need to be replaced with IndependentDirectory schema pattern
+	// need to be replaced with IndependentMap schema pattern
 	// similar to what is commented out.
 	// For now, it seems to work.
-	[Path: string]: ReturnType<<TValue>() => TValue>;
-	// [Path: string]: IndependentDatastoreSchemaNode;
+	[Key: string]: ReturnType<<TValue>() => TValue>;
+	// [Key: string]: IndependentDatastoreSchemaNode;
 }
 
 /**
@@ -28,19 +28,19 @@ export interface IndependentDatastoreSchema {
  */
 export interface IndependentDatastore<
 	TSchema extends IndependentDatastoreSchema,
-	TPath extends keyof TSchema & string = keyof TSchema & string,
+	TKey extends keyof TSchema & string = keyof TSchema & string,
 > {
-	localUpdate(path: TPath, forceBroadcast: boolean): void;
+	localUpdate(key: TKey, forceBroadcast: boolean): void;
 	update(
-		path: TPath,
+		key: TKey,
 		clientId: ClientId,
 		rev: number,
 		timestamp: number,
-		value: RoundTrippable<TSchema[TPath]>,
+		value: RoundTrippable<TSchema[TKey]>,
 	): void;
-	knownValues(path: TPath): {
+	knownValues(key: TKey): {
 		self: ClientId | undefined;
-		states: ValueElement<TSchema[TPath]>;
+		states: ValueElement<TSchema[TKey]>;
 	};
 }
 
@@ -51,17 +51,17 @@ export function handleFromDatastore<
 	// Constraining TSchema would be great, but it seems nested types (at least with undefined) cause trouble.
 	// TSchema as `any` still provides some type safety.
 	// TSchema extends IndependentDatastoreSchema,
-	TPath extends string /* & keyof TSchema */,
+	TKey extends string /* & keyof TSchema */,
 	TValue,
->(datastore: IndependentDatastore<any, TPath>): IndependentDatastoreHandle<TPath, TValue> {
-	return datastore as unknown as IndependentDatastoreHandle<TPath, TValue>;
+>(datastore: IndependentDatastore<any, TKey>): IndependentDatastoreHandle<TKey, TValue> {
+	return datastore as unknown as IndependentDatastoreHandle<TKey, TValue>;
 }
 
 /**
  * @internal
  */
-export function datastoreFromHandle<TPath extends string, TValue>(
-	handle: IndependentDatastoreHandle<TPath, TValue>,
-): IndependentDatastore<Record<TPath, TValue>> {
-	return handle as unknown as IndependentDatastore<Record<TPath, TValue>>;
+export function datastoreFromHandle<TKey extends string, TValue>(
+	handle: IndependentDatastoreHandle<TKey, TValue>,
+): IndependentDatastore<Record<TKey, TValue>> {
+	return handle as unknown as IndependentDatastore<Record<TKey, TValue>>;
 }

@@ -16,45 +16,44 @@ import { Serializable } from '@fluidframework/datastore-definitions';
 export type ClientId = string;
 
 // @alpha (undocumented)
-export type EmptyIndependentDirectory = IndependentDirectory<{}>;
+export type EmptyIndependentMap = IndependentMap<{}>;
 
 // @alpha (undocumented)
 export class EphemeralIndependentDirectory extends PureDataObject {
     constructor(props: IDataObjectProps);
     // (undocumented)
-    readonly directory: EmptyIndependentDirectory;
-    // (undocumented)
     static readonly factory: PureDataObjectFactory<EphemeralIndependentDirectory, DataObjectTypes>;
+    readonly map: EmptyIndependentMap;
     // (undocumented)
     static readonly Name = "@fluidframework/ephemeral-independent-directory";
 }
 
 // @alpha (undocumented)
-export class IndependentDatastoreHandle<TPath, TValue> {
+export class IndependentDatastoreHandle<TKey, TValue> {
 }
 
 // @alpha (undocumented)
-export type IndependentDirectory<TSchema extends IndependentDirectoryNodeSchema> = IndependentDirectoryPaths<TSchema> & IndependentDirectoryMethods<TSchema>;
+export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapKeys<TSchema> & IndependentMapMethods<TSchema>;
 
 // @alpha (undocumented)
-export interface IndependentDirectoryMethods<TSchema extends IndependentDirectoryNodeSchema> {
-    // (undocumented)
-    add<TPath extends string, TValue, TManager>(path: TPath, manager: ManagerFactory<TPath, TValue, TManager>): asserts this is IndependentDirectory<TSchema & Record<TPath, ManagerFactory<TPath, TValue, TManager>>>;
-}
+export type IndependentMapEntry<TKey extends string, TValue = RoundTrippable<unknown>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
 
 // @alpha (undocumented)
-export type IndependentDirectoryNode<TPath extends string, TValue = RoundTrippable<unknown>, TManager = unknown> = ManagerFactory<TPath, TValue, TManager>;
-
-// @alpha (undocumented)
-export interface IndependentDirectoryNodeSchema {
-    // (undocumented)
-    [path: string]: IndependentDirectoryNode<typeof path>;
-}
-
-// @alpha (undocumented)
-export type IndependentDirectoryPaths<TSchema extends IndependentDirectoryNodeSchema> = {
-    readonly [path in Exclude<keyof TSchema, keyof IndependentDirectoryMethods<TSchema>>]: ReturnType<TSchema[path]>["manager"];
+export type IndependentMapKeys<TSchema extends IndependentMapSchema> = {
+    readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<TSchema[Key]>["manager"];
 };
+
+// @alpha (undocumented)
+export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
+    // (undocumented)
+    add<TKey extends string, TValue, TManager>(key: TKey, manager: ManagerFactory<TKey, TValue, TManager>): asserts this is IndependentMap<TSchema & Record<TKey, ManagerFactory<TKey, TValue, TManager>>>;
+}
+
+// @alpha (undocumented)
+export interface IndependentMapSchema {
+    // (undocumented)
+    [Key: string]: IndependentMapEntry<typeof Key>;
+}
 
 // @alpha
 export type IndependentValue<T> = T & IndependentValueBrand<T>;
@@ -64,7 +63,7 @@ export class IndependentValueBrand<T> {
 }
 
 // @alpha (undocumented)
-export function Latest<T extends object, Path extends string>(initialValue: Serializable<T> & object): ManagerFactory<Path, T, LatestValueManager<T>>;
+export function Latest<T extends object, Key extends string>(initialValue: Serializable<T> & object): ManagerFactory<Key, T, LatestValueManager<T>>;
 
 // @alpha (undocumented)
 export interface LatestValueClientData<T> extends LatestValueData<T> {
@@ -108,7 +107,7 @@ export interface LatestValueMetadata {
 }
 
 // @alpha
-export type ManagerFactory<TPath extends string, TValue, TManager> = (path: TPath, datastoreHandle: IndependentDatastoreHandle<TPath, TValue>) => {
+export type ManagerFactory<TKey extends string, TValue, TManager> = (key: TKey, datastoreHandle: IndependentDatastoreHandle<TKey, TValue>) => {
     value: RoundTrippable<TValue>;
     manager: IndependentValue<TManager>;
 };

@@ -9,11 +9,11 @@ import { Latest, type LatestValueClientData } from "../index.js";
 
 // Proper clients use EphemeralIndependentDirectory from @fluid-experimental/ephemeral-independent
 // eslint-disable-next-line import/no-internal-modules
-import { createEphemeralIndependentDirectory } from "../independentDirectory/independentDirectory.js";
+import { createEphemeralIndependentMap } from "../independentMap.js";
 
 // ---- test (example) code ----
 
-const directoryInferred = createEphemeralIndependentDirectory(
+const mapInferred = createEphemeralIndependentMap(
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	{} as IFluidDataStoreRuntime,
 	{
@@ -22,14 +22,14 @@ const directoryInferred = createEphemeralIndependentDirectory(
 	},
 );
 // Workaround ts(2775): Assertions require every name in the call target to be declared with an explicit type annotation.
-const directory: typeof directoryInferred = directoryInferred;
+const map: typeof mapInferred = mapInferred;
 
-directory.add("caret", Latest({ id: "", pos: 0 }));
+map.add("caret", Latest({ id: "", pos: 0 }));
 
-const fakeAdd = directory.caret.local.pos + directory.camera.local.z + directory.cursor.local.x;
+const fakeAdd = map.caret.local.pos + map.camera.local.z + map.cursor.local.x;
 
 // TODO: make direct write to local an error. The object returned by local should be readonly.
-directory.caret.local.pos = 0; // error
+map.caret.local.pos = 0; // error
 
 function logClientValue<T>({
 	clientId,
@@ -38,7 +38,9 @@ function logClientValue<T>({
 	console.log(clientId, value);
 }
 
-const cursor = directory.cursor;
+const cursor = map.cursor;
+
+cursor.local = { x: 1, y: 2 };
 
 cursor.on("update", logClientValue);
 cursor.off("update", logClientValue);
