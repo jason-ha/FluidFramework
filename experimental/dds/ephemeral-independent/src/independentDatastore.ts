@@ -3,23 +3,21 @@
  * Licensed under the MIT License.
  */
 
-import type { ValueElement } from "./internalTypes.js";
-import type { ClientId, IndependentDatastoreHandle, RoundTrippable } from "./types.js";
+import type { ClientRecord, ValueStateDirectory } from "./internalTypes.js";
+import type { ClientId, IndependentDatastoreHandle } from "./types.js";
 
 // type IndependentDatastoreSchemaNode<
-// 	TValue = unknown,
-// 	TSerialized extends Serializable<TValue> = Serializable<TValue>,
-// > = TSerialized extends Serializable<TValue> ? TValue : never;
+// 	TValue extends ValueStateDirectory<any> = ValueStateDirectory<unknown>,
+// > = TValue extends ValueStateDirectory<infer T> ? ValueStateDirectory<Serializable<T>> : never;
 
 /**
  * @internal
  */
 export interface IndependentDatastoreSchema {
-	// This type is very odd. It may not be doing much and may
+	// This type is not precise. It may
 	// need to be replaced with IndependentMap schema pattern
 	// similar to what is commented out.
-	// For now, it seems to work.
-	[Key: string]: ReturnType<<TValue>() => TValue>;
+	[Key: string]: ValueStateDirectory<unknown>;
 	// [Key: string]: IndependentDatastoreSchemaNode;
 }
 
@@ -27,20 +25,14 @@ export interface IndependentDatastoreSchema {
  * @internal
  */
 export interface IndependentDatastore<
-	TSchema extends IndependentDatastoreSchema,
-	TKey extends keyof TSchema & string = keyof TSchema & string,
+	TKey extends string,
+	TValue extends ValueStateDirectory<any>,
 > {
-	localUpdate(key: TKey, forceBroadcast: boolean): void;
-	update(
-		key: TKey,
-		clientId: ClientId,
-		rev: number,
-		timestamp: number,
-		value: RoundTrippable<TSchema[TKey]>,
-	): void;
+	localUpdate(key: TKey, value: TValue, forceBroadcast: boolean): void;
+	update(key: TKey, clientId: ClientId, value: TValue): void;
 	knownValues(key: TKey): {
 		self: ClientId | undefined;
-		states: ValueElement<TSchema[TKey]>;
+		states: ClientRecord<TValue>;
 	};
 }
 
@@ -52,16 +44,16 @@ export function handleFromDatastore<
 	// TSchema as `any` still provides some type safety.
 	// TSchema extends IndependentDatastoreSchema,
 	TKey extends string /* & keyof TSchema */,
-	TValue,
->(datastore: IndependentDatastore<any, TKey>): IndependentDatastoreHandle<TKey, TValue> {
+	TValue extends ValueStateDirectory<any>,
+>(datastore: IndependentDatastore<TKey, TValue>): IndependentDatastoreHandle<TKey, TValue> {
 	return datastore as unknown as IndependentDatastoreHandle<TKey, TValue>;
 }
 
 /**
  * @internal
  */
-export function datastoreFromHandle<TKey extends string, TValue>(
+export function datastoreFromHandle<TKey extends string, TValue extends ValueStateDirectory<any>>(
 	handle: IndependentDatastoreHandle<TKey, TValue>,
-): IndependentDatastore<Record<TKey, TValue>> {
-	return handle as unknown as IndependentDatastore<Record<TKey, TValue>>;
+): IndependentDatastore<TKey, TValue> {
+	return handle as unknown as IndependentDatastore<TKey, TValue>;
 }

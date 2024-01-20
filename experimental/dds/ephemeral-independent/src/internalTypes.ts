@@ -6,7 +6,7 @@
 import type { ClientId, RoundTrippable } from "./types.js";
 
 /**
- * @internal
+ * @alpha
  */
 export interface ValueState<TValue> {
 	rev: number;
@@ -15,21 +15,26 @@ export interface ValueState<TValue> {
 }
 
 /**
+ * @alpha
+ */
+export type ValueStateDirectory<T> =
+	| ValueState<T>
+	| { [Subdirectory: string | number]: ValueStateDirectory<T> };
+
+/**
  * @internal
  */
-export interface ValueElement<TValue> {
-	[Id: string]: ValueState<TValue>;
+export interface ClientRecord<TValue extends ValueStateDirectory<any>> {
+	[ClientId: ClientId]: TValue;
 }
 
 /**
  * @internal
  */
-export interface ValueManager<TValue> {
-	get value(): ValueState<TValue>;
-	update(
-		clientId: ClientId,
-		revision: number,
-		timestamp: number,
-		value: RoundTrippable<TValue>,
-	): void;
+export interface ValueManager<
+	TValue,
+	TValueState extends ValueStateDirectory<TValue> = ValueStateDirectory<TValue>,
+> {
+	get value(): TValueState;
+	update(clientId: ClientId, received: number, value: TValueState): void;
 }

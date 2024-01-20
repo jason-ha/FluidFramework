@@ -65,17 +65,14 @@ export interface LatestValueManager<T> extends IEventProvider<LatestValueManager
 
 class LatestValueManagerImpl<T, Key extends string>
 	extends TypedEventEmitter<LatestValueManagerEvents<T>>
-	implements LatestValueManager<T>, ValueManager<T>
+	implements LatestValueManager<T>, ValueManager<T, ValueState<T>>
 {
-	public readonly value: ValueState<T>;
-
 	public constructor(
 		private readonly key: Key,
-		private readonly datastore: IndependentDatastore<Record<Key, T>>,
-		value: Serializable<T>,
+		private readonly datastore: IndependentDatastore<Key, ValueState<T>>,
+		public readonly value: ValueState<T>,
 	) {
 		super();
-		this.value = { rev: 0, timestamp: Date.now(), value };
 	}
 
 	get local(): RoundTrippable<T> {
@@ -86,7 +83,7 @@ class LatestValueManagerImpl<T, Key extends string>
 		this.value.rev += 1;
 		this.value.timestamp = Date.now();
 		this.value.value = value;
-		this.datastore.localUpdate(this.key, /* forceUpdate */ false);
+		this.datastore.localUpdate(this.key, this.value, /* forceUpdate */ false);
 	}
 
 	clientValues(): IterableIterator<LatestValueClientData<T>> {
@@ -109,16 +106,20 @@ class LatestValueManagerImpl<T, Key extends string>
 		throw new Error("No entry for clientId");
 	}
 
-	update(clientId: string, revision: number, timestamp: number, value: RoundTrippable<T>): void {
+	update(clientId: string, _received: number, value: ValueState<T>): void {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		if (clientId in allKnownStates.states) {
 			const currentState = allKnownStates.states[clientId];
-			if (currentState.rev >= revision) {
+			if (currentState.rev >= value.rev) {
 				return;
 			}
 		}
-		this.datastore.update(this.key, clientId, revision, timestamp, value);
-		this.emit("update", { clientId, value, metadata: { revision, timestamp } });
+		this.datastore.update(this.key, clientId, value);
+		this.emit("update", {
+			clientId,
+			value: value.value,
+			metadata: { revision: value.rev, timestamp: value.timestamp },
+		});
 	}
 }
 
@@ -127,13 +128,13 @@ class LatestValueManagerImpl<T, Key extends string>
  */
 export function Latest<T extends object, Key extends string>(
 	initialValue: Serializable<T> & object,
-): ManagerFactory<Key, T, LatestValueManager<T>> {
+): ManagerFactory<Key, ValueState<T>, LatestValueManager<T>> {
 	// LatestValueManager takes ownership of initialValue but makes a shallow
 	// copy for basic protection.
-	const value = { ...initialValue };
-	return (key: Key, datastoreHandle: IndependentDatastoreHandle<Key, T>) => ({
+	const value: ValueState<T> = { rev: 0, timestamp: Date.now(), value: { ...initialValue } };
+	return (key: Key, datastoreHandle: IndependentDatastoreHandle<Key, ValueState<T>>) => ({
 		value,
-		manager: brandIVM(
+		manager: brandIVM<LatestValueManagerImpl<T, Key>, T, ValueState<T>>(
 			new LatestValueManagerImpl(key, datastoreFromHandle(datastoreHandle), value),
 		),
 	});

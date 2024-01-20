@@ -7,20 +7,19 @@ import { assert } from "@fluidframework/core-utils";
 import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions";
 
-import { type IndependentDatastore, handleFromDatastore } from "./independentDatastore.js";
+import { handleFromDatastore, type IndependentDatastore } from "./independentDatastore.js";
 import { unbrandIVM } from "./independentValue.js";
-import type { ValueElement, ValueState } from "./internalTypes.js";
+import type { ClientRecord, ValueState, ValueStateDirectory } from "./internalTypes.js";
 import type {
-	ClientId,
 	IndependentMap,
 	IndependentMapMethods,
 	IndependentMapSchema,
 	ManagerFactory,
-	RoundTrippable,
 } from "./types.js";
 
-interface IndependentMapValueUpdate extends ValueState<unknown> {
+interface IndependentMapValueUpdate<TValue extends ValueStateDirectory<any>> {
 	key: string;
+	content: TValue;
 	keepUnregistered?: true;
 }
 
@@ -37,8 +36,6 @@ type IndependentSubSchemaFromMapSchema<
 	[Key in keyof TSchema]: MapSchemaElement<TSchema, Part, Key>;
 };
 
-type IndependentDatastoreSchemaFromMapSchema<TSchema extends IndependentMapSchema> =
-	IndependentSubSchemaFromMapSchema<TSchema, "value">;
 type MapEntries<TSchema extends IndependentMapSchema> = IndependentSubSchemaFromMapSchema<
 	TSchema,
 	"manager"
@@ -54,7 +51,7 @@ type MapEntries<TSchema extends IndependentMapSchema> = IndependentSubSchemaFrom
  * consumers that are expected to maintain their schema over multiple versions of clients.
  */
 interface ValueElementMap<_TSchema extends IndependentMapSchema> {
-	[Key: string]: { [ClientId: ClientId]: ValueState<unknown> };
+	[Key: string]: ClientRecord<ValueStateDirectory<unknown>>;
 }
 // An attempt to make the type more precise, but it is not working.
 // If the casting in support code is too much we could keep two references to the same
@@ -62,25 +59,57 @@ interface ValueElementMap<_TSchema extends IndependentMapSchema> {
 // type ValueElementMap<TSchema extends IndependentMapNodeSchema> =
 // 	| {
 // 			[Key in keyof TSchema & string]?: {
-// 				[ClientId: ClientId]: ValueState<MapSchemaElement<TSchema,"value",Key>>;
+// 				[ClientId: ClientId]: ValueStateDirectory<MapSchemaElement<TSchema,"value",Key>>;
 // 			};
 // 	  }
 // 	| {
-// 			[Key: string]: { [ClientId: ClientId]: ValueState<unknown> };
+// 			[Key: string]: ClientRecord<ValueStateDirectory<unknown>>;
 // 	  };
 // interface ValueElementMap<TValue> {
-// 	[Id: string]: { [ClientId: ClientId]: ValueState<TValue> };
+// 	[Id: string]: ClientRecord<ValueStateDirectory<TValue>>;
 // 	// Version with local packed in is convenient for map, but not for join broadcast to serialize simply.
 // 	// [Id: string]: {
-// 	// 	local: ValueState<TValue>;
-// 	// 	all: { [ClientId: ClientId]: ValueState<TValue> };
+// 	// 	local: ValueStateDirectory<TValue>;
+// 	// 	all: ClientRecord<ValueStateDirectory<TValue>>;
 // 	// };
 // }
+
+function isValueState<T>(value: ValueStateDirectory<T>): value is ValueState<T> {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"rev" in value &&
+		"timestamp" in value &&
+		"value" in value
+	);
+}
+
+function mergeValueDirectory<T>(
+	base: ValueStateDirectory<T> | undefined,
+	update: ValueStateDirectory<T>,
+	timeDelta: number,
+): ValueStateDirectory<T> {
+	if (isValueState(update)) {
+		if (base === undefined || !isValueState(base) || update.rev > base.rev) {
+			return { ...update, timestamp: update.timestamp + timeDelta };
+		}
+		return base;
+	}
+
+	const mergeBase = base !== undefined && !isValueState(base) ? base : {};
+	Object.entries(update).forEach(([key, value]) => {
+		mergeBase[key] = mergeValueDirectory(mergeBase[key], value, timeDelta);
+	});
+	return mergeBase;
+}
 
 class IndependentMapImpl<TSchema extends IndependentMapSchema>
 	implements
 		IndependentMapMethods<TSchema>,
-		IndependentDatastore<IndependentDatastoreSchemaFromMapSchema<TSchema>>
+		IndependentDatastore<
+			keyof TSchema & string,
+			MapSchemaElement<TSchema, "value", keyof TSchema & string>
+		>
 {
 	private readonly datastore: ValueElementMap<TSchema> = {};
 	public readonly nodes: MapEntries<TSchema>;
@@ -144,34 +173,36 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		key: Key,
 	): {
 		self: string | undefined;
-		states: ValueElement<MapSchemaElement<TSchema, "value", Key>>;
+		states: ClientRecord<MapSchemaElement<TSchema, "value", Key>>;
 	} {
 		return {
 			self: this.runtime.clientId,
-			states: this.datastore[key] as ValueElement<MapSchemaElement<TSchema, "value", Key>>,
+			states: this.datastore[key],
 		};
 	}
 
-	localUpdate(key: keyof TSchema & string, _forceBroadcast: boolean): void {
+	localUpdate<Key extends keyof TSchema & string>(
+		key: Key,
+		value: MapSchemaElement<TSchema, "value", Key>,
+		_forceBroadcast: boolean,
+	): void {
 		const content = {
 			key,
-			...unbrandIVM(this.nodes[key]).value,
-		} satisfies IndependentMapValueUpdate;
+			content: value,
+		} satisfies IndependentMapValueUpdate<MapSchemaElement<TSchema, "value", Key>>;
 		this.runtime.submitSignal("IndependentMapValueUpdate", content);
 	}
 
-	update(
-		key: keyof TSchema & string,
+	update<Key extends keyof TSchema & string>(
+		key: Key,
 		clientId: string,
-		rev: number,
-		timestamp: number,
-		value: RoundTrippable<unknown>,
+		value: MapSchemaElement<TSchema, "value", Key>,
 	): void {
 		const allKnownState = this.datastore[key];
-		allKnownState[clientId] = { rev, timestamp, value };
+		allKnownState[clientId] = mergeValueDirectory(allKnownState[clientId], value, 0);
 	}
 
-	add<TKey extends string, TValue, TValueManager>(
+	add<TKey extends string, TValue extends ValueStateDirectory<any>, TValueManager>(
 		key: TKey,
 		nodeFactory: ManagerFactory<TKey, TValue, TValueManager>,
 	): asserts this is IndependentMap<
@@ -199,26 +230,28 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 			return;
 		}
 
-		const timestamp = Date.now();
+		const received = Date.now();
 		assert(message.clientId !== null, "Map received signal without clientId");
+		const timeDelta = received - received;
 
 		// TODO: Maybe most messages can just be general state update and merged.
 		if (message.type === "IndependentMapValueUpdate") {
-			const {
-				key: key,
-				keepUnregistered,
-				rev,
-				value,
-			} = message.content as IndependentMapValueUpdate;
+			const { key, keepUnregistered, content } = message.content as IndependentMapValueUpdate<
+				ValueStateDirectory<unknown>
+			>;
 			if (key in this.nodes) {
 				const node = unbrandIVM(this.nodes[key]);
-				node.update(message.clientId, rev, timestamp, value);
+				node.update(message.clientId, received, content);
 			} else if (keepUnregistered) {
 				if (!(key in this.datastore)) {
 					this.datastore[key] = {};
 				}
 				const allKnownState = this.datastore[key];
-				allKnownState[message.clientId] = { rev, timestamp, value };
+				allKnownState[message.clientId] = mergeValueDirectory(
+					allKnownState[message.clientId],
+					content,
+					timeDelta,
+				);
 			}
 		} else if (message.type === "CompleteIndependentMap") {
 			const remoteDatastore = message.content as ValueElementMap<TSchema>;
@@ -226,7 +259,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 				if (key in this.nodes) {
 					const node = unbrandIVM(this.nodes[key]);
 					for (const [clientId, value] of Object.entries(remoteAllKnownState)) {
-						node.update(clientId, value.rev, value.timestamp, value.value);
+						node.update(clientId, received, value);
 					}
 				} else {
 					// Assume all broadcast state is meant to be kept even if not currently registered.
@@ -235,7 +268,11 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 					}
 					const localAllKnownState = this.datastore[key];
 					for (const [clientId, value] of Object.entries(remoteAllKnownState)) {
-						localAllKnownState[clientId] = value;
+						localAllKnownState[clientId] = mergeValueDirectory(
+							localAllKnownState[clientId],
+							value,
+							timeDelta,
+						);
 					}
 				}
 			}

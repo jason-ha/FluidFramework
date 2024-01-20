@@ -7,16 +7,19 @@
 import type { IFluidDataStoreRuntime, Serializable } from "@fluidframework/datastore-definitions";
 
 // Proper clients use EphemeralIndependentDirectory from @fluid-experimental/ephemeral-independent
+// until the interface is stabilized.
 import { createEphemeralIndependentMap } from "../independentMap.js";
 
 import type { IndependentDatastoreHandle, IndependentValue, RoundTrippable } from "../index.js";
+// No proper client will need this type. Can switch import from index once pickup new api-extractor.
+import type { ValueState } from "../internalTypes.js";
 
 declare function createValueManager<T, Key extends string>(
 	initial: Serializable<T>,
 ): (
 	key: Key,
-	datastoreHandle: IndependentDatastoreHandle<Key, T>,
-) => { value: RoundTrippable<T>; manager: IndependentValue<RoundTrippable<T>> };
+	datastoreHandle: IndependentDatastoreHandle<Key, ValueState<T>>,
+) => { value: ValueState<T>; manager: IndependentValue<RoundTrippable<T>> };
 
 // ---- test (example) code ----
 
@@ -26,7 +29,7 @@ const mapImplX = createEphemeralIndependentMap(
 	{
 		cursor: createValueManager({ x: 0, y: 0 }),
 		camera: () => ({
-			value: { x: 0, y: 0, z: 0 },
+			value: { rev: 0, timestamp: Date.now(), value: { x: 0, y: 0, z: 0 } },
 			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 			manager: {} as IndependentValue<{ x: number; y: number; z: number }>,
 		}),
