@@ -2,7 +2,6 @@
  * Copyright (c) Microsoft Corporation and contributors. All rights reserved.
  * Licensed under the MIT License.
  */
-/* eslint-disable import/no-internal-modules */
 
 import type { IFluidDataStoreRuntime, Serializable } from "@fluidframework/datastore-definitions";
 
@@ -10,16 +9,17 @@ import type { IFluidDataStoreRuntime, Serializable } from "@fluidframework/datas
 // until the interface is stabilized.
 import { createEphemeralIndependentMap } from "../independentMap.js";
 
-import type { IndependentDatastoreHandle, IndependentValue, RoundTrippable } from "../index.js";
-// No proper client will need this type. Can switch import from index once pickup new api-extractor.
-import type { ValueState } from "../internalTypes.js";
+import type { InternalTypes, RoundTrippable } from "../index.js";
 
 declare function createValueManager<T, Key extends string>(
 	initial: Serializable<T>,
 ): (
 	key: Key,
-	datastoreHandle: IndependentDatastoreHandle<Key, ValueState<T>>,
-) => { value: ValueState<T>; manager: IndependentValue<RoundTrippable<T>> };
+	datastoreHandle: InternalTypes.IndependentDatastoreHandle<Key, InternalTypes.ValueState<T>>,
+) => {
+	value: InternalTypes.ValueState<T>;
+	manager: InternalTypes.IndependentValue<RoundTrippable<T>>;
+};
 
 // ---- test (example) code ----
 
@@ -31,7 +31,7 @@ const mapImplX = createEphemeralIndependentMap(
 		camera: () => ({
 			value: { rev: 0, timestamp: Date.now(), value: { x: 0, y: 0, z: 0 } },
 			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			manager: {} as IndependentValue<{ x: number; y: number; z: number }>,
+			manager: {} as InternalTypes.IndependentValue<{ x: number; y: number; z: number }>,
 		}),
 	},
 );

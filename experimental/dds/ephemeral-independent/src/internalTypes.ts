@@ -3,23 +3,8 @@
  * Licensed under the MIT License.
  */
 
-import type { ClientId, RoundTrippable } from "./types.js";
-
-/**
- * @alpha
- */
-export interface ValueState<TValue> {
-	rev: number;
-	timestamp: number;
-	value: RoundTrippable<TValue>;
-}
-
-/**
- * @alpha
- */
-export type ValueStateDirectory<T> =
-	| ValueState<T>
-	| { [Subdirectory: string | number]: ValueStateDirectory<T> };
+import type { ClientId } from "./baseTypes.js";
+import { ValueStateDirectory } from "./exposedInternalTypes.js";
 
 /**
  * @internal

@@ -10,7 +10,7 @@ import type { IEvent } from '@fluidframework/core-interfaces';
 import type { IEventProvider } from '@fluidframework/core-interfaces';
 import { PureDataObject } from '@fluidframework/aqueduct';
 import { PureDataObjectFactory } from '@fluidframework/aqueduct';
-import { Serializable } from '@fluidframework/datastore-definitions';
+import type { Serializable } from '@fluidframework/datastore-definitions';
 
 // @alpha (undocumented)
 export type ClientId = string;
@@ -29,19 +29,19 @@ export class EphemeralIndependentDirectory extends PureDataObject {
 }
 
 // @alpha (undocumented)
-export class IndependentDatastoreHandle<TKey, TValue extends ValueStateDirectory<any>> {
+class IndependentDatastoreHandle<TKey, TValue extends ValueStateDirectory<any>> {
 }
 
 // @alpha (undocumented)
-export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapKeys<TSchema> & IndependentMapMethods<TSchema>;
+export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;
+
+// @alpha (undocumented)
+export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
+    readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<TSchema[Key]>["manager"] extends IndependentValue<infer TManager> ? TManager : never;
+};
 
 // @alpha (undocumented)
 export type IndependentMapEntry<TKey extends string, TValue extends ValueStateDirectory<any>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
-
-// @alpha (undocumented)
-export type IndependentMapKeys<TSchema extends IndependentMapSchema> = {
-    readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<TSchema[Key]>["manager"];
-};
 
 // @alpha (undocumented)
 export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
@@ -56,11 +56,23 @@ export interface IndependentMapSchema {
 }
 
 // @alpha
-export type IndependentValue<T> = T & IndependentValueBrand<T>;
+type IndependentValue<T> = T & IndependentValueBrand<T>;
 
 // @alpha
-export class IndependentValueBrand<T> {
+class IndependentValueBrand<T> {
 }
+
+declare namespace InternalTypes {
+    export {
+        ValueState,
+        ValueStateDirectory,
+        IndependentDatastoreHandle,
+        IndependentValueBrand,
+        IndependentValue,
+        ManagerFactory
+    }
+}
+export { InternalTypes }
 
 // @alpha (undocumented)
 export function Latest<T extends object, Key extends string>(initialValue: Serializable<T> & object): ManagerFactory<Key, ValueState<T>, LatestValueManager<T>>;
@@ -107,7 +119,7 @@ export interface LatestValueMetadata {
 }
 
 // @alpha
-export type ManagerFactory<TKey extends string, TValue extends ValueStateDirectory<any>, TManager> = (key: TKey, datastoreHandle: IndependentDatastoreHandle<TKey, TValue>) => {
+type ManagerFactory<TKey extends string, TValue extends ValueStateDirectory<any>, TManager> = (key: TKey, datastoreHandle: IndependentDatastoreHandle<TKey, TValue>) => {
     value: TValue;
     manager: IndependentValue<TManager>;
 };
@@ -116,7 +128,7 @@ export type ManagerFactory<TKey extends string, TValue extends ValueStateDirecto
 export type RoundTrippable<T> = Serializable<T>;
 
 // @alpha (undocumented)
-export interface ValueState<TValue> {
+interface ValueState<TValue> {
     // (undocumented)
     rev: number;
     // (undocumented)
@@ -126,7 +138,7 @@ export interface ValueState<TValue> {
 }
 
 // @alpha (undocumented)
-export type ValueStateDirectory<T> = ValueState<T> | {
+type ValueStateDirectory<T> = ValueState<T> | {
     [Subdirectory: string | number]: ValueStateDirectory<T>;
 };
 

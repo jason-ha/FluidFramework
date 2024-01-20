@@ -7,15 +7,11 @@ import { assert } from "@fluidframework/core-utils";
 import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions";
 
+import type { ManagerFactory, ValueState, ValueStateDirectory } from "./exposedInternalTypes.js";
 import { handleFromDatastore, type IndependentDatastore } from "./independentDatastore.js";
 import { unbrandIVM } from "./independentValue.js";
-import type { ClientRecord, ValueState, ValueStateDirectory } from "./internalTypes.js";
-import type {
-	IndependentMap,
-	IndependentMapMethods,
-	IndependentMapSchema,
-	ManagerFactory,
-} from "./types.js";
+import type { ClientRecord } from "./internalTypes.js";
+import type { IndependentMap, IndependentMapMethods, IndependentMapSchema } from "./types.js";
 
 interface IndependentMapValueUpdate<TValue extends ValueStateDirectory<any>> {
 	key: string;

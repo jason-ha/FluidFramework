@@ -3,8 +3,9 @@
  * Licensed under the MIT License.
  */
 
-import type { ClientRecord, ValueStateDirectory } from "./internalTypes.js";
-import type { ClientId, IndependentDatastoreHandle } from "./types.js";
+import type { ClientId } from "./baseTypes.js";
+import type { IndependentDatastoreHandle, ValueStateDirectory } from "./exposedInternalTypes.js";
+import type { ClientRecord } from "./internalTypes.js";
 
 // type IndependentDatastoreSchemaNode<
 // 	TValue extends ValueStateDirectory<any> = ValueStateDirectory<unknown>,

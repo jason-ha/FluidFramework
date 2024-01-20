@@ -3,8 +3,8 @@
  * Licensed under the MIT License.
  */
 
-import type { ValueManager, ValueStateDirectory } from "./internalTypes.js";
-import type { IndependentValue } from "./types.js";
+import type { IndependentValue, ValueStateDirectory } from "./exposedInternalTypes.js";
+import type { ValueManager } from "./internalTypes.js";
 
 /**
  * @internal

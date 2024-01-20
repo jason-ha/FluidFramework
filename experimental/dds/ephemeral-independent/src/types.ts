@@ -3,65 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import type { Serializable } from "@fluidframework/datastore-definitions";
-import { ValueStateDirectory } from "./internalTypes.js";
-
-/**
- * @alpha
- */
-export type ClientId = string;
-
-/**
- * @alpha
- */
-// TODO: RoundTrippable needs revised to be the consistent pre and post serialization
-//       and get a better name.
-export type RoundTrippable<T> = Serializable<T>;
-
-/**
- * Brand to ensure independent values internal type safety without revealing
- * internals that are subject to change.
- *
- * @alpha
- */
-export declare class IndependentValueBrand<T> {
-	private readonly IndependentValue: IndependentValue<T>;
-}
-
-/**
- * This type provides no additional functionality over the type it wraps.
- * It is used to ensure type safety within package.
- * Users may find it convenient to just use the type it wraps directly.
- *
- * @privateRemarks
- * Checkout filtering omitting unknown from T (`Omit<T,unknown> &`).
- *
- * @alpha
- */
-export type IndependentValue<T> = T & IndependentValueBrand<T>;
-
-/**
- * @alpha
- */
-export declare class IndependentDatastoreHandle<TKey, TValue extends ValueStateDirectory<any>> {
-	private readonly IndependentDatastoreHandle: IndependentDatastoreHandle<TKey, TValue>;
-}
-
-/**
- * Package internal function declaration for value manager instantiation.
- * @alpha
- */
-export type ManagerFactory<
-	TKey extends string,
-	TValue extends ValueStateDirectory<any>,
-	TManager,
-> = (
-	key: TKey,
-	datastoreHandle: IndependentDatastoreHandle<TKey, TValue>,
-) => {
-	value: TValue;
-	manager: IndependentValue<TManager>;
-};
+import { IndependentValue, ManagerFactory, ValueStateDirectory } from "./exposedInternalTypes.js";
 
 /**
  * @alpha
@@ -101,10 +43,12 @@ export interface IndependentMapSchema {
 /**
  * @alpha
  */
-export type IndependentMapKeys<TSchema extends IndependentMapSchema> = {
+export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
 	readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<
 		TSchema[Key]
-	>["manager"];
+	>["manager"] extends IndependentValue<infer TManager>
+		? TManager
+		: never;
 };
 
 /**
@@ -122,5 +66,5 @@ export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
 /**
  * @alpha
  */
-export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapKeys<TSchema> &
+export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> &
 	IndependentMapMethods<TSchema>;
