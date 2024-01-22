@@ -29,7 +29,7 @@ export class EphemeralIndependentDirectory extends PureDataObject {
 }
 
 // @alpha (undocumented)
-class IndependentDatastoreHandle<TKey, TValue extends ValueStateDirectory<any>> {
+class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
 }
 
 // @alpha (undocumented)
@@ -41,18 +41,18 @@ export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
 };
 
 // @alpha (undocumented)
-export type IndependentMapEntry<TKey extends string, TValue extends ValueStateDirectory<any>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
+export type IndependentMapEntry<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
 
 // @alpha (undocumented)
 export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
     // (undocumented)
-    add<TKey extends string, TValue extends ValueStateDirectory<any>, TManager>(key: TKey, manager: ManagerFactory<TKey, TValue, TManager>): asserts this is IndependentMap<TSchema & Record<TKey, ManagerFactory<TKey, TValue, TManager>>>;
+    add<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager>(key: TKey, manager: ManagerFactory<TKey, TValue, TManager>): asserts this is IndependentMap<TSchema & Record<TKey, ManagerFactory<TKey, TValue, TManager>>>;
 }
 
 // @alpha (undocumented)
 export interface IndependentMapSchema {
     // (undocumented)
-    [Key: string]: IndependentMapEntry<typeof Key, ValueStateDirectory<any>>;
+    [key: string]: IndependentMapEntry<typeof key, ValueDirectoryOrState<any>>;
 }
 
 // @alpha
@@ -65,7 +65,8 @@ class IndependentValueBrand<T> {
 declare namespace InternalTypes {
     export {
         ValueState,
-        ValueStateDirectory,
+        ValueDirectory,
+        ValueDirectoryOrState,
         IndependentDatastoreHandle,
         IndependentValueBrand,
         IndependentValue,
@@ -119,13 +120,26 @@ export interface LatestValueMetadata {
 }
 
 // @alpha
-type ManagerFactory<TKey extends string, TValue extends ValueStateDirectory<any>, TManager> = (key: TKey, datastoreHandle: IndependentDatastoreHandle<TKey, TValue>) => {
+type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager> = (key: TKey, datastoreHandle: IndependentDatastoreHandle<TKey, TValue>) => {
     value: TValue;
     manager: IndependentValue<TManager>;
 };
 
 // @alpha (undocumented)
 export type RoundTrippable<T> = Serializable<T>;
+
+// @alpha (undocumented)
+interface ValueDirectory<T> {
+    // (undocumented)
+    items: {
+        [name: string | number]: ValueDirectoryOrState<T>;
+    };
+    // (undocumented)
+    rev: number;
+}
+
+// @alpha (undocumented)
+type ValueDirectoryOrState<T> = ValueState<T> | ValueDirectory<T>;
 
 // @alpha (undocumented)
 interface ValueState<TValue> {
@@ -136,11 +150,6 @@ interface ValueState<TValue> {
     // (undocumented)
     value: RoundTrippable<TValue>;
 }
-
-// @alpha (undocumented)
-type ValueStateDirectory<T> = ValueState<T> | {
-    [Subdirectory: string | number]: ValueStateDirectory<T>;
-};
 
 // (No @packageDocumentation comment for this package)
 

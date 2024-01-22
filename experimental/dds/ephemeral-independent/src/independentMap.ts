@@ -7,13 +7,18 @@ import { assert } from "@fluidframework/core-utils";
 import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions";
 
-import type { ManagerFactory, ValueState, ValueStateDirectory } from "./exposedInternalTypes.js";
+import type {
+	ManagerFactory,
+	ValueDirectory,
+	ValueDirectoryOrState,
+	ValueState,
+} from "./exposedInternalTypes.js";
 import { handleFromDatastore, type IndependentDatastore } from "./independentDatastore.js";
 import { unbrandIVM } from "./independentValue.js";
 import type { ClientRecord } from "./internalTypes.js";
 import type { IndependentMap, IndependentMapMethods, IndependentMapSchema } from "./types.js";
 
-interface IndependentMapValueUpdate<TValue extends ValueStateDirectory<any>> {
+interface IndependentMapValueUpdate<TValue extends ValueDirectoryOrState<any>> {
 	key: string;
 	content: TValue;
 	keepUnregistered?: true;
@@ -47,7 +52,7 @@ type MapEntries<TSchema extends IndependentMapSchema> = IndependentSubSchemaFrom
  * consumers that are expected to maintain their schema over multiple versions of clients.
  */
 interface ValueElementMap<_TSchema extends IndependentMapSchema> {
-	[Key: string]: ClientRecord<ValueStateDirectory<unknown>>;
+	[key: string]: ClientRecord<ValueDirectoryOrState<unknown>>;
 }
 // An attempt to make the type more precise, but it is not working.
 // If the casting in support code is too much we could keep two references to the same
@@ -55,46 +60,57 @@ interface ValueElementMap<_TSchema extends IndependentMapSchema> {
 // type ValueElementMap<TSchema extends IndependentMapNodeSchema> =
 // 	| {
 // 			[Key in keyof TSchema & string]?: {
-// 				[ClientId: ClientId]: ValueStateDirectory<MapSchemaElement<TSchema,"value",Key>>;
+// 				[ClientId: ClientId]: ValueDirectoryOrState<MapSchemaElement<TSchema,"value",Key>>;
 // 			};
 // 	  }
 // 	| {
-// 			[Key: string]: ClientRecord<ValueStateDirectory<unknown>>;
+// 			[key: string]: ClientRecord<ValueDirectoryOrState<unknown>>;
 // 	  };
 // interface ValueElementMap<TValue> {
-// 	[Id: string]: ClientRecord<ValueStateDirectory<TValue>>;
+// 	[Id: string]: ClientRecord<ValueDirectoryOrState<TValue>>;
 // 	// Version with local packed in is convenient for map, but not for join broadcast to serialize simply.
 // 	// [Id: string]: {
-// 	// 	local: ValueStateDirectory<TValue>;
-// 	// 	all: ClientRecord<ValueStateDirectory<TValue>>;
+// 	// 	local: ValueDirectoryOrState<TValue>;
+// 	// 	all: ClientRecord<ValueDirectoryOrState<TValue>>;
 // 	// };
 // }
 
-function isValueState<T>(value: ValueStateDirectory<T>): value is ValueState<T> {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		"rev" in value &&
-		"timestamp" in value &&
-		"value" in value
-	);
+function isValueState<T>(value: ValueDirectoryOrState<T>): value is ValueState<T> {
+	return "value" in value;
 }
 
 function mergeValueDirectory<T>(
-	base: ValueStateDirectory<T> | undefined,
-	update: ValueStateDirectory<T>,
+	base: ValueDirectoryOrState<T> | undefined,
+	update: ValueDirectoryOrState<T>,
 	timeDelta: number,
-): ValueStateDirectory<T> {
+): ValueDirectoryOrState<T> {
 	if (isValueState(update)) {
-		if (base === undefined || !isValueState(base) || update.rev > base.rev) {
+		if (base === undefined || update.rev > base.rev) {
 			return { ...update, timestamp: update.timestamp + timeDelta };
 		}
 		return base;
 	}
 
-	const mergeBase = base !== undefined && !isValueState(base) ? base : {};
-	Object.entries(update).forEach(([key, value]) => {
-		mergeBase[key] = mergeValueDirectory(mergeBase[key], value, timeDelta);
+	let mergeBase: ValueDirectory<T>;
+	if (base !== undefined) {
+		const baseIsValue = isValueState(base);
+		if (base.rev >= update.rev) {
+			if (baseIsValue) {
+				// base is leaf value that is more recent - nothing to do
+				return base;
+			}
+			// While base has more advanced revision, assume mis-ordering or
+			// missed and catchup update needs merged in.
+			mergeBase = base;
+		} else {
+			mergeBase = { rev: update.rev, items: baseIsValue ? {} : base.items };
+		}
+	} else {
+		mergeBase = { rev: update.rev, items: {} };
+	}
+	Object.entries(update.items).forEach(([key, value]) => {
+		const baseElement = mergeBase.items[key];
+		mergeBase.items[key] = mergeValueDirectory(baseElement, value, timeDelta);
 	});
 	return mergeBase;
 }
@@ -198,7 +214,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		allKnownState[clientId] = mergeValueDirectory(allKnownState[clientId], value, 0);
 	}
 
-	add<TKey extends string, TValue extends ValueStateDirectory<any>, TValueManager>(
+	add<TKey extends string, TValue extends ValueDirectoryOrState<any>, TValueManager>(
 		key: TKey,
 		nodeFactory: ManagerFactory<TKey, TValue, TValueManager>,
 	): asserts this is IndependentMap<
@@ -233,7 +249,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		// TODO: Maybe most messages can just be general state update and merged.
 		if (message.type === "IndependentMapValueUpdate") {
 			const { key, keepUnregistered, content } = message.content as IndependentMapValueUpdate<
-				ValueStateDirectory<unknown>
+				ValueDirectoryOrState<unknown>
 			>;
 			if (key in this.nodes) {
 				const node = unbrandIVM(this.nodes[key]);

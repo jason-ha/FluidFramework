@@ -4,12 +4,12 @@
  */
 
 import type { ClientId } from "./baseTypes.js";
-import type { IndependentDatastoreHandle, ValueStateDirectory } from "./exposedInternalTypes.js";
+import type { IndependentDatastoreHandle, ValueDirectoryOrState } from "./exposedInternalTypes.js";
 import type { ClientRecord } from "./internalTypes.js";
 
 // type IndependentDatastoreSchemaNode<
-// 	TValue extends ValueStateDirectory<any> = ValueStateDirectory<unknown>,
-// > = TValue extends ValueStateDirectory<infer T> ? ValueStateDirectory<Serializable<T>> : never;
+// 	TValue extends ValueDirectoryOrState<any> = ValueDirectoryOrState<unknown>,
+// > = TValue extends ValueDirectoryOrState<infer T> ? ValueDirectoryOrState<Serializable<T>> : never;
 
 /**
  * @internal
@@ -18,8 +18,8 @@ export interface IndependentDatastoreSchema {
 	// This type is not precise. It may
 	// need to be replaced with IndependentMap schema pattern
 	// similar to what is commented out.
-	[Key: string]: ValueStateDirectory<unknown>;
-	// [Key: string]: IndependentDatastoreSchemaNode;
+	[key: string]: ValueDirectoryOrState<unknown>;
+	// [key: string]: IndependentDatastoreSchemaNode;
 }
 
 /**
@@ -27,7 +27,7 @@ export interface IndependentDatastoreSchema {
  */
 export interface IndependentDatastore<
 	TKey extends string,
-	TValue extends ValueStateDirectory<any>,
+	TValue extends ValueDirectoryOrState<any>,
 > {
 	localUpdate(key: TKey, value: TValue, forceBroadcast: boolean): void;
 	update(key: TKey, clientId: ClientId, value: TValue): void;
@@ -45,7 +45,7 @@ export function handleFromDatastore<
 	// TSchema as `any` still provides some type safety.
 	// TSchema extends IndependentDatastoreSchema,
 	TKey extends string /* & keyof TSchema */,
-	TValue extends ValueStateDirectory<any>,
+	TValue extends ValueDirectoryOrState<any>,
 >(datastore: IndependentDatastore<TKey, TValue>): IndependentDatastoreHandle<TKey, TValue> {
 	return datastore as unknown as IndependentDatastoreHandle<TKey, TValue>;
 }
@@ -53,7 +53,7 @@ export function handleFromDatastore<
 /**
  * @internal
  */
-export function datastoreFromHandle<TKey extends string, TValue extends ValueStateDirectory<any>>(
+export function datastoreFromHandle<TKey extends string, TValue extends ValueDirectoryOrState<any>>(
 	handle: IndependentDatastoreHandle<TKey, TValue>,
 ): IndependentDatastore<TKey, TValue> {
 	return handle as unknown as IndependentDatastore<TKey, TValue>;
