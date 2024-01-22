@@ -8,6 +8,7 @@ import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitio
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions";
 
 import type {
+	ClientRecord,
 	ManagerFactory,
 	ValueDirectory,
 	ValueDirectoryOrState,
@@ -15,7 +16,6 @@ import type {
 } from "./exposedInternalTypes.js";
 import { handleFromDatastore, type IndependentDatastore } from "./independentDatastore.js";
 import { unbrandIVM } from "./independentValue.js";
-import type { ClientRecord } from "./internalTypes.js";
 import type { IndependentMap, IndependentMapMethods, IndependentMapSchema } from "./types.js";
 
 interface IndependentMapValueUpdate<TValue extends ValueDirectoryOrState<any>> {

@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import type { RoundTrippable } from "./baseTypes.js";
+import type { ClientId, RoundTrippable } from "./baseTypes.js";
 
 /**
  * @alpha
@@ -76,3 +76,13 @@ export type ManagerFactory<
 	value: TValue;
 	manager: IndependentValue<TManager>;
 };
+
+/**
+ * @internal
+ */
+export interface ClientRecord<TValue extends ValueDirectoryOrState<any>> {
+	// Caution: any particular item may or may not exist
+	// Typescript does not support absent keys without forcing type to also be undefined.
+	// See https://github.com/microsoft/TypeScript/issues/42810.
+	[ClientId: ClientId]: TValue;
+}

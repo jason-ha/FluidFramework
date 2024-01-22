@@ -15,6 +15,12 @@ import type { Serializable } from '@fluidframework/datastore-definitions';
 // @alpha (undocumented)
 export type ClientId = string;
 
+// @internal (undocumented)
+interface ClientRecord<TValue extends ValueDirectoryOrState<any>> {
+    // (undocumented)
+    [ClientId: ClientId]: TValue;
+}
+
 // @alpha (undocumented)
 export type EmptyIndependentMap = IndependentMap<{}>;
 
@@ -70,7 +76,8 @@ declare namespace InternalTypes {
         IndependentDatastoreHandle,
         IndependentValueBrand,
         IndependentValue,
-        ManagerFactory
+        ManagerFactory,
+        ClientRecord
     }
 }
 export { InternalTypes }
