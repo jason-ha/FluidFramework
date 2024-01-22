@@ -4,8 +4,11 @@
  */
 
 import type { ClientId } from "./baseTypes.js";
-import type { IndependentDatastoreHandle, ValueDirectoryOrState } from "./exposedInternalTypes.js";
-import type { ClientRecord } from "./internalTypes.js";
+import type {
+	ClientRecord,
+	IndependentDatastoreHandle,
+	ValueDirectoryOrState,
+} from "./exposedInternalTypes.js";
 
 // type IndependentDatastoreSchemaNode<
 // 	TValue extends ValueDirectoryOrState<any> = ValueDirectoryOrState<unknown>,

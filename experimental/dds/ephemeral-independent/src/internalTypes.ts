@@ -9,16 +9,6 @@ import { ValueDirectoryOrState } from "./exposedInternalTypes.js";
 /**
  * @internal
  */
-export interface ClientRecord<TValue extends ValueDirectoryOrState<any>> {
-	// Caution: any particular item may or may not exist
-	// Typescript does not support absent keys without forcing type to also be undefined.
-	// See https://github.com/microsoft/TypeScript/issues/42810.
-	[ClientId: ClientId]: TValue;
-}
-
-/**
- * @internal
- */
 export interface ValueManager<
 	TValue,
 	TValueState extends ValueDirectoryOrState<TValue> = ValueDirectoryOrState<TValue>,
