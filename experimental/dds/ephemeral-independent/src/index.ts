@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-export type { ClientId, RoundTrippable } from "./baseTypes.js";
+export type { ClientId } from "./baseTypes.js";
 
 export type {
 	IndependentMap,
@@ -12,6 +12,8 @@ export type {
 	IndependentMapMethods,
 	IndependentMapSchema,
 } from "./types.js";
+
+export type { JsonDeserializedTypeWith, JsonDeserialized } from "./jsonDeserialized.js";
 
 export type { JsonEncodableTypeWith, JsonEncodable } from "./jsonEncodable.js";
 

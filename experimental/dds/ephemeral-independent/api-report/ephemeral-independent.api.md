@@ -28,6 +28,11 @@ export class EphemeralIndependentDirectory extends PureDataObject {
 }
 
 // @beta (undocumented)
+type FullyReadonly<T> = {
+    readonly [K in keyof T]: FullyReadonly<T[K]>;
+};
+
+// @beta (undocumented)
 class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
 }
 
@@ -76,11 +81,26 @@ export { InternalTypes }
 
 declare namespace InternalUtilityTypes {
     export {
+        NonSymbolWithOptionalPropertyOf,
         NonSymbolWithRequiredPropertyOf,
-        NonSymbolWithOptionalPropertyOf
+        NonSymbolWithDefinedNonFunctionPropertyOf,
+        NonSymbolWithUndefinedNonFunctionPropertyOf,
+        FullyReadonly
     }
 }
 export { InternalUtilityTypes }
+
+// @beta
+export type JsonDeserialized<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonDeserializedTypeWith<TReplaced> : unknown extends T ? JsonDeserializedTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends (infer E)[] ? JsonDeserialized<E, TReplaced>[] : /* property bag => */ {
+    [K in NonSymbolWithDefinedNonFunctionPropertyOf<T>]: JsonDeserialized<T[K], TReplaced>;
+} & {
+    [K in NonSymbolWithUndefinedNonFunctionPropertyOf<T>]?: JsonDeserialized<T[K], TReplaced>;
+} : never : never;
+
+// @beta
+export type JsonDeserializedTypeWith<T> = null | boolean | number | string | T | {
+    [key: string | number]: JsonDeserializedTypeWith<T>;
+} | JsonDeserializedTypeWith<T>[];
 
 // @beta
 export type JsonEncodable<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonEncodableTypeWith<TReplaced> : unknown extends T ? JsonEncodableTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends (infer U)[] ? JsonEncodable<U, TReplaced>[] : /* property bag => */ {
@@ -97,7 +117,7 @@ export type JsonEncodableTypeWith<T> = null | boolean | number | string | T | {
 } | JsonEncodableTypeWith<T>[];
 
 // @beta (undocumented)
-export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & object): ManagerFactory<Key, ValueState<T>, LatestValueManager<T>>;
+export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & JsonDeserialized<T> & object): ManagerFactory<Key, ValueState<T>, LatestValueManager<T>>;
 
 // @beta (undocumented)
 export interface LatestValueClientData<T> extends LatestValueData<T> {
@@ -110,7 +130,7 @@ export interface LatestValueData<T> {
     // (undocumented)
     metadata: LatestValueMetadata;
     // (undocumented)
-    value: RoundTrippable<T>;
+    value: FullyReadonly<JsonDeserialized<T>>;
 }
 
 // @beta (undocumented)
@@ -122,8 +142,8 @@ export interface LatestValueManager<T> extends IEventProvider<LatestValueManager
     // (undocumented)
     clientValues(): IterableIterator<LatestValueClientData<T>>;
     // (undocumented)
-    get local(): RoundTrippable<T>;
-    set local(value: JsonEncodable<T>);
+    get local(): FullyReadonly<JsonDeserialized<T>>;
+    set local(value: JsonEncodable<T> & JsonDeserialized<T>);
 }
 
 // @beta (undocumented)
@@ -147,6 +167,11 @@ type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<an
 };
 
 // @beta (undocumented)
+type NonSymbolWithDefinedNonFunctionPropertyOf<T extends object> = Exclude<{
+    [K in keyof T]: undefined extends T[K] ? never : T[K] extends Function ? never : K;
+}[keyof T], undefined | symbol>;
+
+// @beta (undocumented)
 type NonSymbolWithOptionalPropertyOf<T extends object> = Exclude<{
     [K in keyof T]: T extends Record<K, T[K]> ? never : K;
 }[keyof T], undefined | symbol>;
@@ -157,7 +182,9 @@ type NonSymbolWithRequiredPropertyOf<T extends object> = Exclude<{
 }[keyof T], undefined | symbol>;
 
 // @beta (undocumented)
-export type RoundTrippable<T> = JsonEncodable<T>;
+type NonSymbolWithUndefinedNonFunctionPropertyOf<T extends object> = Exclude<{
+    [K in keyof T]: undefined extends T[K] ? (T[K] extends Function ? never : K) : never;
+}[keyof T], undefined | symbol>;
 
 // @beta (undocumented)
 interface ValueDirectory<T> {
@@ -179,7 +206,7 @@ interface ValueState<TValue> {
     // (undocumented)
     timestamp: number;
     // (undocumented)
-    value: RoundTrippable<TValue>;
+    value: JsonDeserialized<TValue>;
 }
 
 // (No @packageDocumentation comment for this package)

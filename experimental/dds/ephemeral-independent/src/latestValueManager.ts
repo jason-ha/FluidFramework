@@ -6,15 +6,17 @@
 import { TypedEventEmitter } from "@fluid-internal/client-utils";
 import type { IEvent, IEventProvider } from "@fluidframework/core-interfaces";
 
-import type { ClientId, RoundTrippable } from "./baseTypes.js";
+import type { ClientId } from "./baseTypes.js";
 import type {
 	IndependentDatastoreHandle,
 	ManagerFactory,
 	ValueState,
 } from "./exposedInternalTypes.js";
+import type { FullyReadonly } from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
 import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
+import type { JsonDeserialized } from "./jsonDeserialized.js";
 import type { JsonEncodable } from "./jsonEncodable.js";
 
 /**
@@ -29,7 +31,7 @@ export interface LatestValueMetadata {
  * @beta
  */
 export interface LatestValueData<T> {
-	value: RoundTrippable<T>;
+	value: FullyReadonly<JsonDeserialized<T>>;
 	metadata: LatestValueMetadata;
 }
 
@@ -56,8 +58,8 @@ export interface LatestValueManagerEvents<T> extends IEvent {
  * @beta
  */
 export interface LatestValueManager<T> extends IEventProvider<LatestValueManagerEvents<T>> {
-	get local(): RoundTrippable<T>;
-	set local(value: JsonEncodable<T>);
+	get local(): FullyReadonly<JsonDeserialized<T>>;
+	set local(value: JsonEncodable<T> & JsonDeserialized<T>);
 	clientValues(): IterableIterator<LatestValueClientData<T>>;
 	clients(): ClientId[];
 	clientValue(clientId: ClientId): LatestValueData<T>;
@@ -75,11 +77,11 @@ class LatestValueManagerImpl<T, Key extends string>
 		super();
 	}
 
-	get local(): RoundTrippable<T> {
+	get local(): FullyReadonly<JsonDeserialized<T>> {
 		return this.value.value;
 	}
 
-	set local(value: JsonEncodable<T>) {
+	set local(value: JsonEncodable<T> & JsonDeserialized<T>) {
 		this.value.rev += 1;
 		this.value.timestamp = Date.now();
 		this.value.value = value;
@@ -127,7 +129,7 @@ class LatestValueManagerImpl<T, Key extends string>
  * @beta
  */
 export function Latest<T extends object, Key extends string>(
-	initialValue: JsonEncodable<T> & object,
+	initialValue: JsonEncodable<T> & JsonDeserialized<T> & object,
 ): ManagerFactory<Key, ValueState<T>, LatestValueManager<T>> {
 	// LatestValueManager takes ownership of initialValue but makes a shallow
 	// copy for basic protection.

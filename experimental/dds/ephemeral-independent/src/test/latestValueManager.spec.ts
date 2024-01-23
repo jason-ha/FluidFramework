@@ -28,8 +28,8 @@ map.add("caret", Latest({ id: "", pos: 0 }));
 
 const fakeAdd = map.caret.local.pos + map.camera.local.z + map.cursor.local.x;
 
-// TODO: make direct write to local an error. The object returned by local should be readonly.
-map.caret.local.pos = 0; // error
+// @ts-expect-error local may be set wholly, but partially it is readonly
+map.caret.local.pos = 0;
 
 function logClientValue<T>({
 	clientId,

@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import type { RoundTrippable } from "./baseTypes.js";
+import type { JsonDeserialized } from "./jsonDeserialized.js";
 
 /**
  * @beta
@@ -11,7 +11,7 @@ import type { RoundTrippable } from "./baseTypes.js";
 export interface ValueState<TValue> {
 	rev: number;
 	timestamp: number;
-	value: RoundTrippable<TValue>;
+	value: JsonDeserialized<TValue>;
 }
 
 /**

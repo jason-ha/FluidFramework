@@ -9,16 +9,16 @@ import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitio
 // until the interface is stabilized.
 import { createEphemeralIndependentMap } from "../independentMap.js";
 
-import type { InternalTypes, JsonEncodable, RoundTrippable } from "../index.js";
+import type { InternalTypes, JsonDeserialized, JsonEncodable } from "../index.js";
 
 declare function createValueManager<T, Key extends string>(
-	initial: JsonEncodable<T>,
+	initial: JsonEncodable<T> & JsonDeserialized<T>,
 ): (
 	key: Key,
 	datastoreHandle: InternalTypes.IndependentDatastoreHandle<Key, InternalTypes.ValueState<T>>,
 ) => {
 	value: InternalTypes.ValueState<T>;
-	manager: InternalTypes.IndependentValue<RoundTrippable<T>>;
+	manager: InternalTypes.IndependentValue<JsonDeserialized<T>>;
 };
 
 // ---- test (example) code ----
