@@ -10,9 +10,8 @@ import type { IEvent } from '@fluidframework/core-interfaces';
 import type { IEventProvider } from '@fluidframework/core-interfaces';
 import { PureDataObject } from '@fluidframework/aqueduct';
 import { PureDataObjectFactory } from '@fluidframework/aqueduct';
-import type { Serializable } from '@fluidframework/datastore-definitions';
 
-// @alpha (undocumented)
+// @beta (undocumented)
 export type ClientId = string;
 
 // @alpha (undocumented)
@@ -28,37 +27,37 @@ export class EphemeralIndependentDirectory extends PureDataObject {
     static readonly Name = "@fluidframework/ephemeral-independent-directory";
 }
 
-// @alpha (undocumented)
+// @beta (undocumented)
 class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
 }
 
-// @alpha (undocumented)
+// @beta (undocumented)
 export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;
 
-// @alpha (undocumented)
+// @beta (undocumented)
 export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
     readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<TSchema[Key]>["manager"] extends IndependentValue<infer TManager> ? TManager : never;
 };
 
-// @alpha (undocumented)
+// @beta (undocumented)
 export type IndependentMapEntry<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
 
-// @alpha (undocumented)
+// @beta (undocumented)
 export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
     // (undocumented)
     add<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager>(key: TKey, manager: ManagerFactory<TKey, TValue, TManager>): asserts this is IndependentMap<TSchema & Record<TKey, ManagerFactory<TKey, TValue, TManager>>>;
 }
 
-// @alpha (undocumented)
+// @beta (undocumented)
 export interface IndependentMapSchema {
     // (undocumented)
     [key: string]: IndependentMapEntry<typeof key, ValueDirectoryOrState<any>>;
 }
 
-// @alpha
+// @beta
 type IndependentValue<T> = T & IndependentValueBrand<T>;
 
-// @alpha
+// @beta
 class IndependentValueBrand<T> {
 }
 
@@ -75,16 +74,38 @@ declare namespace InternalTypes {
 }
 export { InternalTypes }
 
-// @alpha (undocumented)
-export function Latest<T extends object, Key extends string>(initialValue: Serializable<T> & object): ManagerFactory<Key, ValueState<T>, LatestValueManager<T>>;
+declare namespace InternalUtilityTypes {
+    export {
+        NonSymbolWithRequiredPropertyOf,
+        NonSymbolWithOptionalPropertyOf
+    }
+}
+export { InternalUtilityTypes }
 
-// @alpha (undocumented)
+// @beta
+export type JsonEncodable<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonEncodableTypeWith<TReplaced> : unknown extends T ? JsonEncodableTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends (infer U)[] ? JsonEncodable<U, TReplaced>[] : /* property bag => */ {
+    [K in NonSymbolWithRequiredPropertyOf<T>]-?: undefined extends T[K] ? "error-required-property-may-not-allow-undefined-value" : JsonEncodable<T[K], TReplaced>;
+} & {
+    [K in NonSymbolWithOptionalPropertyOf<T>]?: JsonEncodable<T[K], TReplaced | undefined>;
+} & {
+    [K in keyof T & symbol]: never;
+} : never : never;
+
+// @beta
+export type JsonEncodableTypeWith<T> = null | boolean | number | string | T | {
+    [key: string | number]: JsonEncodableTypeWith<T>;
+} | JsonEncodableTypeWith<T>[];
+
+// @beta (undocumented)
+export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & object): ManagerFactory<Key, ValueState<T>, LatestValueManager<T>>;
+
+// @beta (undocumented)
 export interface LatestValueClientData<T> extends LatestValueData<T> {
     // (undocumented)
     clientId: ClientId;
 }
 
-// @alpha (undocumented)
+// @beta (undocumented)
 export interface LatestValueData<T> {
     // (undocumented)
     metadata: LatestValueMetadata;
@@ -92,7 +113,7 @@ export interface LatestValueData<T> {
     value: RoundTrippable<T>;
 }
 
-// @alpha (undocumented)
+// @beta (undocumented)
 export interface LatestValueManager<T> extends IEventProvider<LatestValueManagerEvents<T>> {
     // (undocumented)
     clients(): ClientId[];
@@ -102,16 +123,16 @@ export interface LatestValueManager<T> extends IEventProvider<LatestValueManager
     clientValues(): IterableIterator<LatestValueClientData<T>>;
     // (undocumented)
     get local(): RoundTrippable<T>;
-    set local(value: Serializable<T>);
+    set local(value: JsonEncodable<T>);
 }
 
-// @alpha (undocumented)
+// @beta (undocumented)
 export interface LatestValueManagerEvents<T> extends IEvent {
     // @eventProperty
     (event: "update", listener: (update: LatestValueClientData<T>) => void): void;
 }
 
-// @alpha (undocumented)
+// @beta (undocumented)
 export interface LatestValueMetadata {
     // (undocumented)
     revision: number;
@@ -119,16 +140,26 @@ export interface LatestValueMetadata {
     timestamp: number;
 }
 
-// @alpha
+// @beta
 type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager> = (key: TKey, datastoreHandle: IndependentDatastoreHandle<TKey, TValue>) => {
     value: TValue;
     manager: IndependentValue<TManager>;
 };
 
-// @alpha (undocumented)
-export type RoundTrippable<T> = Serializable<T>;
+// @beta (undocumented)
+type NonSymbolWithOptionalPropertyOf<T extends object> = Exclude<{
+    [K in keyof T]: T extends Record<K, T[K]> ? never : K;
+}[keyof T], undefined | symbol>;
 
-// @alpha (undocumented)
+// @beta (undocumented)
+type NonSymbolWithRequiredPropertyOf<T extends object> = Exclude<{
+    [K in keyof T]: T extends Record<K, T[K]> ? K : never;
+}[keyof T], undefined | symbol>;
+
+// @beta (undocumented)
+export type RoundTrippable<T> = JsonEncodable<T>;
+
+// @beta (undocumented)
 interface ValueDirectory<T> {
     // (undocumented)
     items: {
@@ -138,10 +169,10 @@ interface ValueDirectory<T> {
     rev: number;
 }
 
-// @alpha (undocumented)
+// @beta (undocumented)
 type ValueDirectoryOrState<T> = ValueState<T> | ValueDirectory<T>;
 
-// @alpha (undocumented)
+// @beta (undocumented)
 interface ValueState<TValue> {
     // (undocumented)
     rev: number;

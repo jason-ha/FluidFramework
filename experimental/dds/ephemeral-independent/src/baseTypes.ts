@@ -3,16 +3,16 @@
  * Licensed under the MIT License.
  */
 
-import type { Serializable } from "@fluidframework/datastore-definitions";
+import type { JsonEncodable } from "./jsonEncodable.js";
 
 /**
- * @alpha
+ * @beta
  */
 export type ClientId = string;
 
 /**
- * @alpha
+ * @beta
  */
 // TODO: RoundTrippable needs revised to be the consistent pre and post serialization
 //       and get a better name.
-export type RoundTrippable<T> = Serializable<T>;
+export type RoundTrippable<T> = JsonEncodable<T>;

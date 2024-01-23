@@ -13,6 +13,8 @@ export type {
 	IndependentMapSchema,
 } from "./types.js";
 
+export type { JsonEncodableTypeWith, JsonEncodable } from "./jsonEncodable.js";
+
 export {
 	type EmptyIndependentMap,
 	EphemeralIndependentDirectory,
@@ -30,3 +32,5 @@ export {
 // Below here are things that are used by the above, but not part of the desired API surface.
 import type * as InternalTypes from "./exposedInternalTypes.js";
 export { InternalTypes };
+import type * as InternalUtilityTypes from "./exposedUtilityTypes.js";
+export { InternalUtilityTypes };

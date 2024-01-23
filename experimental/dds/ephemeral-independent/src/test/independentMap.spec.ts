@@ -3,16 +3,16 @@
  * Licensed under the MIT License.
  */
 
-import type { IFluidDataStoreRuntime, Serializable } from "@fluidframework/datastore-definitions";
+import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions";
 
 // Proper clients use EphemeralIndependentDirectory from @fluid-experimental/ephemeral-independent
 // until the interface is stabilized.
 import { createEphemeralIndependentMap } from "../independentMap.js";
 
-import type { InternalTypes, RoundTrippable } from "../index.js";
+import type { InternalTypes, JsonEncodable, RoundTrippable } from "../index.js";
 
 declare function createValueManager<T, Key extends string>(
-	initial: Serializable<T>,
+	initial: JsonEncodable<T>,
 ): (
 	key: Key,
 	datastoreHandle: InternalTypes.IndependentDatastoreHandle<Key, InternalTypes.ValueState<T>>,
@@ -48,3 +48,26 @@ console.log(mapImpl.curso.x); // error to highlight typo detection (proper typin
 
 // example of second add at existing key - results in union of types (should throw at runtime)
 mapImpl.add("caret", createValueManager({ dupe: 0 }));
+
+mapImpl.add(
+	"undefined",
+	// @ts-expect-error should error non-optional undefined
+	createValueManager({ undef: undefined }),
+);
+
+mapImpl.add(
+	"undefOrNum",
+	// @ts-expect-error should error on non-optional that may be undefined
+	createValueManager<{ undefOrNum: undefined | number }, "undefOrNum">({ undefOrNum: 4 }),
+);
+
+// optional undefined is ok - though not recommended to actually specify such properties with
+// undefined values as the properties won't come back; they will be absent.
+mapImpl.add(
+	"optionalUndefined",
+	createValueManager<{ undef?: number }, "optionalUndefined">({ undef: undefined }),
+);
+mapImpl.add(
+	"optionalUndefinedPreferred",
+	createValueManager<{ undef?: number }, "optionalUndefinedPreferred">({}),
+);

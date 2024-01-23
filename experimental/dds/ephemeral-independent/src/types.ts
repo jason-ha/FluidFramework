@@ -6,7 +6,7 @@
 import { IndependentValue, ManagerFactory, ValueDirectoryOrState } from "./exposedInternalTypes.js";
 
 /**
- * @alpha
+ * @beta
  */
 export type IndependentMapEntry<
 	TKey extends string,
@@ -15,10 +15,10 @@ export type IndependentMapEntry<
 > = ManagerFactory<TKey, TValue, TManager>;
 
 /**
- * @alpha
+ * @beta
  */
 export interface IndependentMapSchema {
-	// [key: string]: <T, M>(initialValue: Serializable<M>) => IndependentMapEntry<IndependentValue<T>>;
+	// [key: string]: <T, M>(initialValue: JsonEncodable<M>) => IndependentMapEntry<IndependentValue<T>>;
 	// inference gobbledegook with no basis to work
 	// [key: string]: <P1 extends string, P2,R>(a: P1, b: P2) => R extends ManagerFactory<typeof Key, infer TValue, infer TManager> ? ManagerFactory<typeof Key, TValue, TManager> : never;
 	// Comes super close to working, but the instantiation is not viable as factory can be invoked with arbitrary TValue and TManager.
@@ -41,7 +41,7 @@ export interface IndependentMapSchema {
 }
 
 /**
- * @alpha
+ * @beta
  */
 export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
 	readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<
@@ -52,7 +52,7 @@ export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
 };
 
 /**
- * @alpha
+ * @beta
  */
 export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
 	add<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager>(
@@ -64,7 +64,7 @@ export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
 }
 
 /**
- * @alpha
+ * @beta
  */
 export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> &
 	IndependentMapMethods<TSchema>;

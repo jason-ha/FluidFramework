@@ -9,7 +9,7 @@ import type { ClientRecord } from "./internalTypes.js";
 
 // type IndependentDatastoreSchemaNode<
 // 	TValue extends ValueDirectoryOrState<any> = ValueDirectoryOrState<unknown>,
-// > = TValue extends ValueDirectoryOrState<infer T> ? ValueDirectoryOrState<Serializable<T>> : never;
+// > = TValue extends ValueDirectoryOrState<infer T> ? ValueDirectoryOrState<T> : never;
 
 /**
  * @internal

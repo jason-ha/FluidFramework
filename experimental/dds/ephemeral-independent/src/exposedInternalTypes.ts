@@ -6,7 +6,7 @@
 import type { RoundTrippable } from "./baseTypes.js";
 
 /**
- * @alpha
+ * @beta
  */
 export interface ValueState<TValue> {
 	rev: number;
@@ -15,7 +15,7 @@ export interface ValueState<TValue> {
 }
 
 /**
- * @alpha
+ * @beta
  */
 export interface ValueDirectory<T> {
 	rev: number;
@@ -28,12 +28,12 @@ export interface ValueDirectory<T> {
 }
 
 /**
- * @alpha
+ * @beta
  */
 export type ValueDirectoryOrState<T> = ValueState<T> | ValueDirectory<T>;
 
 /**
- * @alpha
+ * @beta
  */
 export declare class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
 	private readonly IndependentDatastoreHandle: IndependentDatastoreHandle<TKey, TValue>;
@@ -43,7 +43,7 @@ export declare class IndependentDatastoreHandle<TKey, TValue extends ValueDirect
  * Brand to ensure independent values internal type safety without revealing
  * internals that are subject to change.
  *
- * @alpha
+ * @beta
  */
 export declare class IndependentValueBrand<T> {
 	private readonly IndependentValue: IndependentValue<T>;
@@ -57,13 +57,13 @@ export declare class IndependentValueBrand<T> {
  * @privateRemarks
  * Checkout filtering omitting unknown from T (`Omit<T,unknown> &`).
  *
- * @alpha
+ * @beta
  */
 export type IndependentValue<T> = T & IndependentValueBrand<T>;
 
 /**
  * Package internal function declaration for value manager instantiation.
- * @alpha
+ * @beta
  */
 export type ManagerFactory<
 	TKey extends string,
