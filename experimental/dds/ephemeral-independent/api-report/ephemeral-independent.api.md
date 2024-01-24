@@ -4,33 +4,28 @@
 
 ```ts
 
-import { DataObjectTypes } from '@fluidframework/aqueduct';
-import { IDataObjectProps } from '@fluidframework/aqueduct';
+import type { FluidObject } from '@fluidframework/core-interfaces';
 import type { IEvent } from '@fluidframework/core-interfaces';
 import type { IEventProvider } from '@fluidframework/core-interfaces';
-import { PureDataObject } from '@fluidframework/aqueduct';
-import { PureDataObjectFactory } from '@fluidframework/aqueduct';
+import type { IFluidDataStoreRuntime } from '@fluidframework/datastore-definitions';
+import type { NamedFluidDataStoreRegistryEntry } from '@fluidframework/runtime-definitions';
 
 // @beta (undocumented)
 export type ClientId = string;
 
-// @alpha (undocumented)
-export type EmptyIndependentMap = IndependentMap<{}>;
+// @beta (undocumented)
+export function createIndependentMap<TSchema extends IndependentMapSchema>(runtime: IFluidEphemeralDataStoreRuntime, initialContent: TSchema): IndependentMap<TSchema>;
 
 // @alpha (undocumented)
-export class EphemeralIndependentDirectory extends PureDataObject {
-    constructor(props: IDataObjectProps);
-    // (undocumented)
-    static readonly factory: PureDataObjectFactory<EphemeralIndependentDirectory, DataObjectTypes>;
-    readonly map: EmptyIndependentMap;
-    // (undocumented)
-    static readonly Name = "@fluidframework/ephemeral-independent-directory";
-}
+export type EmptyIndependentMap = IndependentMap<{}>;
 
 // @beta (undocumented)
 type FullyReadonly<T> = {
     readonly [K in keyof T]: FullyReadonly<T[K]>;
 };
+
+// @beta
+export type IFluidEphemeralDataStoreRuntime = Pick<IFluidDataStoreRuntime, "clientId" | "getAudience" | "off" | "on" | "submitSignal">;
 
 // @beta (undocumented)
 class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
@@ -38,6 +33,16 @@ class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>
 
 // @beta (undocumented)
 export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;
+
+// @alpha (undocumented)
+export class IndependentMapDO implements FluidObject {
+    constructor(runtime: IFluidDataStoreRuntime);
+    readonly map: EmptyIndependentMap;
+    // (undocumented)
+    static readonly Name = "@fluidframework/ephemeral-independent-directory";
+    // (undocumented)
+    static readonly RegistryEntry: NamedFluidDataStoreRegistryEntry;
+}
 
 // @beta (undocumented)
 export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {

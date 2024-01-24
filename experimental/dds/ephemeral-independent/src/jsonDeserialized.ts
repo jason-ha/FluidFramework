@@ -3,6 +3,8 @@
  * Licensed under the MIT License.
  */
 
+/* eslint-disable @rushstack/no-new-null */
+
 import {
 	NonSymbolWithDefinedNonFunctionPropertyOf,
 	NonSymbolWithUndefinedNonFunctionPropertyOf,

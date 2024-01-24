@@ -1,7 +1,7 @@
 {
 	"name": "@fluid-experimental/ephemeral-independent",
 	"version": "2.0.0-rc.1.0.0",
-	"description": "A session only DDS for lightweight data sharing",
+	"description": "A session only data object for lightweight data sharing",
 	"homepage": "https://fluidframework.com",
 	"repository": {
 		"type": "git",
@@ -20,6 +20,16 @@
 			},
 			"require": {
 				"types": "./dist/ephemeral-independent-alpha.d.ts",
+				"default": "./dist/index.js"
+			}
+		},
+		"./beta": {
+			"import": {
+				"types": "./lib/ephemeral-independent-beta.d.ts",
+				"default": "./lib/index.js"
+			},
+			"require": {
+				"types": "./dist/ephemeral-independent-beta.d.ts",
 				"default": "./dist/index.js"
 			}
 		}
@@ -53,9 +63,9 @@
 	},
 	"dependencies": {
 		"@fluid-internal/client-utils": "workspace:~",
-		"@fluidframework/aqueduct": "workspace:~",
 		"@fluidframework/core-interfaces": "workspace:~",
 		"@fluidframework/core-utils": "workspace:~",
+		"@fluidframework/datastore": "workspace:~",
 		"@fluidframework/datastore-definitions": "workspace:~",
 		"@fluidframework/map": "workspace:~",
 		"@fluidframework/runtime-definitions": "workspace:~",

@@ -3,13 +3,15 @@
  * Licensed under the MIT License.
  */
 
-import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions";
-
-// Proper clients use EphemeralIndependentDirectory from @fluid-experimental/ephemeral-independent
-// until the interface is stabilized.
-import { createEphemeralIndependentMap } from "../independentMap.js";
-
-import type { InternalTypes, JsonDeserialized, JsonEncodable } from "../index.js";
+import {
+	// Most clients should use IndependentMapDO from @fluid-experimental/ephemeral-independent/alpha
+	// until the interface is stabilized.
+	createIndependentMap,
+	type IFluidEphemeralDataStoreRuntime,
+	type InternalTypes,
+	type JsonDeserialized,
+	type JsonEncodable,
+} from "../index.js";
 
 declare function createValueManager<T, Key extends string>(
 	initial: JsonEncodable<T> & JsonDeserialized<T>,
@@ -23,9 +25,9 @@ declare function createValueManager<T, Key extends string>(
 
 // ---- test (example) code ----
 
-const mapImplX = createEphemeralIndependentMap(
+const mapImplX = createIndependentMap(
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-	{} as IFluidDataStoreRuntime,
+	{} as IFluidEphemeralDataStoreRuntime,
 	{
 		cursor: createValueManager({ x: 0, y: 0 }),
 		camera: () => ({

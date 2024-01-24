@@ -75,6 +75,16 @@ interface ValueElementMap<_TSchema extends IndependentMapSchema> {
 // 	// };
 // }
 
+/**
+ * This interface is a subset of IFluidDataStoreRuntime that is needed by the IndependentMap.
+ *
+ * @beta
+ */
+export type IFluidEphemeralDataStoreRuntime = Pick<
+	IFluidDataStoreRuntime,
+	"clientId" | "getAudience" | "off" | "on" | "submitSignal"
+>;
+
 function isValueState<T>(value: ValueDirectoryOrState<T>): value is ValueState<T> {
 	return "value" in value;
 }
@@ -127,7 +137,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 	public readonly nodes: MapEntries<TSchema>;
 
 	constructor(
-		private readonly runtime: IFluidDataStoreRuntime,
+		private readonly runtime: IFluidEphemeralDataStoreRuntime,
 		initialContent: TSchema,
 	) {
 		this.runtime.getAudience().on("addMember", (clientId) => {
@@ -293,10 +303,10 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 }
 
 /**
- * @internal
+ * @beta
  */
-export function createEphemeralIndependentMap<TSchema extends IndependentMapSchema>(
-	runtime: IFluidDataStoreRuntime,
+export function createIndependentMap<TSchema extends IndependentMapSchema>(
+	runtime: IFluidEphemeralDataStoreRuntime,
 	initialContent: TSchema,
 ): IndependentMap<TSchema> {
 	const map = new IndependentMapImpl(runtime, initialContent);

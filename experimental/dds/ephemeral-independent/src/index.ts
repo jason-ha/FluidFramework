@@ -17,10 +17,9 @@ export type { JsonDeserializedTypeWith, JsonDeserialized } from "./jsonDeseriali
 
 export type { JsonEncodableTypeWith, JsonEncodable } from "./jsonEncodable.js";
 
-export {
-	type EmptyIndependentMap,
-	EphemeralIndependentDirectory,
-} from "./ephemeralIndependentDirectory.js";
+export { createIndependentMap, type IFluidEphemeralDataStoreRuntime } from "./independentMap.js";
+
+export { type EmptyIndependentMap, IndependentMapDO } from "./independentMapDataObject.js";
 
 export {
 	Latest,
