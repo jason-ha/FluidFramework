@@ -184,7 +184,7 @@ module.exports = {
 				"^packages/loader/container-loader/package.json",
 			],
 			"fluid-build-tasks-tsc": [
-				"experimental/dds/ephemeral-independent/package.json", // Builds CommonJS with custom tsconfig
+				"experimental/framework/independent-state/package.json", // Builds CommonJS with custom tsconfig
 			],
 			"html-copyright-file-header": [
 				// Tests generate HTML "snapshot" artifacts
@@ -223,7 +223,7 @@ module.exports = {
 				"common/build/eslint-config-fluid/package.json",
 				"packages/test/mocha-test-setup/package.json",
 				"examples/apps/attributable-map/package.json",
-				"experimental/dds/ephemeral-independent/package.json", // Compile only tests currently
+				"experimental/framework/independent-state/package.json", // Compile only tests currently
 			],
 			"npm-package-json-test-scripts-split": [
 				"server/",
@@ -241,7 +241,7 @@ module.exports = {
 			],
 			"npm-package-json-esm": [
 				// Policy is incorrect about "main", "module", and "types" in package.json when "exports" is present.
-				"experimental/dds/ephemeral-independent/package.json",
+				"experimental/framework/independent-state/package.json",
 				// These are ESM-only packages and use tsc to build the ESM output. The policy handler doesn't understand this
 				// case.
 				"packages/dds/migration-shim/package.json",

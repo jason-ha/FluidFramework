@@ -58,7 +58,7 @@ class IndependentMapDOFactory implements IFluidDataStoreFactory {
  * @alpha
  */
 export class IndependentMapDO implements FluidObject {
-	public static readonly Name = "@fluidframework/ephemeral-independent-directory";
+	public static readonly Name = "@fluidframework/independent-state-map";
 
 	public static readonly RegistryEntry: NamedFluidDataStoreRegistryEntry = [
 		IndependentMapDO.Name,

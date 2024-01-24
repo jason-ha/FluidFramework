@@ -1,12 +1,12 @@
 {
-	"name": "@fluid-experimental/ephemeral-independent",
+	"name": "@fluid-experimental/independent-state",
 	"version": "2.0.0-rc.1.0.0",
 	"description": "A session only data object for lightweight data sharing",
 	"homepage": "https://fluidframework.com",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/microsoft/FluidFramework.git",
-		"directory": "experimental/dds/ephemeral-independent"
+		"directory": "experimental/framework/independent-state"
 	},
 	"license": "MIT",
 	"author": "Microsoft and contributors",
@@ -15,21 +15,21 @@
 	"exports": {
 		"./alpha": {
 			"import": {
-				"types": "./lib/ephemeral-independent-alpha.d.ts",
+				"types": "./lib/independent-state-alpha.d.ts",
 				"default": "./lib/index.js"
 			},
 			"require": {
-				"types": "./dist/ephemeral-independent-alpha.d.ts",
+				"types": "./dist/independent-state-alpha.d.ts",
 				"default": "./dist/index.js"
 			}
 		},
 		"./beta": {
 			"import": {
-				"types": "./lib/ephemeral-independent-beta.d.ts",
+				"types": "./lib/independent-state-beta.d.ts",
 				"default": "./lib/index.js"
 			},
 			"require": {
-				"types": "./dist/ephemeral-independent-beta.d.ts",
+				"types": "./dist/independent-state-beta.d.ts",
 				"default": "./dist/index.js"
 			}
 		}

@@ -93,7 +93,7 @@
 			"Framework": {
 				"packages": [
 					"@fluid-experimental/data-objects",
-					"@fluid-experimental/ephemeral-independent",
+					"@fluid-experimental/independent-state",
 					"@fluidframework/fluid-static"
 				],
 				"dirs": [

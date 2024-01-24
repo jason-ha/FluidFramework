@@ -1,4 +1,4 @@
-# @fluid-experimental/ephemeral-independent
+# @fluid-experimental/independent-state
 
 A session only DDS for lightweight data sharing.
 
@@ -23,12 +23,12 @@ library consumers should always prefer `^`.
 To get started, install the package by running the following command:
 
 ```bash
-npm i @fluid-experimental/ephemeral-independent
+npm i @fluid-experimental/independent-state
 ```
 
 ## API Documentation
 
-API documentation for **@fluid-experimental/ephemeral-independent** is available at <https://fluidframework.com/docs/apis/ephemeral-independent>.
+API documentation for **@fluid-experimental/independent-state** is available at <https://fluidframework.com/docs/apis/independent-state>.
 
 ## Contribution Guidelines
 

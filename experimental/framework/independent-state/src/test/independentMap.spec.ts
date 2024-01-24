@@ -4,7 +4,7 @@
  */
 
 import {
-	// Most clients should use IndependentMapDO from @fluid-experimental/ephemeral-independent/alpha
+	// Most clients should use IndependentMapDO from @fluid-experimental/independent-state/alpha
 	// until the interface is stabilized.
 	createIndependentMap,
 	type IFluidEphemeralDataStoreRuntime,
