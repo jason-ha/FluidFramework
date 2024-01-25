@@ -5832,7 +5832,6 @@ importers:
       '@fluidframework/datastore': workspace:~
       '@fluidframework/datastore-definitions': workspace:~
       '@fluidframework/eslint-config-fluid': ^3.3.0
-      '@fluidframework/map': workspace:~
       '@fluidframework/runtime-definitions': workspace:~
       '@microsoft/api-extractor': ^7.39.1
       '@types/node': ^18.19.0
@@ -5849,7 +5848,6 @@ importers:
       '@fluidframework/core-utils': link:../../../packages/common/core-utils
       '@fluidframework/datastore': link:../../../packages/runtime/datastore
       '@fluidframework/datastore-definitions': link:../../../packages/runtime/datastore-definitions
-      '@fluidframework/map': link:../../../packages/dds/map
       '@fluidframework/runtime-definitions': link:../../../packages/runtime/runtime-definitions
       events: 3.3.0
     devDependencies:
@@ -20199,7 +20197,7 @@ packages:
       assert-never: 1.2.1
       globby: 13.2.2
       prettier: 3.0.3
-      typescript: 5.3.2
+      typescript: 5.3.3
     dev: true
 
   /@previewjs/vfs/2.1.0:
@@ -45374,7 +45372,7 @@ packages:
     version: 0.1.0
     hasBin: true
     dependencies:
-      '@rushstack/node-core-library': 3.61.0
+      '@rushstack/node-core-library': 3.63.0
       '@tylerbu/markdown-magic': 2.4.0-tylerbu-1
       chalk: 4.1.2
       markdown-magic-package-scripts: 1.2.2
