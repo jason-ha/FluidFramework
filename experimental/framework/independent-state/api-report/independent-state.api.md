@@ -4,20 +4,18 @@
 
 ```ts
 
-import type { FluidObject } from '@fluidframework/core-interfaces';
+import { FluidDataStoreRuntime } from '@fluidframework/datastore';
 import type { IEvent } from '@fluidframework/core-interfaces';
 import type { IEventProvider } from '@fluidframework/core-interfaces';
+import type { IFluidDataStoreContext } from '@fluidframework/runtime-definitions';
+import type { IFluidDataStoreFactory } from '@fluidframework/runtime-definitions';
 import type { IFluidDataStoreRuntime } from '@fluidframework/datastore-definitions';
-import type { NamedFluidDataStoreRegistryEntry } from '@fluidframework/runtime-definitions';
 
 // @beta (undocumented)
 export type ClientId = string;
 
 // @beta (undocumented)
 export function createIndependentMap<TSchema extends IndependentMapSchema>(runtime: IFluidEphemeralDataStoreRuntime, initialContent: TSchema): IndependentMap<TSchema>;
-
-// @alpha (undocumented)
-export type EmptyIndependentMap = IndependentMap<{}>;
 
 // @beta (undocumented)
 type FullyReadonly<T> = {
@@ -34,16 +32,6 @@ class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>
 // @beta (undocumented)
 export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;
 
-// @alpha (undocumented)
-export class IndependentMapDO implements FluidObject {
-    constructor(runtime: IFluidDataStoreRuntime);
-    readonly map: EmptyIndependentMap;
-    // (undocumented)
-    static readonly Name = "@fluidframework/independent-state-map";
-    // (undocumented)
-    static readonly RegistryEntry: NamedFluidDataStoreRegistryEntry;
-}
-
 // @beta (undocumented)
 export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
     readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<TSchema[Key]>["manager"] extends IndependentValue<infer TManager> ? TManager : never;
@@ -51,6 +39,19 @@ export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
 
 // @beta (undocumented)
 export type IndependentMapEntry<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
+
+// @alpha (undocumented)
+export class IndependentMapFactory<TSchema extends IndependentMapSchema> implements IFluidDataStoreFactory {
+    constructor(initialContent: TSchema, runtimeClass?: typeof FluidDataStoreRuntime);
+    // (undocumented)
+    get IFluidDataStoreFactory(): this;
+    instantiateDataStore(context: IFluidDataStoreContext, existing: boolean): Promise<FluidDataStoreRuntime>;
+    readonly map: Promise<IndependentMap<TSchema>>;
+    // (undocumented)
+    get registryEntry(): [string, Promise<Awaited<this>>];
+    // (undocumented)
+    readonly type = "@fluidframework/independent-state-map";
+}
 
 // @beta (undocumented)
 export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {

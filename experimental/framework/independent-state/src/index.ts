@@ -19,7 +19,7 @@ export type { JsonEncodableTypeWith, JsonEncodable } from "./jsonEncodable.js";
 
 export { createIndependentMap, type IFluidEphemeralDataStoreRuntime } from "./independentMap.js";
 
-export { type EmptyIndependentMap, IndependentMapDO } from "./independentMapDataObject.js";
+export { IndependentMapFactory } from "./independentMapFactory.js";
 
 export {
 	Latest,
