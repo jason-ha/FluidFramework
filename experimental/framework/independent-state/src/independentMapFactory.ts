@@ -3,9 +3,12 @@
  * Licensed under the MIT License.
  */
 
+import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions";
+import type { IFluidHandle } from "@fluidframework/core-interfaces";
 import { assert } from "@fluidframework/core-utils";
 import { FluidDataStoreRuntime } from "@fluidframework/datastore";
 import type {
+	IContainerRuntimeBase,
 	IFluidDataStoreContext,
 	IFluidDataStoreFactory,
 	NamedFluidDataStoreRegistryEntry,
@@ -15,55 +18,15 @@ import type { IndependentMap, IndependentMapSchema } from "./types.js";
 
 import { createIndependentMap } from "./independentMap.js";
 
-/**
- * Local implementation of Promise.withResolvers
- * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers
- */
-function promiseWithResolves<T>(): {
-	promise: Promise<T>;
-	resolve: (value: T | PromiseLike<T>) => void;
-	reject: (reason?: any) => void;
-} {
-	let resolveFn: (value: T | PromiseLike<T>) => void;
-	let rejectFn: (reason?: any) => void;
-	const promise = new Promise<T>((resolve, reject) => {
-		resolveFn = resolve;
-		rejectFn = reject;
-	});
-	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-	return { promise, resolve: resolveFn!, reject: rejectFn! };
-}
-
-/**
- * @alpha
- */
-export class IndependentMapFactory<TSchema extends IndependentMapSchema>
+class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 	implements IFluidDataStoreFactory
 {
-	public readonly type = "@fluidframework/independent-state-map";
+	public readonly type = "@fluidframework/independent-state-map-data-store";
 
 	constructor(
 		private readonly initialContent: TSchema,
 		private readonly runtimeClass: typeof FluidDataStoreRuntime = FluidDataStoreRuntime,
-	) {
-		const { promise, resolve } = promiseWithResolves<IndependentMap<TSchema>>();
-		this.map = promise;
-		this.resolveMap = resolve;
-	}
-
-	public get registryEntry() {
-		return [this.type, Promise.resolve(this)] satisfies NamedFluidDataStoreRegistryEntry;
-	}
-
-	/**
-	 * Provides {@link IndependentMap} once factory has been registered and
-	 * instantiation is complete.
-	 */
-	public readonly map: Promise<IndependentMap<TSchema>>;
-
-	private readonly resolveMap: (
-		value: IndependentMap<TSchema> | PromiseLike<IndependentMap<TSchema>>,
-	) => void;
+	) {}
 
 	/**
 	 * This is where we do data store setup.
@@ -84,12 +47,57 @@ export class IndependentMapFactory<TSchema extends IndependentMapSchema>
 		);
 
 		const instance = createIndependentMap<TSchema>(runtime, this.initialContent);
-		this.resolveMap(instance);
 
 		return runtime;
 	}
 
 	public get IFluidDataStoreFactory() {
 		return this;
+	}
+}
+
+/**
+ * Convenience helper class to create ${@link IndependentMap} in own data store.
+ *
+ * @alpha
+ */
+export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
+	private readonly dataStoreFactory: IndependentMapDataStoreFactory<TSchema>;
+
+	constructor(
+		initialContent: TSchema,
+		private readonly alias: string = "independent-state-map.0",
+		runtimeClass: typeof FluidDataStoreRuntime = FluidDataStoreRuntime,
+	) {
+		this.dataStoreFactory = new IndependentMapDataStoreFactory(initialContent, runtimeClass);
+	}
+
+	public get registryEntry(): NamedFluidDataStoreRegistryEntry {
+		return [this.dataStoreFactory.type, Promise.resolve(this.dataStoreFactory)];
+	}
+
+	/**
+	 * Creates exclusive data store for ${@link IndependentMap} to work in.
+	 */
+	public async initializingFirstTime(containerRuntime: IContainerRuntimeBase) {
+		return containerRuntime
+			.createDataStore(this.dataStoreFactory.type)
+			.then(async (datastore) => datastore.trySetAlias(this.alias));
+	}
+
+	/**
+	 * Provides {@link IndependentMap} once factory has been registered and
+	 * instantiation is complete.
+	 */
+	public async getMap(containerRuntime: IContainerRuntime): Promise<IndependentMap<TSchema>> {
+		const entryPointHandle = (await containerRuntime.getAliasedDataStoreEntryPoint(
+			this.alias,
+		)) as IFluidHandle<IndependentMap<TSchema>> | undefined;
+
+		if (entryPointHandle === undefined) {
+			throw new Error(`dataStore [${this.alias}] must exist`);
+		}
+
+		return entryPointHandle.get();
 	}
 }

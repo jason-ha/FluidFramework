@@ -4,12 +4,14 @@
 
 ```ts
 
+import { AliasResult } from '@fluidframework/runtime-definitions';
 import { FluidDataStoreRuntime } from '@fluidframework/datastore';
+import type { IContainerRuntime } from '@fluidframework/container-runtime-definitions';
+import type { IContainerRuntimeBase } from '@fluidframework/runtime-definitions';
 import type { IEvent } from '@fluidframework/core-interfaces';
 import type { IEventProvider } from '@fluidframework/core-interfaces';
-import type { IFluidDataStoreContext } from '@fluidframework/runtime-definitions';
-import type { IFluidDataStoreFactory } from '@fluidframework/runtime-definitions';
 import type { IFluidDataStoreRuntime } from '@fluidframework/datastore-definitions';
+import type { NamedFluidDataStoreRegistryEntry } from '@fluidframework/runtime-definitions';
 
 // @beta (undocumented)
 export type ClientId = string;
@@ -40,17 +42,13 @@ export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
 // @beta (undocumented)
 export type IndependentMapEntry<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
 
-// @alpha (undocumented)
-export class IndependentMapFactory<TSchema extends IndependentMapSchema> implements IFluidDataStoreFactory {
-    constructor(initialContent: TSchema, runtimeClass?: typeof FluidDataStoreRuntime);
+// @alpha
+export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
+    constructor(initialContent: TSchema, alias?: string, runtimeClass?: typeof FluidDataStoreRuntime);
+    getMap(containerRuntime: IContainerRuntime): Promise<IndependentMap<TSchema>>;
+    initializingFirstTime(containerRuntime: IContainerRuntimeBase): Promise<AliasResult>;
     // (undocumented)
-    get IFluidDataStoreFactory(): this;
-    instantiateDataStore(context: IFluidDataStoreContext, existing: boolean): Promise<FluidDataStoreRuntime>;
-    readonly map: Promise<IndependentMap<TSchema>>;
-    // (undocumented)
-    get registryEntry(): [string, Promise<Awaited<this>>];
-    // (undocumented)
-    readonly type = "@fluidframework/independent-state-map";
+    get registryEntry(): NamedFluidDataStoreRegistryEntry;
 }
 
 // @beta (undocumented)
