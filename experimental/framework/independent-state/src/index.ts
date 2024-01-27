@@ -23,10 +23,10 @@ export { type EmptyIndependentMap, IndependentMapDO } from "./independentMapData
 
 export {
 	Latest,
-	type LatestValueClientData,
-	type LatestValueData,
+	type LatestMapValueClientData as LatestValueClientData,
+	type LatestMapValueData as LatestValueData,
 	type LatestValueManager,
-	type LatestValueManagerEvents,
+	type LatestMapValueManagerEvents as LatestValueManagerEvents,
 	type LatestValueMetadata,
 } from "./latestValueManager.js";
 

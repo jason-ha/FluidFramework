@@ -86,7 +86,7 @@ export type IFluidEphemeralDataStoreRuntime = Pick<
 >;
 
 function isValueState<T>(value: ValueDirectoryOrState<T>): value is ValueState<T> {
-	return "value" in value;
+	return !("items" in value);
 }
 
 function mergeValueDirectory<T>(

@@ -11,7 +11,7 @@ import type { JsonDeserialized } from "./jsonDeserialized.js";
 export interface ValueState<TValue> {
 	rev: number;
 	timestamp: number;
-	value: JsonDeserialized<TValue>;
+	value?: JsonDeserialized<TValue>;
 }
 
 /**
