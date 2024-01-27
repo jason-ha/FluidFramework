@@ -44,6 +44,7 @@ tsdoc-metadata.json
 # Test json
 build-tools/packages/build-tools/src/test/data/
 experimental/dds/tree/src/test/documents/
+packages/dds/matrix/src/test/results/**/*.json
 packages/dds/merge-tree/src/test/literature/*.txt
 packages/dds/merge-tree/src/test/results/*.json
 packages/dds/sequence/src/test/snapshots/**/*.json
