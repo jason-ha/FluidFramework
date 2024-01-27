@@ -5,7 +5,8 @@
 
 /* eslint-disable @rushstack/no-new-null */
 
-import {
+import type {
+	JsonForArrayItem,
 	NonSymbolWithOptionalPropertyOf,
 	NonSymbolWithRequiredPropertyOf,
 } from "./exposedUtilityTypes.js";
@@ -83,8 +84,16 @@ export type JsonEncodable<T, TReplaced = never> = /* test for 'any' */ boolean e
 	: // eslint-disable-next-line @typescript-eslint/ban-types
 	/* test for not a function */ Extract<T, Function> extends never
 	? /* not a function => test for object */ T extends object
-		? /* object => test for array */ T extends (infer U)[] // prefer ArrayLike test to catch non-array array-like types
-			? /* array => */ JsonEncodable<U, TReplaced>[]
+		? /* object => test for array */ T extends (infer _)[]
+			? /* array => */ {
+					/* array items may not not allow undefined */
+					/* use homomorphic mapped type to preserve tuple type */
+					[K in keyof T]: JsonForArrayItem<
+						T[K],
+						TReplaced,
+						JsonEncodable<T[K], TReplaced>
+					>;
+			  }
 			: /* property bag => */ {
 					/* required properties are recursed and may not have undefined values. */
 					[K in NonSymbolWithRequiredPropertyOf<T>]-?: undefined extends T[K]

@@ -5,7 +5,8 @@
 
 /* eslint-disable @rushstack/no-new-null */
 
-import {
+import type {
+	JsonForArrayItem,
 	NonSymbolWithDefinedNonFunctionPropertyOf,
 	NonSymbolWithUndefinedNonFunctionPropertyOf,
 } from "./exposedUtilityTypes.js";
@@ -50,8 +51,16 @@ export type JsonDeserialized<T, TReplaced = never> = /* test for 'any' */ boolea
 	: // eslint-disable-next-line @typescript-eslint/ban-types
 	/* test for not a function */ Extract<T, Function> extends never
 	? /* not a function => test for object */ T extends object
-		? /* object => test for array */ T extends (infer E)[]
-			? /* array => */ JsonDeserialized<E, TReplaced>[]
+		? /* object => test for array */ T extends (infer _)[]
+			? /* array => */ {
+					/* array items may not not allow undefined */
+					/* use homomorphic mapped type to preserve tuple type */
+					[K in keyof T]: JsonForArrayItem<
+						T[K],
+						TReplaced,
+						JsonDeserialized<T[K], TReplaced>
+					>;
+			  }
 			: /* property bag => */
 			  /* properties with symbol keys or function values are removed */
 			  {

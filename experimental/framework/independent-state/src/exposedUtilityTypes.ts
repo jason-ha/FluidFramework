@@ -4,6 +4,8 @@
  */
 
 /**
+ * Returns non-symbol keys for optional properties of an object type.
+ *
  * @beta
  */
 export type NonSymbolWithOptionalPropertyOf<T extends object> = Exclude<
@@ -14,6 +16,8 @@ export type NonSymbolWithOptionalPropertyOf<T extends object> = Exclude<
 >;
 
 /**
+ * Returns non-symbol keys for required properties of an object type.
+ *
  * @beta
  */
 export type NonSymbolWithRequiredPropertyOf<T extends object> = Exclude<
@@ -24,6 +28,8 @@ export type NonSymbolWithRequiredPropertyOf<T extends object> = Exclude<
 >;
 
 /**
+ * Returns non-symbol keys for defined, non-function properties of an object type.
+ *
  * @beta
  */
 export type NonSymbolWithDefinedNonFunctionPropertyOf<T extends object> = Exclude<
@@ -35,6 +41,8 @@ export type NonSymbolWithDefinedNonFunctionPropertyOf<T extends object> = Exclud
 >;
 
 /**
+ * Returns non-symbol keys for undefined, non-function properties of an object type.
+ *
  * @beta
  */
 export type NonSymbolWithUndefinedNonFunctionPropertyOf<T extends object> = Exclude<
@@ -46,6 +54,36 @@ export type NonSymbolWithUndefinedNonFunctionPropertyOf<T extends object> = Excl
 >;
 
 /**
+ * Filters a type `T` to types for undefined that is not viable in an array (or tuple) that
+ * must go through JSON serialization.
+ * If `T` is `undefined`, then an error literal string type is returned with hopes of being
+ * informative. When result is unioned with `string`, then the error string will be eclipsed
+ * by the union. In that case undefined will still not be an option, but source of the error
+ * may be harder to discover.
+ *
+ * @beta
+ */
+export type JsonForArrayItem<T, TReplaced, TBlessed> =
+	// Some initial filtering must be provided before a test for undefined.
+	// These tests are expected to match those in JsonEncodable/JsonDecodable.
+	/* test for 'any' */ boolean extends (T extends never ? true : false)
+		? /* 'any' => */ TBlessed
+		: /* test for 'unknown' */ unknown extends T
+		? /* 'unknown' => */ TBlessed
+		: /* test for Jsonable primitive types */ T extends
+				| null
+				| boolean
+				| number
+				| string
+				| TReplaced
+		? /* primitive types => */ T
+		: /* test for undefined possibility */ undefined extends T
+		? /* undefined | ... => */ "error-array-or-tuple-may-not-allow-undefined-value-consider-null"
+		: TBlessed;
+
+/**
+ * Recursively/deeply makes all properties of a type readonly.
+ *
  * @beta
  */
 export type FullyReadonly<T> = {
