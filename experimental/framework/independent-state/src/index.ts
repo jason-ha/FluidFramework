@@ -13,9 +13,9 @@ export type {
 	IndependentMapSchema,
 } from "./types.js";
 
-export type { JsonDeserializedTypeWith, JsonDeserialized } from "./jsonDeserialized.js";
-
-export type { JsonEncodableTypeWith, JsonEncodable } from "./jsonEncodable.js";
+export type { JsonDeserialized } from "./jsonDeserialized.js";
+export type { JsonEncodable } from "./jsonEncodable.js";
+export type { JsonTypeWith } from "./jsonType.js";
 
 export { createIndependentMap, type IFluidEphemeralDataStoreRuntime } from "./independentMap.js";
 

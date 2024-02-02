@@ -6,31 +6,13 @@
 /* eslint-disable @rushstack/no-new-null */
 
 import type {
+	IsEnumLike,
+	IsExactlyObject,
 	JsonForArrayItem,
 	NonSymbolWithOptionalPropertyOf,
 	NonSymbolWithRequiredPropertyOf,
 } from "./exposedUtilityTypes.js";
-
-/**
- * Type constraint for types that are likely encodable as JSON or have a custom
- * alternate type.
- *
- * @remarks
- * Use `JsonEncodableTypeWith<never>` for just JSON encodable types.
- * See {@link JsonEncodable} for encoding pitfalls.
- *
- * @privateRemarks
- * Perfer using `JsonEncodable<unknown>` over this type that is an implementation detail.
- * @beta
- */
-export type JsonEncodableTypeWith<T> =
-	| null
-	| boolean
-	| number
-	| string
-	| T
-	| { [key: string | number]: JsonEncodableTypeWith<T> }
-	| JsonEncodableTypeWith<T>[];
+import type { JsonTypeWith } from "./jsonType.js";
 
 /**
  * Used to constrain a type `T` to types that are serializable as JSON.
@@ -59,7 +41,7 @@ export type JsonEncodableTypeWith<T> =
  * Also, `JsonEncodable<T>` does not prevent the construction of circular references.
  *
  * Using `JsonEncodable<unknown>` or `JsonEncodable<any>` is a type alias for
- * {@link JsonEncodableTypeWith}`<never>` and should not be used if precise type safety is desired.
+ * {@link JsonTypeWith}`<never>` and should not be used if precise type safety is desired.
  *
  * @example Typical usage
  *
@@ -71,10 +53,10 @@ export type JsonEncodableTypeWith<T> =
 export type JsonEncodable<T, TReplaced = never> = /* test for 'any' */ boolean extends (
 	T extends never ? true : false
 )
-	? /* 'any' => */ JsonEncodableTypeWith<TReplaced>
+	? /* 'any' => */ JsonTypeWith<TReplaced>
 	: /* test for 'unknown' */ unknown extends T
-	? /* 'unknown' => */ JsonEncodableTypeWith<TReplaced>
-	: /* test for JsonEncodable primitive types */ T extends
+	? /* 'unknown' => */ JsonTypeWith<TReplaced>
+	: /* test for JSON Encodable primitive types or given alternate */ T extends
 			| null
 			| boolean
 			| number
@@ -84,7 +66,7 @@ export type JsonEncodable<T, TReplaced = never> = /* test for 'any' */ boolean e
 	: // eslint-disable-next-line @typescript-eslint/ban-types
 	/* test for not a function */ Extract<T, Function> extends never
 	? /* not a function => test for object */ T extends object
-		? /* object => test for array */ T extends (infer _)[]
+		? /* object => test for array */ T extends readonly (infer _)[]
 			? /* array => */ {
 					/* array items may not not allow undefined */
 					/* use homomorphic mapped type to preserve tuple type */
@@ -94,6 +76,10 @@ export type JsonEncodable<T, TReplaced = never> = /* test for 'any' */ boolean e
 						JsonEncodable<T[K], TReplaced>
 					>;
 			  }
+			: /* not an array => test for exactly `object` */ IsExactlyObject<T> extends true
+			? /* `object` => */ JsonTypeWith<TReplaced>
+			: /* test for enum like types */ IsEnumLike<T> extends true
+			? /* enum or similar simple type (return as-is) => */ T
 			: /* property bag => */ {
 					/* required properties are recursed and may not have undefined values. */
 					[K in NonSymbolWithRequiredPropertyOf<T>]-?: undefined extends T[K]

@@ -82,6 +82,36 @@ export type JsonForArrayItem<T, TReplaced, TBlessed> =
 		: TBlessed;
 
 /**
+ * Checks for a type that is simple class of number and string indexed types to numbers and strings.
+ * @beta
+ */
+export type IsEnumLike<T extends object> = T extends readonly (infer _)[]
+	? /* array => */ false
+	: T extends {
+			// all numerical indices should refer to a string
+			readonly [i: number]: string;
+			// string indices may be string or number
+			readonly [p: string]: number | string;
+	  }
+	? /* test for a never or any property */ true extends {
+			[K in keyof T]: T[K] extends never ? true : never;
+	  }[keyof T]
+		? false
+		: true
+	: false;
+
+/**
+ * Checks for that type is exactly `object`.
+ * @beta
+ */
+export type IsExactlyObject<T extends object> =
+	/* test for more than type with all optional properties */ object extends Required<T>
+		? /* test for `{}` */ false extends T
+			? /* `{}` => */ false
+			: /* `object` => */ true
+		: /* optional or required properties => */ false;
+
+/**
  * Recursively/deeply makes all properties of a type readonly.
  *
  * @beta

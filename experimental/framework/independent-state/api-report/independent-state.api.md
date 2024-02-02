@@ -19,7 +19,7 @@ export type ClientId = string;
 // @beta (undocumented)
 export function createIndependentMap<TSchema extends IndependentMapSchema>(runtime: IFluidEphemeralDataStoreRuntime, initialContent: TSchema): IndependentMap<TSchema>;
 
-// @beta (undocumented)
+// @beta
 type FullyReadonly<T> = {
     readonly [K in keyof T]: FullyReadonly<T[K]>;
 };
@@ -89,25 +89,38 @@ declare namespace InternalUtilityTypes {
         NonSymbolWithRequiredPropertyOf,
         NonSymbolWithDefinedNonFunctionPropertyOf,
         NonSymbolWithUndefinedNonFunctionPropertyOf,
+        JsonForArrayItem,
+        IsEnumLike,
+        IsExactlyObject,
         FullyReadonly
     }
 }
 export { InternalUtilityTypes }
 
 // @beta
-export type JsonDeserialized<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonDeserializedTypeWith<TReplaced> : unknown extends T ? JsonDeserializedTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends (infer E)[] ? JsonDeserialized<E, TReplaced>[] : /* property bag => */ {
+type IsEnumLike<T extends object> = T extends readonly (infer _)[] ? false : T extends {
+    readonly [i: number]: string;
+    readonly [p: string]: number | string;
+} ? true extends {
+    [K in keyof T]: T[K] extends never ? true : never;
+}[keyof T] ? false : true : false;
+
+// @beta
+type IsExactlyObject<T extends object> = object extends Required<T> ? false extends T ? false : true : false;
+
+// @beta
+export type JsonDeserialized<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonTypeWith<TReplaced> : unknown extends T ? JsonTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends readonly (infer _)[] ? {
+    [K in keyof T]: JsonForArrayItem<T[K], TReplaced, JsonDeserialized<T[K], TReplaced>>;
+} : IsExactlyObject<T> extends true ? JsonTypeWith<TReplaced> : IsEnumLike<T> extends true ? T : /* property bag => */ {
     [K in NonSymbolWithDefinedNonFunctionPropertyOf<T>]: JsonDeserialized<T[K], TReplaced>;
 } & {
     [K in NonSymbolWithUndefinedNonFunctionPropertyOf<T>]?: JsonDeserialized<T[K], TReplaced>;
 } : never : never;
 
 // @beta
-export type JsonDeserializedTypeWith<T> = null | boolean | number | string | T | {
-    [key: string | number]: JsonDeserializedTypeWith<T>;
-} | JsonDeserializedTypeWith<T>[];
-
-// @beta
-export type JsonEncodable<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonEncodableTypeWith<TReplaced> : unknown extends T ? JsonEncodableTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends (infer U)[] ? JsonEncodable<U, TReplaced>[] : /* property bag => */ {
+export type JsonEncodable<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonTypeWith<TReplaced> : unknown extends T ? JsonTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends readonly (infer _)[] ? {
+    [K in keyof T]: JsonForArrayItem<T[K], TReplaced, JsonEncodable<T[K], TReplaced>>;
+} : IsExactlyObject<T> extends true ? JsonTypeWith<TReplaced> : IsEnumLike<T> extends true ? T : /* property bag => */ {
     [K in NonSymbolWithRequiredPropertyOf<T>]-?: undefined extends T[K] ? "error-required-property-may-not-allow-undefined-value" : JsonEncodable<T[K], TReplaced>;
 } & {
     [K in NonSymbolWithOptionalPropertyOf<T>]?: JsonEncodable<T[K], TReplaced | undefined>;
@@ -116,9 +129,12 @@ export type JsonEncodable<T, TReplaced = never> = boolean extends (T extends nev
 } : never : never;
 
 // @beta
-export type JsonEncodableTypeWith<T> = null | boolean | number | string | T | {
-    [key: string | number]: JsonEncodableTypeWith<T>;
-} | JsonEncodableTypeWith<T>[];
+type JsonForArrayItem<T, TReplaced, TBlessed> = boolean extends (T extends never ? true : false) ? TBlessed : unknown extends T ? TBlessed : T extends null | boolean | number | string | TReplaced ? T : undefined extends T ? "error-array-or-tuple-may-not-allow-undefined-value-consider-null" : TBlessed;
+
+// @beta
+export type JsonTypeWith<T> = null | boolean | number | string | T | {
+    [key: string | number]: JsonTypeWith<T>;
+} | JsonTypeWith<T>[];
 
 // @beta (undocumented)
 export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & JsonDeserialized<T> & object): ManagerFactory<Key, ValueState<T>, LatestValueManager<T>>;
@@ -170,22 +186,22 @@ type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<an
     manager: IndependentValue<TManager>;
 };
 
-// @beta (undocumented)
+// @beta
 type NonSymbolWithDefinedNonFunctionPropertyOf<T extends object> = Exclude<{
     [K in keyof T]: undefined extends T[K] ? never : T[K] extends Function ? never : K;
 }[keyof T], undefined | symbol>;
 
-// @beta (undocumented)
+// @beta
 type NonSymbolWithOptionalPropertyOf<T extends object> = Exclude<{
     [K in keyof T]: T extends Record<K, T[K]> ? never : K;
 }[keyof T], undefined | symbol>;
 
-// @beta (undocumented)
+// @beta
 type NonSymbolWithRequiredPropertyOf<T extends object> = Exclude<{
     [K in keyof T]: T extends Record<K, T[K]> ? K : never;
 }[keyof T], undefined | symbol>;
 
-// @beta (undocumented)
+// @beta
 type NonSymbolWithUndefinedNonFunctionPropertyOf<T extends object> = Exclude<{
     [K in keyof T]: undefined extends T[K] ? (T[K] extends Function ? never : K) : never;
 }[keyof T], undefined | symbol>;

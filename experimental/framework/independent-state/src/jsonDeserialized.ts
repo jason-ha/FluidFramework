@@ -6,25 +6,13 @@
 /* eslint-disable @rushstack/no-new-null */
 
 import type {
+	IsEnumLike,
+	IsExactlyObject,
 	JsonForArrayItem,
 	NonSymbolWithDefinedNonFunctionPropertyOf,
 	NonSymbolWithUndefinedNonFunctionPropertyOf,
 } from "./exposedUtilityTypes.js";
-
-/**
- * Type constraint for types that are likely deserializable from JSON or have a custom
- * alternate type.
- *
- * @beta
- */
-export type JsonDeserializedTypeWith<T> =
-	| null
-	| boolean
-	| number
-	| string
-	| T
-	| { [key: string | number]: JsonDeserializedTypeWith<T> }
-	| JsonDeserializedTypeWith<T>[];
+import type { JsonTypeWith } from "./jsonType.js";
 
 /**
  * Used to constrain a type `T` to types that are deserializable from JSON.
@@ -43,15 +31,20 @@ export type JsonDeserializedTypeWith<T> =
 export type JsonDeserialized<T, TReplaced = never> = /* test for 'any' */ boolean extends (
 	T extends never ? true : false
 )
-	? /* 'any' => */ JsonDeserializedTypeWith<TReplaced>
+	? /* 'any' => */ JsonTypeWith<TReplaced>
 	: /* test for 'unknown' */ unknown extends T
-	? /* 'unknown' => */ JsonDeserializedTypeWith<TReplaced>
-	: /* test for Jsonable primitive types */ T extends null | boolean | number | string | TReplaced
+	? /* 'unknown' => */ JsonTypeWith<TReplaced>
+	: /* test for deserializable primitive types or given alternate */ T extends
+			| null
+			| boolean
+			| number
+			| string
+			| TReplaced
 	? /* primitive types => */ T
 	: // eslint-disable-next-line @typescript-eslint/ban-types
 	/* test for not a function */ Extract<T, Function> extends never
 	? /* not a function => test for object */ T extends object
-		? /* object => test for array */ T extends (infer _)[]
+		? /* object => test for array */ T extends readonly (infer _)[]
 			? /* array => */ {
 					/* array items may not not allow undefined */
 					/* use homomorphic mapped type to preserve tuple type */
@@ -61,6 +54,10 @@ export type JsonDeserialized<T, TReplaced = never> = /* test for 'any' */ boolea
 						JsonDeserialized<T[K], TReplaced>
 					>;
 			  }
+			: /* not an array => test for exactly `object` */ IsExactlyObject<T> extends true
+			? /* `object` => */ JsonTypeWith<TReplaced>
+			: /* test for enum like types */ IsEnumLike<T> extends true
+			? /* enum or similar simple type (return as-is) => */ T
 			: /* property bag => */
 			  /* properties with symbol keys or function values are removed */
 			  {
