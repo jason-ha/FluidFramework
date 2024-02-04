@@ -8,9 +8,22 @@ import type { JsonDeserialized } from "./jsonDeserialized.js";
 /**
  * @beta
  */
-export interface ValueState<TValue> {
+export interface ValueStateMetadata {
 	rev: number;
 	timestamp: number;
+}
+
+/**
+ * @beta
+ */
+export interface ValueOptionalState<TValue> extends ValueStateMetadata {
+	value?: JsonDeserialized<TValue>;
+}
+
+/**
+ * @beta
+ */
+export interface ValueRequiredState<TValue> extends ValueStateMetadata {
 	value: JsonDeserialized<TValue>;
 }
 
@@ -23,14 +36,14 @@ export interface ValueDirectory<T> {
 		// Caution: any particular item may or may not exist
 		// Typescript does not support absent keys without forcing type to also be undefined.
 		// See https://github.com/microsoft/TypeScript/issues/42810.
-		[name: string | number]: ValueDirectoryOrState<T>;
+		[name: string | number]: ValueOptionalState<T> | ValueDirectory<T>;
 	};
 }
 
 /**
  * @beta
  */
-export type ValueDirectoryOrState<T> = ValueState<T> | ValueDirectory<T>;
+export type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
 
 /**
  * @beta

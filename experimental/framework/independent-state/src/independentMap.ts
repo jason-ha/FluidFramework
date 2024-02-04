@@ -11,7 +11,8 @@ import type {
 	ManagerFactory,
 	ValueDirectory,
 	ValueDirectoryOrState,
-	ValueState,
+	ValueOptionalState,
+	ValueRequiredState,
 } from "./exposedInternalTypes.js";
 import { handleFromDatastore, type IndependentDatastore } from "./independentDatastore.js";
 import { unbrandIVM } from "./independentValue.js";
@@ -85,16 +86,18 @@ export type IFluidEphemeralDataStoreRuntime = Pick<
 	"clientId" | "getAudience" | "off" | "on" | "submitSignal"
 >;
 
-function isValueState<T>(value: ValueDirectoryOrState<T>): value is ValueState<T> {
-	return "value" in value;
+function isValueDirectory<T, TValueState extends ValueRequiredState<T> | ValueOptionalState<T>>(
+	value: ValueDirectory<T> | TValueState,
+): value is ValueDirectory<T> {
+	return "items" in value;
 }
 
-function mergeValueDirectory<T>(
-	base: ValueDirectoryOrState<T> | undefined,
-	update: ValueDirectoryOrState<T>,
+function mergeValueDirectory<T, TValueState extends ValueRequiredState<T> | ValueOptionalState<T>>(
+	base: TValueState | ValueDirectory<T> | undefined,
+	update: TValueState | ValueDirectory<T>,
 	timeDelta: number,
-): ValueDirectoryOrState<T> {
-	if (isValueState(update)) {
+): TValueState | ValueDirectory<T> {
+	if (!isValueDirectory(update)) {
 		if (base === undefined || update.rev > base.rev) {
 			return { ...update, timestamp: update.timestamp + timeDelta };
 		}
@@ -103,9 +106,9 @@ function mergeValueDirectory<T>(
 
 	let mergeBase: ValueDirectory<T>;
 	if (base !== undefined) {
-		const baseIsValue = isValueState(base);
+		const baseIsDirectory = isValueDirectory(base);
 		if (base.rev >= update.rev) {
-			if (baseIsValue) {
+			if (!baseIsDirectory) {
 				// base is leaf value that is more recent - nothing to do
 				return base;
 			}
@@ -113,7 +116,7 @@ function mergeValueDirectory<T>(
 			// missed and catchup update needs merged in.
 			mergeBase = base;
 		} else {
-			mergeBase = { rev: update.rev, items: baseIsValue ? {} : base.items };
+			mergeBase = { rev: update.rev, items: baseIsDirectory ? base.items : {} };
 		}
 	} else {
 		mergeBase = { rev: update.rev, items: {} };

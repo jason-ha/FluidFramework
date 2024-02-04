@@ -17,9 +17,12 @@ declare function createValueManager<T, Key extends string>(
 	initial: JsonEncodable<T> & JsonDeserialized<T>,
 ): (
 	key: Key,
-	datastoreHandle: InternalTypes.IndependentDatastoreHandle<Key, InternalTypes.ValueState<T>>,
+	datastoreHandle: InternalTypes.IndependentDatastoreHandle<
+		Key,
+		InternalTypes.ValueRequiredState<T>
+	>,
 ) => {
-	value: InternalTypes.ValueState<T>;
+	value: InternalTypes.ValueRequiredState<T>;
 	manager: InternalTypes.IndependentValue<JsonDeserialized<T>>;
 };
 

@@ -77,7 +77,9 @@ class IndependentValueBrand<T> {
 
 declare namespace InternalTypes {
     export {
-        ValueState,
+        ValueStateMetadata,
+        ValueOptionalState,
+        ValueRequiredState,
         ValueDirectory,
         ValueDirectoryOrState,
         IndependentDatastoreHandle,
@@ -143,7 +145,62 @@ export type JsonTypeWith<T> = null | boolean | number | string | T | {
 } | JsonTypeWith<T>[];
 
 // @beta (undocumented)
-export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & JsonDeserialized<T> & object): ManagerFactory<Key, ValueState<T>, LatestValueManager<T>>;
+export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & JsonDeserialized<T> & object): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>>;
+
+// @beta (undocumented)
+export function LatestMap<T extends object, RegistrationKey extends string, Keys extends string | number = string | number>(initialValues?: {
+    [K in Keys]: JsonEncodable<T> & JsonDeserialized<T>;
+}): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>>;
+
+// @beta (undocumented)
+export interface LatestMapItemRemovedClientData<K extends string | number> {
+    // (undocumented)
+    clientId: ClientId;
+    // (undocumented)
+    key: K;
+    // (undocumented)
+    metadata: LatestValueMetadata;
+}
+
+// @beta (undocumented)
+export interface LatestMapItemValueClientData<T, K extends string | number> extends LatestValueClientData<T> {
+    // (undocumented)
+    key: K;
+}
+
+// @beta (undocumented)
+export interface LatestMapValueClientData<T, K extends string | number> extends LatestMapValueData<T, K> {
+    // (undocumented)
+    clientId: ClientId;
+}
+
+// @beta (undocumented)
+export interface LatestMapValueData<T, Keys extends string | number> {
+    // (undocumented)
+    items: Map<Keys, LatestValueData<T>>;
+}
+
+// @beta (undocumented)
+export interface LatestMapValueManager<T, K extends string | number = string | number> extends IEventProvider<LatestMapValueManagerEvents<T, K>> {
+    // (undocumented)
+    clients(): ClientId[];
+    // (undocumented)
+    clientValue(clientId: ClientId): LatestMapValueData<T, K>;
+    // (undocumented)
+    clientValues(): IterableIterator<LatestMapValueClientData<T, K>>;
+    // (undocumented)
+    readonly local: ValueMap<K, T>;
+}
+
+// @beta (undocumented)
+export interface LatestMapValueManagerEvents<T, K extends string | number> extends IEvent {
+    // @eventProperty
+    (event: "updated", listener: (updates: LatestMapValueClientData<T, K>) => void): void;
+    // @eventProperty
+    (event: "itemUpdated", listener: (updatedItem: LatestMapItemValueClientData<T, K>) => void): void;
+    // @eventProperty
+    (event: "itemRemoved", listener: (removedItem: LatestMapItemRemovedClientData<K>) => void): void;
+}
 
 // @beta (undocumented)
 export interface LatestValueClientData<T> extends LatestValueData<T> {
@@ -175,7 +232,7 @@ export interface LatestValueManager<T> extends IEventProvider<LatestValueManager
 // @beta (undocumented)
 export interface LatestValueManagerEvents<T> extends IEvent {
     // @eventProperty
-    (event: "update", listener: (update: LatestValueClientData<T>) => void): void;
+    (event: "updated", listener: (update: LatestValueClientData<T>) => void): void;
 }
 
 // @beta (undocumented)
@@ -191,6 +248,16 @@ type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<an
     value: TValue;
     manager: IndependentValue<TManager>;
 };
+
+// @beta (undocumented)
+export interface MapValueState<T> {
+    // (undocumented)
+    items: {
+        [name: string | number]: ValueOptionalState<T>;
+    };
+    // (undocumented)
+    rev: number;
+}
 
 // @beta
 type NonSymbolWithDefinedNonFunctionPropertyOf<T extends object> = Exclude<{
@@ -216,23 +283,47 @@ type NonSymbolWithRequiredPropertyOf<T extends object> = Exclude<{
 interface ValueDirectory<T> {
     // (undocumented)
     items: {
-        [name: string | number]: ValueDirectoryOrState<T>;
+        [name: string | number]: ValueOptionalState<T> | ValueDirectory<T>;
     };
     // (undocumented)
     rev: number;
 }
 
 // @beta (undocumented)
-type ValueDirectoryOrState<T> = ValueState<T> | ValueDirectory<T>;
+type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
 
 // @beta (undocumented)
-interface ValueState<TValue> {
+export interface ValueMap<K extends string | number, V> {
+    clear(): void;
+    // (undocumented)
+    delete(key: K): boolean;
+    forEach(callbackfn: (value: FullyReadonly<JsonDeserialized<V>>, key: K, map: ValueMap<K, V>) => void, thisArg?: any): void;
+    get(key: K): FullyReadonly<JsonDeserialized<V>> | undefined;
+    // (undocumented)
+    has(key: K): boolean;
+    set(key: K, value: JsonEncodable<V> & JsonDeserialized<V>): this;
+    // (undocumented)
+    readonly size: number;
+}
+
+// @beta (undocumented)
+interface ValueOptionalState<TValue> extends ValueStateMetadata {
+    // (undocumented)
+    value?: JsonDeserialized<TValue>;
+}
+
+// @beta (undocumented)
+interface ValueRequiredState<TValue> extends ValueStateMetadata {
+    // (undocumented)
+    value: JsonDeserialized<TValue>;
+}
+
+// @beta (undocumented)
+interface ValueStateMetadata {
     // (undocumented)
     rev: number;
     // (undocumented)
     timestamp: number;
-    // (undocumented)
-    value: JsonDeserialized<TValue>;
 }
 
 // (No @packageDocumentation comment for this package)

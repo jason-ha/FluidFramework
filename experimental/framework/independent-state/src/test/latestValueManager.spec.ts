@@ -43,8 +43,8 @@ const cursor = map.cursor;
 
 cursor.local = { x: 1, y: 2 };
 
-cursor.on("update", logClientValue);
-cursor.off("update", logClientValue);
+cursor.on("updated", logClientValue);
+cursor.off("updated", logClientValue);
 
 cursor.clients().forEach((clientId) => {
 	logClientValue({ clientId, ...cursor.clientValue(clientId) });
