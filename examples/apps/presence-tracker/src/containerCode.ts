@@ -16,16 +16,19 @@ import { createServiceAudience } from "@fluidframework/fluid-static/internal";
 import { createMockServiceMember } from "./Audience.js";
 import { FocusTracker } from "./FocusTracker.js";
 import { MouseTracker } from "./MouseTracker.js";
+import { PointerTracker } from "./PointerTracker.js";
 
 export interface ITrackerAppModel {
 	readonly focusTracker: FocusTracker;
 	readonly mouseTracker: MouseTracker;
+	readonly pointerTracker: PointerTracker;
 }
 
 class TrackerAppModel implements ITrackerAppModel {
 	public constructor(
 		public readonly focusTracker: FocusTracker,
 		public readonly mouseTracker: MouseTracker,
+		public readonly pointerTracker: PointerTracker,
 	) {}
 }
 
@@ -66,15 +69,20 @@ export class TrackerContainerRuntimeFactory extends ModelContainerRuntimeFactory
 			(signaler) => new FocusTracker(container, audience, signaler),
 		);
 
-		const mouseTracker = this.independentMapFactory
-			.getMap(runtime)
-			.then((map) => new MouseTracker(audience, map));
+		const mouseAndPointerTrackers = this.independentMapFactory.getMap(runtime).then((map) => ({
+			mouseTracker: new MouseTracker(audience, map),
+			pointerTracker: new PointerTracker(audience, map),
+		}));
 
 		const audience = createServiceAudience({
 			container,
 			createServiceMember: createMockServiceMember,
 		});
 
-		return new TrackerAppModel(await focusTracker, await mouseTracker);
+		return new TrackerAppModel(
+			await focusTracker,
+			(await mouseAndPointerTrackers).mouseTracker,
+			(await mouseAndPointerTrackers).pointerTracker,
+		);
 	}
 }
