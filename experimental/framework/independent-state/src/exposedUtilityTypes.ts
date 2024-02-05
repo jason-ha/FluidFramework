@@ -45,10 +45,16 @@ export type NonSymbolWithDefinedNonFunctionPropertyOf<T extends object> = Exclud
  *
  * @beta
  */
-export type NonSymbolWithUndefinedNonFunctionPropertyOf<T extends object> = Exclude<
+export type NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf<T extends object> = Exclude<
 	{
-		// eslint-disable-next-line @typescript-eslint/ban-types
-		[K in keyof T]: undefined extends T[K] ? (T[K] extends Function ? never : K) : never;
+		[K in keyof T]: undefined extends T[K]
+			? // eslint-disable-next-line @typescript-eslint/ban-types
+			  T[K] extends Function
+				? never
+				: Exclude<T[K], undefined> extends never
+				? never
+				: K
+			: never;
 	}[keyof T],
 	undefined | symbol
 >;
@@ -83,6 +89,7 @@ export type JsonForArrayItem<T, TReplaced, TBlessed> =
 
 /**
  * Checks for a type that is simple class of number and string indexed types to numbers and strings.
+ *
  * @beta
  */
 export type IsEnumLike<T extends object> = T extends readonly (infer _)[]
@@ -102,6 +109,7 @@ export type IsEnumLike<T extends object> = T extends readonly (infer _)[]
 
 /**
  * Checks for that type is exactly `object`.
+ *
  * @beta
  */
 export type IsExactlyObject<T extends object> =
@@ -110,6 +118,18 @@ export type IsExactlyObject<T extends object> =
 			? /* `{}` => */ false
 			: /* `object` => */ true
 		: /* optional or required properties => */ false;
+
+/**
+ * Creates a simple object type from an intersection of multiple.
+ * @privateRemarks `T extends Record` encourages tsc to process intersections within unions.
+ *
+ * @beta
+ */
+export type FlattenIntersection<T> = T extends Record<any, any>
+	? {
+			[K in keyof T]: T[K];
+	  }
+	: T;
 
 /**
  * Recursively/deeply makes all properties of a type readonly.

@@ -6,6 +6,7 @@
 /* eslint-disable @rushstack/no-new-null */
 
 import type {
+	FlattenIntersection,
 	IsEnumLike,
 	IsExactlyObject,
 	JsonForArrayItem,
@@ -80,20 +81,22 @@ export type JsonEncodable<T, TReplaced = never> = /* test for 'any' */ boolean e
 			? /* `object` => */ JsonTypeWith<TReplaced>
 			: /* test for enum like types */ IsEnumLike<T> extends true
 			? /* enum or similar simple type (return as-is) => */ T
-			: /* property bag => */ {
-					/* required properties are recursed and may not have undefined values. */
-					[K in NonSymbolWithRequiredPropertyOf<T>]-?: undefined extends T[K]
-						? "error-required-property-may-not-allow-undefined-value"
-						: JsonEncodable<T[K], TReplaced>;
-			  } & {
-					/* optional properties are recursed and allowed to preserve undefined value type. */
-					[K in NonSymbolWithOptionalPropertyOf<T>]?: JsonEncodable<
-						T[K],
-						TReplaced | undefined
-					>;
-			  } & {
-					/* symbol properties are rejected */
-					[K in keyof T & symbol]: never;
-			  }
+			: /* property bag => */ FlattenIntersection<
+					{
+						/* required properties are recursed and may not have undefined values. */
+						[K in NonSymbolWithRequiredPropertyOf<T>]-?: undefined extends T[K]
+							? "error-required-property-may-not-allow-undefined-value"
+							: JsonEncodable<T[K], TReplaced>;
+					} & {
+						/* optional properties are recursed and allowed to preserve undefined value type. */
+						[K in NonSymbolWithOptionalPropertyOf<T>]?: JsonEncodable<
+							T[K],
+							TReplaced | undefined
+						>;
+					} & {
+						/* symbol properties are rejected */
+						[K in keyof T & symbol]: never;
+					}
+			  >
 		: /* not an object => */ never
 	: /* function => */ never;

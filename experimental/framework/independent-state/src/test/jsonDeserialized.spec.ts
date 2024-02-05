@@ -48,9 +48,19 @@ const constHeterogenousEnumValue = ((): ConstHeterogenousEnum => ConstHeterogeno
 const computedEnumValue = ((): ComputedEnum => ComputedEnum.computed)();
 
 const object: object = { key: "value" };
+const emptyObject = {};
 const objectWithUndefined = {
 	undef: undefined,
 };
+const objectWithOptionalUndefined: {
+	optUndef?: undefined;
+} = { optUndef: undefined };
+const objectWithOptionalNumber: {
+	optNumber?: number;
+} = { optNumber: undefined };
+const objectWithNumberOrUndefined: {
+	numOrUndef: number | undefined;
+} = { numOrUndef: undefined };
 const objectWithNever = {
 	never,
 };
@@ -100,6 +110,10 @@ describe("JsonDeserialized", () => {
 		passThru(ComputedEnum.computed) satisfies ComputedEnum.computed;
 	});
 
+	it("empty object is supported", () => {
+		passThru(emptyObject) satisfies typeof emptyObject;
+	});
+
 	it("unsupported types cause compiler error", () => {
 		// @ts-expect-error `undefined` is not supported (becomes `never`)
 		passThru(undefined);
@@ -126,10 +140,25 @@ describe("JsonDeserialized", () => {
 		passThru<any>(undefined);
 	});
 
-	it("undefined property is only supported as optional", () => {
-		// @ts-expect-error `undef` property (required) should no longer be required
-		passThru(objectWithUndefined) satisfies typeof objectWithUndefined;
-		passThru(objectWithUndefined) satisfies Partial<typeof objectWithUndefined>;
+	it("possibly `undefined` property is only supported as optional", () => {
+		const objectWithNumberOrUndefinedRead = passThru(objectWithNumberOrUndefined);
+		// @ts-expect-error `numOrUndef` property (required) should no longer be required
+		objectWithNumberOrUndefinedRead satisfies typeof objectWithNumberOrUndefined;
+		objectWithNumberOrUndefinedRead satisfies Partial<typeof objectWithNumberOrUndefined>;
+
+		const objectWithOptionalNumberRead = passThru(objectWithOptionalNumber);
+		objectWithOptionalNumberRead satisfies typeof objectWithOptionalNumber;
+	});
+
+	it("`undefined` property is erased", () => {
+		const objectWithUndefinedRead = passThru(objectWithUndefined);
+		// @ts-expect-error `undef` property (required) should no longer exist
+		objectWithUndefinedRead satisfies typeof objectWithUndefined;
+		emptyObject satisfies typeof objectWithUndefinedRead;
+
+		const objectWithOptionalUndefinedRead = passThru(objectWithOptionalUndefined);
+		objectWithOptionalUndefinedRead satisfies typeof objectWithOptionalUndefined;
+		emptyObject satisfies typeof objectWithOptionalUndefinedRead;
 	});
 
 	it("never property is filtered away", () => {

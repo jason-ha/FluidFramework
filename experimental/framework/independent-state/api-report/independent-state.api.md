@@ -20,6 +20,11 @@ export type ClientId = string;
 export function createIndependentMap<TSchema extends IndependentMapSchema>(runtime: IFluidEphemeralDataStoreRuntime, initialContent: TSchema): IndependentMap<TSchema>;
 
 // @beta
+type FlattenIntersection<T> = T extends Record<any, any> ? {
+    [K in keyof T]: T[K];
+} : T;
+
+// @beta
 type FullyReadonly<T> = {
     readonly [K in keyof T]: FullyReadonly<T[K]>;
 };
@@ -88,10 +93,11 @@ declare namespace InternalUtilityTypes {
         NonSymbolWithOptionalPropertyOf,
         NonSymbolWithRequiredPropertyOf,
         NonSymbolWithDefinedNonFunctionPropertyOf,
-        NonSymbolWithUndefinedNonFunctionPropertyOf,
+        NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf,
         JsonForArrayItem,
         IsEnumLike,
         IsExactlyObject,
+        FlattenIntersection,
         FullyReadonly
     }
 }
@@ -111,22 +117,22 @@ type IsExactlyObject<T extends object> = object extends Required<T> ? false exte
 // @beta
 export type JsonDeserialized<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonTypeWith<TReplaced> : unknown extends T ? JsonTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends readonly (infer _)[] ? {
     [K in keyof T]: JsonForArrayItem<T[K], TReplaced, JsonDeserialized<T[K], TReplaced>>;
-} : IsExactlyObject<T> extends true ? JsonTypeWith<TReplaced> : IsEnumLike<T> extends true ? T : /* property bag => */ {
+} : IsExactlyObject<T> extends true ? JsonTypeWith<TReplaced> : IsEnumLike<T> extends true ? T : FlattenIntersection<{
     [K in NonSymbolWithDefinedNonFunctionPropertyOf<T>]: JsonDeserialized<T[K], TReplaced>;
 } & {
-    [K in NonSymbolWithUndefinedNonFunctionPropertyOf<T>]?: JsonDeserialized<T[K], TReplaced>;
-} : never : never;
+    [K in NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf<T>]?: JsonDeserialized<T[K], TReplaced>;
+}> : never : never;
 
 // @beta
 export type JsonEncodable<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonTypeWith<TReplaced> : unknown extends T ? JsonTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends readonly (infer _)[] ? {
     [K in keyof T]: JsonForArrayItem<T[K], TReplaced, JsonEncodable<T[K], TReplaced>>;
-} : IsExactlyObject<T> extends true ? JsonTypeWith<TReplaced> : IsEnumLike<T> extends true ? T : /* property bag => */ {
+} : IsExactlyObject<T> extends true ? JsonTypeWith<TReplaced> : IsEnumLike<T> extends true ? T : FlattenIntersection<{
     [K in NonSymbolWithRequiredPropertyOf<T>]-?: undefined extends T[K] ? "error-required-property-may-not-allow-undefined-value" : JsonEncodable<T[K], TReplaced>;
 } & {
     [K in NonSymbolWithOptionalPropertyOf<T>]?: JsonEncodable<T[K], TReplaced | undefined>;
 } & {
     [K in keyof T & symbol]: never;
-} : never : never;
+}> : never : never;
 
 // @beta
 type JsonForArrayItem<T, TReplaced, TBlessed> = boolean extends (T extends never ? true : false) ? TBlessed : unknown extends T ? TBlessed : T extends null | boolean | number | string | TReplaced ? T : undefined extends T ? "error-array-or-tuple-may-not-allow-undefined-value-consider-null" : TBlessed;
@@ -197,13 +203,13 @@ type NonSymbolWithOptionalPropertyOf<T extends object> = Exclude<{
 }[keyof T], undefined | symbol>;
 
 // @beta
-type NonSymbolWithRequiredPropertyOf<T extends object> = Exclude<{
-    [K in keyof T]: T extends Record<K, T[K]> ? K : never;
+type NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf<T extends object> = Exclude<{
+    [K in keyof T]: undefined extends T[K] ? T[K] extends Function ? never : Exclude<T[K], undefined> extends never ? never : K : never;
 }[keyof T], undefined | symbol>;
 
 // @beta
-type NonSymbolWithUndefinedNonFunctionPropertyOf<T extends object> = Exclude<{
-    [K in keyof T]: undefined extends T[K] ? (T[K] extends Function ? never : K) : never;
+type NonSymbolWithRequiredPropertyOf<T extends object> = Exclude<{
+    [K in keyof T]: T extends Record<K, T[K]> ? K : never;
 }[keyof T], undefined | symbol>;
 
 // @beta (undocumented)

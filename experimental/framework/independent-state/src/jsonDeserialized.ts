@@ -6,11 +6,12 @@
 /* eslint-disable @rushstack/no-new-null */
 
 import type {
+	FlattenIntersection,
 	IsEnumLike,
 	IsExactlyObject,
 	JsonForArrayItem,
 	NonSymbolWithDefinedNonFunctionPropertyOf,
-	NonSymbolWithUndefinedNonFunctionPropertyOf,
+	NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf,
 } from "./exposedUtilityTypes.js";
 import type { JsonTypeWith } from "./jsonType.js";
 
@@ -58,20 +59,21 @@ export type JsonDeserialized<T, TReplaced = never> = /* test for 'any' */ boolea
 			? /* `object` => */ JsonTypeWith<TReplaced>
 			: /* test for enum like types */ IsEnumLike<T> extends true
 			? /* enum or similar simple type (return as-is) => */ T
-			: /* property bag => */
-			  /* properties with symbol keys or function values are removed */
-			  {
-					/* properties with defined values are recursed */
-					[K in NonSymbolWithDefinedNonFunctionPropertyOf<T>]: JsonDeserialized<
-						T[K],
-						TReplaced
-					>;
-			  } & {
-					/* properties that may have undefined values are optional */
-					[K in NonSymbolWithUndefinedNonFunctionPropertyOf<T>]?: JsonDeserialized<
-						T[K],
-						TReplaced
-					>;
-			  }
+			: /* property bag => */ FlattenIntersection<
+					/* properties with symbol keys or function values are removed */
+					{
+						/* properties with defined values are recursed */
+						[K in NonSymbolWithDefinedNonFunctionPropertyOf<T>]: JsonDeserialized<
+							T[K],
+							TReplaced
+						>;
+					} & {
+						/* properties that may have undefined values are optional */
+						[K in NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf<T>]?: JsonDeserialized<
+							T[K],
+							TReplaced
+						>;
+					}
+			  >
 		: /* not an object => */ never
 	: /* function => */ never;
