@@ -12,7 +12,11 @@ module.exports = {
 		"import/no-internal-modules": [
 			"error",
 			{
-				allow: ["@fluid-experimental/*/alpha"],
+				allow: [
+					"@fluid-experimental/*/alpha",
+					// While this is examples, it uses internal APIs :(.
+					"@fluidframework/*/internal",
+				],
 			},
 		],
 	},
