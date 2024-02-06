@@ -306,6 +306,12 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 }
 
 /**
+ * Create a new IndependentMap using the DataStoreRuntime provided.
+ * @param runtime - The dedicated runtime to use for the IndependentMap. The requirements
+ * are very unstable and will change. Recommendation is to use IndependentMapFactory from
+ * `alpha` entrypoint for now.
+ * @param initialContent - The initial value managers to register.
+ *
  * @beta
  */
 export function createIndependentMap<TSchema extends IndependentMapSchema>(

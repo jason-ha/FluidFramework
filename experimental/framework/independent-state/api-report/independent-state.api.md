@@ -13,10 +13,10 @@ import type { IEventProvider } from '@fluidframework/core-interfaces';
 import type { IFluidDataStoreRuntime } from '@fluidframework/datastore-definitions';
 import type { NamedFluidDataStoreRegistryEntry } from '@fluidframework/runtime-definitions';
 
-// @beta (undocumented)
+// @beta
 export type ClientId = string;
 
-// @beta (undocumented)
+// @beta
 export function createIndependentMap<TSchema extends IndependentMapSchema>(runtime: IFluidEphemeralDataStoreRuntime, initialContent: TSchema): IndependentMap<TSchema>;
 
 // @beta
@@ -36,15 +36,16 @@ export type IFluidEphemeralDataStoreRuntime = Pick<IFluidDataStoreRuntime, "clie
 class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
 }
 
-// @beta (undocumented)
+// @beta
 export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;
 
-// @beta (undocumented)
+// @beta
 export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
+    /** Registered `Value Manager` */
     readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<TSchema[Key]>["manager"] extends IndependentValue<infer TManager> ? TManager : never;
 };
 
-// @beta (undocumented)
+// @beta
 export type IndependentMapEntry<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
 
 // @alpha
@@ -56,13 +57,12 @@ export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
     get registryEntry(): NamedFluidDataStoreRegistryEntry;
 }
 
-// @beta (undocumented)
+// @beta
 export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
-    // (undocumented)
     add<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager>(key: TKey, manager: ManagerFactory<TKey, TValue, TManager>): asserts this is IndependentMap<TSchema & Record<TKey, ManagerFactory<TKey, TValue, TManager>>>;
 }
 
-// @beta (undocumented)
+// @beta
 export interface IndependentMapSchema {
     // (undocumented)
     [key: string]: IndependentMapEntry<typeof key, ValueDirectoryOrState<any>>;
@@ -144,7 +144,7 @@ export type JsonTypeWith<T> = null | boolean | number | string | T | {
     [key: string | number]: JsonTypeWith<T>;
 } | JsonTypeWith<T>[];
 
-// @beta (undocumented)
+// @beta
 export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & JsonDeserialized<T> & object): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>>;
 
 // @beta
@@ -193,13 +193,13 @@ export interface LatestMapValueManagerEvents<T, K extends string | number> exten
     (event: "itemRemoved", listener: (removedItem: LatestMapItemRemovedClientData<K>) => void): void;
 }
 
-// @beta (undocumented)
+// @beta
 export interface LatestValueClientData<T> extends LatestValueData<T> {
     // (undocumented)
     clientId: ClientId;
 }
 
-// @beta (undocumented)
+// @beta
 export interface LatestValueData<T> {
     // (undocumented)
     metadata: LatestValueMetadata;
@@ -207,15 +207,11 @@ export interface LatestValueData<T> {
     value: FullyReadonly<JsonDeserialized<T>>;
 }
 
-// @beta (undocumented)
+// @beta
 export interface LatestValueManager<T> extends IEventProvider<LatestValueManagerEvents<T>> {
-    // (undocumented)
     clients(): ClientId[];
-    // (undocumented)
     clientValue(clientId: ClientId): LatestValueData<T>;
-    // (undocumented)
     clientValues(): IterableIterator<LatestValueClientData<T>>;
-    // (undocumented)
     get local(): FullyReadonly<JsonDeserialized<T>>;
     set local(value: JsonEncodable<T> & JsonDeserialized<T>);
 }
@@ -226,11 +222,9 @@ export interface LatestValueManagerEvents<T> extends IEvent {
     (event: "updated", listener: (update: LatestValueClientData<T>) => void): void;
 }
 
-// @beta (undocumented)
+// @beta
 export interface LatestValueMetadata {
-    // (undocumented)
     revision: number;
-    // (undocumented)
     timestamp: number;
 }
 

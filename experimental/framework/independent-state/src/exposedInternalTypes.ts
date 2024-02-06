@@ -76,6 +76,7 @@ export type IndependentValue<T> = T & IndependentValueBrand<T>;
 
 /**
  * Package internal function declaration for value manager instantiation.
+ *
  * @beta
  */
 export type ManagerFactory<

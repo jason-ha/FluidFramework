@@ -25,7 +25,7 @@ import type { LatestValueClientData, LatestValueData } from "./latestValueTypes.
  */
 export interface LatestValueManagerEvents<T> extends IEvent {
 	/**
-	 * .
+	 * Raised when remote client's value is updated, which may be the same value.
 	 *
 	 * @eventProperty
 	 */
@@ -33,13 +33,30 @@ export interface LatestValueManagerEvents<T> extends IEvent {
 }
 
 /**
+ * Value manager that provides the latest known value from this client to others and read access to their values.
+ * All participant clients must provide a value.
+ *
+ * @remarks Create using {@link Latest} registered to {@link IndependentMap}.
+ *
  * @beta
  */
 export interface LatestValueManager<T> extends IEventProvider<LatestValueManagerEvents<T>> {
+	/**
+	 * Currently state for this client.
+	 * Set state for this client which will be transmitted to all other connected clients.
+	 * @remarks Manager assumes ownership of the value and its references. Make a deep clone before
+	 * setting, if needed. No comparison is done to detect changes; all sets are transmitted.
+	 */
 	get local(): FullyReadonly<JsonDeserialized<T>>;
 	set local(value: JsonEncodable<T> & JsonDeserialized<T>);
+	/**
+	 * Iterable access to remote clients' values.
+	 * @remarks This is not yet implemented.
+	 */
 	clientValues(): IterableIterator<LatestValueClientData<T>>;
+	/** Array of known clients' identifiers. */
 	clients(): ClientId[];
+	/** Access to a specific client's value. */
 	clientValue(clientId: ClientId): LatestValueData<T>;
 }
 
@@ -104,6 +121,8 @@ class LatestValueManagerImpl<T, Key extends string>
 }
 
 /**
+ * Factory for creating a {@link LatestValueManager}.
+ *
  * @beta
  */
 export function Latest<T extends object, Key extends string>(

@@ -4,6 +4,8 @@
  */
 
 /**
+ * A Fluid client identifier.
+ *
  * @beta
  */
 export type ClientId = string;
