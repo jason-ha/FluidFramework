@@ -17,6 +17,7 @@
  * @beta
  */
 export type JsonTypeWith<T> =
+	// eslint-disable-next-line @rushstack/no-new-null
 	| null
 	| boolean
 	| number

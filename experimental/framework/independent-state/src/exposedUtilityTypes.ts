@@ -76,7 +76,7 @@ export type JsonForArrayItem<T, TReplaced, TBlessed> =
 		? /* 'any' => */ TBlessed
 		: /* test for 'unknown' */ unknown extends T
 		? /* 'unknown' => */ TBlessed
-		: /* test for Jsonable primitive types */ T extends
+		: /* test for Jsonable primitive types */ T extends  // eslint-disable-next-line @rushstack/no-new-null
 				| null
 				| boolean
 				| number
