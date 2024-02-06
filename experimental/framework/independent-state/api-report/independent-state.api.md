@@ -147,12 +147,12 @@ export type JsonTypeWith<T> = null | boolean | number | string | T | {
 // @beta (undocumented)
 export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & JsonDeserialized<T> & object): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>>;
 
-// @beta (undocumented)
+// @beta
 export function LatestMap<T extends object, RegistrationKey extends string, Keys extends string | number = string | number>(initialValues?: {
     [K in Keys]: JsonEncodable<T> & JsonDeserialized<T>;
 }): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>>;
 
-// @beta (undocumented)
+// @beta
 export interface LatestMapItemRemovedClientData<K extends string | number> {
     // (undocumented)
     clientId: ClientId;
@@ -162,40 +162,31 @@ export interface LatestMapItemRemovedClientData<K extends string | number> {
     metadata: LatestValueMetadata;
 }
 
-// @beta (undocumented)
+// @beta
 export interface LatestMapItemValueClientData<T, K extends string | number> extends LatestValueClientData<T> {
     // (undocumented)
     key: K;
 }
 
-// @beta (undocumented)
-export interface LatestMapValueClientData<T, K extends string | number> extends LatestMapValueData<T, K> {
+// @beta
+export interface LatestMapValueClientData<SpecificClientId extends ClientId, T, Keys extends string | number> {
+    clientId: SpecificClientId;
     // (undocumented)
-    clientId: ClientId;
+    items: ReadonlyMap<Keys, LatestValueData<T>>;
 }
 
-// @beta (undocumented)
-export interface LatestMapValueData<T, Keys extends string | number> {
-    // (undocumented)
-    items: Map<Keys, LatestValueData<T>>;
-}
-
-// @beta (undocumented)
-export interface LatestMapValueManager<T, K extends string | number = string | number> extends IEventProvider<LatestMapValueManagerEvents<T, K>> {
-    // (undocumented)
+// @beta
+export interface LatestMapValueManager<T, Keys extends string | number = string | number> extends IEventProvider<LatestMapValueManagerEvents<T, Keys>> {
     clients(): ClientId[];
-    // (undocumented)
-    clientValue(clientId: ClientId): LatestMapValueData<T, K>;
-    // (undocumented)
-    clientValues(): IterableIterator<LatestMapValueClientData<T, K>>;
-    // (undocumented)
-    readonly local: ValueMap<K, T>;
+    clientValue<SpecificClientId extends ClientId>(clientId: SpecificClientId): LatestMapValueClientData<SpecificClientId, T, Keys>;
+    clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>>;
+    readonly local: ValueMap<Keys, T>;
 }
 
 // @beta (undocumented)
 export interface LatestMapValueManagerEvents<T, K extends string | number> extends IEvent {
     // @eventProperty
-    (event: "updated", listener: (updates: LatestMapValueClientData<T, K>) => void): void;
+    (event: "updated", listener: (updates: LatestMapValueClientData<ClientId, T, K>) => void): void;
     // @eventProperty
     (event: "itemUpdated", listener: (updatedItem: LatestMapItemValueClientData<T, K>) => void): void;
     // @eventProperty
@@ -292,7 +283,7 @@ interface ValueDirectory<T> {
 // @beta (undocumented)
 type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
 
-// @beta (undocumented)
+// @beta
 export interface ValueMap<K extends string | number, V> {
     clear(): void;
     // (undocumented)
@@ -301,6 +292,7 @@ export interface ValueMap<K extends string | number, V> {
     get(key: K): FullyReadonly<JsonDeserialized<V>> | undefined;
     // (undocumented)
     has(key: K): boolean;
+    keys(): IterableIterator<K>;
     set(key: K, value: JsonEncodable<V> & JsonDeserialized<V>): this;
     // (undocumented)
     readonly size: number;

@@ -26,7 +26,6 @@ export {
 	type LatestMapItemRemovedClientData,
 	type LatestMapItemValueClientData,
 	type LatestMapValueClientData,
-	type LatestMapValueData,
 	type LatestMapValueManager,
 	type LatestMapValueManagerEvents,
 	type MapValueState,

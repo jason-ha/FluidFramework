@@ -25,21 +25,30 @@ import type {
 } from "./latestValueTypes.js";
 
 /**
+ * Collection of latest known values for a specific client.
+ *
  * @beta
  */
-export interface LatestMapValueData<T, Keys extends string | number> {
-	items: Map<Keys, LatestValueData<T>>;
+export interface LatestMapValueClientData<
+	SpecificClientId extends ClientId,
+	T,
+	Keys extends string | number,
+> {
+	/**
+	 * Identifier of the client.
+	 */
+	clientId: SpecificClientId;
+
+	/**
+	 * @privateRemarks This could be regular map currently as no Map is
+	 * stored internally and an new instance is created for every request.
+	 */
+	items: ReadonlyMap<Keys, LatestValueData<T>>;
 }
 
 /**
- * @beta
- */
-export interface LatestMapValueClientData<T, K extends string | number>
-	extends LatestMapValueData<T, K> {
-	clientId: ClientId;
-}
-
-/**
+ * State of a single item value, its key, and its metadata.
+ *
  * @beta
  */
 export interface LatestMapItemValueClientData<T, K extends string | number>
@@ -48,6 +57,8 @@ export interface LatestMapItemValueClientData<T, K extends string | number>
 }
 
 /**
+ * Identifier and metadata for a removed item.
+ *
  * @beta
  */
 export interface LatestMapItemRemovedClientData<K extends string | number> {
@@ -64,9 +75,11 @@ export interface LatestMapValueManagerEvents<T, K extends string | number> exten
 	 * Raised when any item's value for remote client is updated.
 	 * @param updates - Map of one or more values updated.
 	 *
+	 * @remarks The event does not include item removals.
+	 *
 	 * @eventProperty
 	 */
-	(event: "updated", listener: (updates: LatestMapValueClientData<T, K>) => void): void;
+	(event: "updated", listener: (updates: LatestMapValueClientData<ClientId, T, K>) => void): void;
 
 	/**
 	 * Raised when specific item's value is updated.
@@ -92,17 +105,28 @@ export interface LatestMapValueManagerEvents<T, K extends string | number> exten
 }
 
 /**
+ * Map of local client's values. Modifications are transmitted to all other connected clients.
+ *
  * @beta
  */
 export interface ValueMap<K extends string | number, V> {
 	/**
 	 * ${@link ValueMap.delete}s all elements in the ValueMap.
+	 * @remarks This is not yet implemented.
 	 */
 	clear(): void;
+
 	/**
-	 * @returns true if an element in the ValueMap existed and has been removed, or false if the element does not exist.
+	 * @returns true if an element in the ValueMap existed and has been removed, or false if
+	 * the element does not exist.
+	 * @remarks No entry is fully removed. Instead an undefined placeholder is locally and
+	 * transmitted to all other clients. For better performance limit the number of deleted
+	 * entries and reuse keys when possible.
+	 * @privateRemarks In the future we may add a mechanism to remove the placeholder, at least
+	 * from transmissions after sufficient has passed.
 	 */
 	delete(key: K): boolean;
+
 	/**
 	 * Executes a provided function once per each key/value pair in the ValueMap, in arbitrary order.
 	 */
@@ -114,23 +138,52 @@ export interface ValueMap<K extends string | number, V> {
 		) => void,
 		thisArg?: any,
 	): void;
+
 	/**
 	 * Returns a specified element from the ValueMap object.
 	 * @returns Returns the element associated with the specified key. If no element is associated with the specified key, undefined is returned.
 	 */
 	get(key: K): FullyReadonly<JsonDeserialized<V>> | undefined;
+
 	/**
 	 * @returns boolean indicating whether an element with the specified key exists or not.
 	 */
 	has(key: K): boolean;
+
 	/**
 	 * Adds a new element with a specified key and value to the ValueMap. If an element with the same key already exists, the element will be updated.
+	 * The value will be transmitted to all other connected clients.
+	 *
+	 * @remarks Manager assumes ownership of the value and its references.
+	 * Make a deep clone before setting, if needed. No comparison is done to detect changes; all
+	 * sets are transmitted.
 	 */
 	set(key: K, value: JsonEncodable<V> & JsonDeserialized<V>): this;
+
 	/**
 	 * @returns the number of elements in the ValueMap.
 	 */
 	readonly size: number;
+
+	/**
+	 * Returns an iterable of entries in the map.
+	 */
+	// [Symbol.iterator](): IterableIterator<[K, FullyReadonly<JsonDeserialized<V>>]>;
+
+	/**
+	 * Returns an iterable of key, value pairs for every entry in the map.
+	 */
+	// entries(): IterableIterator<[K, FullyReadonly<JsonDeserialized<V>>]>;
+
+	/**
+	 * Returns an iterable of keys in the map.
+	 */
+	keys(): IterableIterator<K>;
+
+	/**
+	 * Returns an iterable of values in the map.
+	 */
+	// values(): IterableIterator<FullyReadonly<JsonDeserialized<V>>>;
 }
 
 /**
@@ -211,29 +264,48 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 	get size(): number {
 		return this.countDefined;
 	}
-	entries(): IterableIterator<[K, FullyReadonly<JsonDeserialized<T>>]> {
-		throw new Error("Method not implemented.");
-	}
 	keys(): IterableIterator<K> {
-		throw new Error("Method not implemented.");
-	}
-	values(): IterableIterator<FullyReadonly<JsonDeserialized<T>>> {
-		throw new Error("Method not implemented.");
-	}
-	[Symbol.iterator](): IterableIterator<[K, FullyReadonly<JsonDeserialized<T>>]> {
-		throw new Error("Method not implemented.");
+		const keys: K[] = [];
+		Object.entries(this.value.items).forEach(([key, item]) => {
+			if (item.value !== undefined) {
+				keys.push(key as K);
+			}
+		});
+		return keys[Symbol.iterator]();
 	}
 }
 
 /**
+ * Value manager that provides a `Map` of latest known values from this client to
+ * others and read access to their values.
+ * Entries in the map may vary over time and by client, but all values are expected to
+ * be of the same type, which may be a union type.
+ *
+ * @remarks Create using {@link LatestMap} registered to {@link IndependentMap}.
+ *
  * @beta
  */
-export interface LatestMapValueManager<T, K extends string | number = string | number>
-	extends IEventProvider<LatestMapValueManagerEvents<T, K>> {
-	readonly local: ValueMap<K, T>;
-	clientValues(): IterableIterator<LatestMapValueClientData<T, K>>;
+export interface LatestMapValueManager<T, Keys extends string | number = string | number>
+	extends IEventProvider<LatestMapValueManagerEvents<T, Keys>> {
+	/**
+	 * Current value map for this client.
+	 */
+	readonly local: ValueMap<Keys, T>;
+	/**
+	 * Iterable access to remote clients' map of values.
+	 * @remarks This is not yet implemented.
+	 */
+	clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>>;
+	/**
+	 * Array of known clients' identifiers.
+	 */
 	clients(): ClientId[];
-	clientValue(clientId: ClientId): LatestMapValueData<T, K>;
+	/**
+	 * Access to a specific client's map of values.
+	 */
+	clientValue<SpecificClientId extends ClientId>(
+		clientId: SpecificClientId,
+	): LatestMapValueClientData<SpecificClientId, T, Keys>;
 }
 
 class LatestMapValueManagerImpl<
@@ -260,7 +332,7 @@ class LatestMapValueManagerImpl<
 
 	public readonly local: ValueMap<Keys, T>;
 
-	clientValues(): IterableIterator<LatestMapValueClientData<T, Keys>> {
+	clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>> {
 		throw new Error("Method not implemented.");
 	}
 
@@ -271,7 +343,9 @@ class LatestMapValueManagerImpl<
 		);
 	}
 
-	clientValue(clientId: ClientId): LatestMapValueData<T, Keys> {
+	clientValue<SpecificClientId extends ClientId>(
+		clientId: SpecificClientId,
+	): LatestMapValueClientData<SpecificClientId, T, Keys> {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		if (!(clientId in allKnownStates.states)) {
 			throw new Error("No entry for clientId");
@@ -287,10 +361,14 @@ class LatestMapValueManagerImpl<
 				});
 			}
 		});
-		return { items };
+		return { clientId, items };
 	}
 
-	update(clientId: string, _received: number, value: MapValueState<T>): void {
+	update<SpecificClientId extends ClientId>(
+		clientId: SpecificClientId,
+		_received: number,
+		value: MapValueState<T>,
+	): void {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		if (!(clientId in allKnownStates.states)) {
 			// New client - prepare new client state directory
@@ -313,10 +391,10 @@ class LatestMapValueManagerImpl<
 		if (value.rev > currentState.rev) {
 			currentState.rev = value.rev;
 		}
-		const allUpdates: LatestMapValueClientData<T, Keys> = {
+		const allUpdates = {
 			clientId,
 			items: new Map<Keys, LatestValueData<T>>(),
-		};
+		} satisfies LatestMapValueClientData<SpecificClientId, T, Keys>;
 		updatedItemKeys.forEach((key) => {
 			const item = value.items[key];
 			const hadPriorValue = currentState.items[key]?.value;
@@ -344,6 +422,8 @@ class LatestMapValueManagerImpl<
 }
 
 /**
+ * Factory for creating a {@link LatestMapValueManager}.
+ *
  * @beta
  */
 export function LatestMap<
@@ -353,9 +433,9 @@ export function LatestMap<
 >(initialValues?: {
 	[K in Keys]: JsonEncodable<T> & JsonDeserialized<T>;
 }): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>> {
-	// LatestMapValueManager takes ownership of values within initialValues.
 	const timestamp = Date.now();
 	const value: MapValueState<T> = { rev: 0, items: {} };
+	// LatestMapValueManager takes ownership of values within initialValues.
 	if (initialValues !== undefined) {
 		Object.keys(initialValues).forEach((key) => {
 			value.items[key] = { rev: 0, timestamp, value: initialValues[key as Keys] };

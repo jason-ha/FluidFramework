@@ -37,6 +37,11 @@ map.fixedMap.local.set("key2", { x: 0 });
 // @ts-expect-error with inferred heterogenous type mixed type values are errors
 map.fixedMap.local.set("key2", { x: 0, y: 2, ref: "a", someId: 3 });
 
+for (const key of map.fixedMap.local.keys()) {
+	const value = map.fixedMap.local.get(key);
+	console.log(key, value);
+}
+
 interface PointerData {
 	x: number;
 	y: number;
