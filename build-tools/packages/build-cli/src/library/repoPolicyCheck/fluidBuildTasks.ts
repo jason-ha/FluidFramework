@@ -604,7 +604,60 @@ function checkTscDependencies({
 	return checkTaskDeps(root, json, script, checkDeps);
 }
 
+/**
+ * Checks if given tsc task is using Node16+ or Bundler options that will allow
+ * structured import paths from packages required.
+ */
+function checkApiImportPathCompatible({
+	packageDir,
+	script,
+	command,
+}: BuildDepsCallbackContext): string | undefined {
+	const checkContext = `${packageDir.replaceAll(
+		"\\",
+		"/",
+	)}/package.json '${script}': "${command}"`;
+	const utils = TscUtils.getTscUtils(packageDir);
+	const parsedCommandLine = utils.parseCommandLine(command);
+	if (!parsedCommandLine) {
+		throw new Error(`Error parsing tsc command for ${checkContext}`);
+	}
+	const configFileName = utils.findConfigFile(packageDir, parsedCommandLine);
+	if (!configFileName) {
+		throw new Error(`Unknown config file in command ${checkContext}`);
+	}
+	const parsedCommand = utils.tsLib.getParsedCommandLineOfConfigFile(
+		configFileName,
+		parsedCommandLine.options,
+		{
+			...utils.tsLib.sys,
+			onUnRecoverableConfigFileDiagnostic: (diagnostic) => {
+				throw new Error(
+					`unrecoverable error processing config for ${checkContext}: see ${diagnostic.file}`,
+				);
+			},
+		},
+	);
+	if (!parsedCommand) {
+		throw new Error(`Error parsing tsc config for ${checkContext}`);
+	}
+	const { module, moduleResolution } = parsedCommand.options;
+	if (module === undefined) {
+		return `'${script}' tsc task has no defined "module" option`;
+	}
+	if (module !== utils.tsLib.ModuleKind.Node16 && module !== utils.tsLib.ModuleKind.NodeNext) {
+		const moduleText = utils.tsLib.ModuleKind[module];
+		if (moduleResolution === undefined) {
+			return `'${script}' tsc task has no defined "moduleResolution" option while using "module" ${moduleText}`;
+		}
+		if (moduleResolution !== utils.tsLib.ModuleResolutionKind.Bundler) {
+			return `'${script}' tsc task uses "module" ${moduleText} and "moduleResolution" ${utils.tsLib.ModuleResolutionKind[moduleResolution]}`;
+		}
+	}
+}
+
 const match = /(^|\/)package\.json/i;
+const regexScopeIsNotStable = /^@fluid-(experimental|internal|private)/;
 export const handlers: Handler[] = [
 	{
 		name: "fluid-build-tasks-eslint",
@@ -671,6 +724,46 @@ export const handlers: Handler[] = [
 					projectMap.set(configFile, script);
 				},
 			);
+		},
+	},
+	{
+		/**
+		 * Checks that package's tsc tasks are using Node16+ (or Bundler).
+		 */
+		name: "api-trimming-ready",
+		match: /^(azure|packages|experimental|examples)\/.+\/package\.json/i,
+		handler: async (file: string, root: string) =>
+			buildDepsHandler(file, root, checkApiImportPathCompatible),
+	},
+	{
+		/**
+		 * Checks that packages have "exports" record if any legacy "main" is defined.
+		 * Packages in stable scope are also expected to have "./internal" export.
+		 */
+		name: "package-sets-api-exports",
+		match: /^(azure|packages|experimental)\/.+\/package\.json/i,
+		handler: async (file: string, root: string): Promise<string | undefined> => {
+			let packageJson: PackageJson;
+			try {
+				packageJson = JSON.parse(readFile(file)) as PackageJson;
+			} catch {
+				return `Error parsing JSON file: ${file}`;
+			}
+
+			const { exports, main, types } = packageJson;
+			if (exports === undefined || exports === null) {
+				if (main !== undefined || types !== undefined) {
+					return `${packageJson.name} has no "exports" specification`;
+				}
+				return;
+			}
+
+			if (typeof exports !== "object") {
+				return `${packageJson.name} "exports" is not a record`;
+			}
+			if (!("./internal" in exports) && !regexScopeIsNotStable.test(packageJson.name)) {
+				return `${packageJson.name} "exports" has no "./internal" entry`;
+			}
 		},
 	},
 	{
