@@ -149,10 +149,7 @@ function findTscMultiScript(json: PackageJson, config: string): string | undefin
  *
  * @remarks
  */
-function findFluidTscScript(
-	json: PackageJson,
-	project: string | undefined,
-): string | undefined {
+function findFluidTscScript(json: PackageJson, project: string | undefined): string | undefined {
 	for (const [script, scriptCommands] of Object.entries(json.scripts)) {
 		if (scriptCommands === undefined) {
 			continue;
@@ -392,7 +389,12 @@ function checkTaskDeps(
 	const missingTaskDependencies = taskDeps
 		.filter(
 			(taskDep) =>
-				!hasTaskDependency(root, json, taskName, Array.isArray(taskDep) ? taskDep : [taskDep]),
+				!hasTaskDependency(
+					root,
+					json,
+					taskName,
+					Array.isArray(taskDep) ? taskDep : [taskDep],
+				),
 		)
 		.map((dep) => (Array.isArray(dep) ? dep.join(" or ") : dep));
 
@@ -527,7 +529,9 @@ function getTscCommandDependencies(
 			// that builds the referenced project is listed as a dependency.
 			const referencedScript = findTscScripts(json, refConfigPath);
 			if (referencedScript === undefined) {
-				throw new Error(`Unable to find tsc script for referenced project ${refConfigPath}`);
+				throw new Error(
+					`Unable to find tsc script for referenced project ${refConfigPath}`,
+				);
 			}
 			deps.push(referencedScript);
 		}
@@ -657,7 +661,7 @@ function checkApiImportPathCompatible({
 }
 
 const match = /(^|\/)package\.json/i;
-const regexScopeIsNotStable = /^@fluid-(experimental|internal|private)/;
+const regexScopeIsNotStable = /^@fluid-(example|experimental|internal|private)/;
 export const handlers: Handler[] = [
 	{
 		name: "fluid-build-tasks-eslint",
@@ -714,7 +718,9 @@ export const handlers: Handler[] = [
 					// If the project has a referenced project, depend on that instead of the default
 					const parsedCommand = TscUtils.parseCommandLine(command);
 					if (!parsedCommand) {
-						throw new Error(`Error parsing tsc command for script '${script}': ${command}`);
+						throw new Error(
+							`Error parsing tsc command for script '${script}': ${command}`,
+						);
 					}
 					const configFile = TscUtils.findConfigFile(packageDir, parsedCommand);
 					const previousUse = projectMap.get(configFile);
