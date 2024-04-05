@@ -24,11 +24,9 @@
 	"main": "lib/index.js",
 	"types": "lib/index.d.ts",
 	"scripts": {
-		"api": "fluid-build . --task api",
-		"api-extractor:esnext": "api-extractor run --local",
 		"build": "fluid-build . --task build",
 		"build:compile": "fluid-build . --task compile",
-		"build:docs": "fluid-build . --task api",
+		"build:docs": "api-extractor run --local",
 		"build:esnext": "tsc --project ./tsconfig.json",
 		"build:genver": "gen-version",
 		"build:test": "npm run build:test:esm",
@@ -134,10 +132,8 @@
 		"tasks": {
 			"build:docs": {
 				"dependsOn": [
-					"...",
-					"api-extractor:esnext"
-				],
-				"script": false
+					"build:esnext"
+				]
 			}
 		}
 	},
