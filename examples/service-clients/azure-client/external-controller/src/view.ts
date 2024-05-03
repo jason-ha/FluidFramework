@@ -2,10 +2,11 @@
  * Copyright (c) Microsoft Corporation and contributors. All rights reserved.
  * Licensed under the MIT License.
  */
+
 import { AzureMember, IAzureAudience } from "@fluidframework/azure-client";
 
-import { ICustomUserDetails } from "./app";
-import { IDiceRollerController } from "./controller";
+import { ICustomUserDetails } from "./app.js";
+import { IDiceRollerController } from "./controller.js";
 
 function makeDiceRollerView(diceRoller: IDiceRollerController): HTMLDivElement {
 	const wrapperDiv = document.createElement("div");
@@ -56,18 +57,18 @@ function makeAudienceView(audience?: IAzureAudience): HTMLDivElement {
 		const useAzure = process.env.FLUID_CLIENT === "azure";
 
 		members.forEach((member: AzureMember<ICustomUserDetails>) => {
-			if (member.userId !== self?.userId) {
+			if (member.id !== self?.id) {
 				if (useAzure) {
-					const memberString = `${member.userName}: {Gender: ${member.additionalDetails?.gender},
+					const memberString = `${member.name}: {Gender: ${member.additionalDetails?.gender},
                         Email: ${member.additionalDetails?.email}}`;
 					memberStrings.push(memberString);
 				} else {
-					memberStrings.push(member.userName);
+					memberStrings.push(member.name);
 				}
 			}
 		});
 		audienceDiv.innerHTML = `
-            Current User: ${self?.userName} <br />
+            Current User: ${self?.name} <br />
             Other Users: ${memberStrings.join(", ")}
         `;
 	};

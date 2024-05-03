@@ -122,26 +122,26 @@ export function create(
 		revokedTokenChecker,
 	};
 
+	const isHttpUsageCountingEnabled: boolean = config.get("usage:httpUsageCountingEnabled");
+
 	router.get(
 		"/:tenantId/:id",
 		validateRequestParams("tenantId", "id"),
 		throttle(generalTenantThrottler, winston, tenantThrottleOptions),
 		verifyStorageToken(tenantManager, config, defaultTokenValidationOptions),
 		(request, response, next) => {
-			const documentP = storage.getDocument(
-				getParam(request.params, "tenantId") || appTenants[0].id,
-				getParam(request.params, "id"),
-			);
-			documentP
+			const documentP = storage
+				.getDocument(
+					getParam(request.params, "tenantId") || appTenants[0].id,
+					getParam(request.params, "id"),
+				)
 				.then((document) => {
 					if (!document || document.scheduledDeletionTime) {
-						response.status(404);
+						throw new NetworkError(404, "Document not found.");
 					}
-					response.status(200).json(document);
-				})
-				.catch((error) => {
-					response.status(400).json(error);
+					return document;
 				});
+			handleResponse(documentP, response);
 		},
 	);
 
@@ -160,6 +160,7 @@ export function create(
 			tenantThrottlers.get(Constants.createDocThrottleIdPrefix),
 			winston,
 			createDocTenantThrottleOptions,
+			isHttpUsageCountingEnabled,
 		),
 		verifyStorageToken(tenantManager, config, {
 			requireDocumentId: false,
@@ -169,6 +170,7 @@ export function create(
 			tokenCache: singleUseTokenCache,
 			revokedTokenChecker,
 		}),
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		async (request, response, next) => {
 			// Tenant and document
 			const tenantId = getParam(request.params, "tenantId");
@@ -278,6 +280,7 @@ export function create(
 			getSessionTenantThrottleOptions,
 		),
 		verifyStorageToken(tenantManager, config, defaultTokenValidationOptions),
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		async (request, response, next) => {
 			const documentId = getParam(request.params, "id");
 			const tenantId = getParam(request.params, "tenantId");
@@ -304,6 +307,7 @@ export function create(
 		validateRequestParams("tenantId", "id"),
 		validateTokenScopeClaims(DocDeleteScopeType),
 		verifyStorageToken(tenantManager, config, defaultTokenValidationOptions),
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		async (request, response, next) => {
 			const documentId = getParam(request.params, "id");
 			const tenantId = getParam(request.params, "tenantId");
@@ -324,6 +328,7 @@ export function create(
 		throttle(generalTenantThrottler, winston, tenantThrottleOptions),
 		validateTokenScopeClaims(TokenRevokeScopeType),
 		verifyStorageToken(tenantManager, config, defaultTokenValidationOptions),
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		async (request, response, next) => {
 			const documentId = getParam(request.params, "id");
 			const tenantId = getParam(request.params, "tenantId");

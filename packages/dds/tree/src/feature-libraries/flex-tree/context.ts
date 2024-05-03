@@ -3,27 +3,29 @@
  * Licensed under the MIT License.
  */
 
-import { assert } from "@fluidframework/core-utils";
+import { assert } from "@fluidframework/core-utils/internal";
+
 import {
-	moveToDetachedField,
-	ForestEvents,
-	TreeFieldStoredSchema,
 	FieldKey,
+	ForestEvents,
 	IForestSubscription,
+	TreeFieldStoredSchema,
+	anchorSlot,
+	moveToDetachedField,
 } from "../../core/index.js";
 import { ISubscribable } from "../../events/index.js";
+import { IDisposable, disposeSymbol } from "../../util/index.js";
 import { IDefaultEditBuilder } from "../default-schema/index.js";
-import { NodeKeyIndex, NodeKeyManager } from "../node-key/index.js";
 import { FieldGenerator } from "../fieldGenerator.js";
+import { NodeKeyManager } from "../node-key/index.js";
 import { FlexTreeSchema } from "../typed-schema/index.js";
-import { disposeSymbol, IDisposable } from "../../util/index.js";
+
 import { FlexTreeField } from "./flexTreeTypes.js";
-import { makeField } from "./lazyField.js";
 import { LazyEntity, prepareForEditSymbol } from "./lazyEntity.js";
-import { NodeKeys, SimpleNodeKeys } from "./nodeKeys.js";
+import { makeField } from "./lazyField.js";
 
 /**
- * A common context of a "forest" of EditableTrees.
+ * A common context of a "forest" of FlexTrees.
  * It handles group operations like transforming cursors into anchors for edits.
  * @internal
  */
@@ -43,13 +45,27 @@ export interface FlexTreeContext extends ISubscribable<ForestEvents> {
 	// - transaction APIs
 	// - branching APIs
 
-	readonly nodeKeys: NodeKeys;
+	readonly nodeKeyManager: NodeKeyManager;
+
+	/**
+	 * The forest containing the tree data associated with this context
+	 */
+	readonly forest: IForestSubscription;
 }
 
 /**
- * Implementation of `EditableTreeContext`.
+ * Creating multiple flex tree contexts for the same branch, and thus with the same underlying AnchorSet does not work due to how TreeNode caching works.
+ * This slot is used to detect if one already exists and error if creating a second.
  *
- * @remarks An editor is required to edit the EditableTrees.
+ * TODO:
+ * 1. API docs need to reflect this limitation or the limitation has to be removed.
+ */
+export const ContextSlot = anchorSlot<Context>();
+
+/**
+ * Implementation of `FlexTreeContext`.
+ *
+ * @remarks An editor is required to edit the FlexTree.
  */
 export class Context implements FlexTreeContext, IDisposable {
 	public readonly withCursors: Set<LazyEntity> = new Set();
@@ -61,7 +77,7 @@ export class Context implements FlexTreeContext, IDisposable {
 	/**
 	 * @param forest - the Forest
 	 * @param editor - an editor that makes changes to the forest.
-	 * @param nodeKeys - an object which handles node key generation and conversion
+	 * @param nodeKeyManager - an object which handles node key generation and conversion
 	 * @param nodeKeyFieldKey - an optional field key under which node keys are stored in this tree.
 	 * If present, clients may query the {@link LocalNodeKey} of a node directly via the {@link localNodeKeySymbol}.
 	 */
@@ -69,7 +85,7 @@ export class Context implements FlexTreeContext, IDisposable {
 		public readonly schema: FlexTreeSchema,
 		public readonly forest: IForestSubscription,
 		public readonly editor: IDefaultEditBuilder,
-		public readonly nodeKeys: NodeKeys,
+		public readonly nodeKeyManager: NodeKeyManager,
 		public readonly nodeKeyFieldKey: FieldKey,
 	) {
 		this.eventUnregister = [
@@ -77,6 +93,12 @@ export class Context implements FlexTreeContext, IDisposable {
 				this.prepareForEdit();
 			}),
 		];
+
+		assert(
+			!this.forest.anchors.slots.has(ContextSlot),
+			0x92b /* Cannot create second flex-tree from checkout */,
+		);
+		this.forest.anchors.slots.set(ContextSlot, this);
 	}
 
 	/**
@@ -99,6 +121,9 @@ export class Context implements FlexTreeContext, IDisposable {
 			unregister();
 		}
 		this.eventUnregister.length = 0;
+
+		const deleted = this.forest.anchors.slots.delete(ContextSlot);
+		assert(deleted, 0x8c4 /* unexpected dispose */);
 	}
 
 	/**
@@ -143,7 +168,7 @@ export class Context implements FlexTreeContext, IDisposable {
  * @param nodeKeyManager - an object which handles node key generation and conversion.
  * @param nodeKeyFieldKey - an optional field key under which node keys are stored in this tree.
  * If present, clients may query the {@link LocalNodeKey} of a node directly via the {@link localNodeKeySymbol}.
- * @returns {@link EditableTreeContext} which is used to manage the cursors and anchors within the EditableTrees:
+ * @returns {@link FlexTreeContext} which is used to manage the cursors and anchors within the FlexTrees:
  * This is necessary for supporting using this tree across edits to the forest, and not leaking memory.
  */
 export function getTreeContext(
@@ -153,11 +178,5 @@ export function getTreeContext(
 	nodeKeyManager: NodeKeyManager,
 	nodeKeyFieldKey: FieldKey,
 ): Context {
-	const nodeKeys = new SimpleNodeKeys(new NodeKeyIndex(nodeKeyFieldKey), nodeKeyManager);
-	const context = new Context(schema, forest, editor, nodeKeys, nodeKeyFieldKey);
-	nodeKeys.map.scanKeys(context);
-	context.on("afterChange", () => {
-		nodeKeys.map.scanKeys(context);
-	});
-	return context;
+	return new Context(schema, forest, editor, nodeKeyManager, nodeKeyFieldKey);
 }

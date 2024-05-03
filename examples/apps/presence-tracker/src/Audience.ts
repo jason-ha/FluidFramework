@@ -4,7 +4,7 @@
  */
 
 import { IClient } from "@fluidframework/protocol-definitions";
-import { TinyliciousMember, TinyliciousUser } from "@fluidframework/tinylicious-client";
+import { TinyliciousMember, TinyliciousUser } from "@fluidframework/tinylicious-client/internal";
 
 export function createMockServiceMember(audienceMember: IClient): TinyliciousMember {
 	const tinyliciousUser = audienceMember.user as TinyliciousUser;
@@ -14,8 +14,8 @@ export function createMockServiceMember(audienceMember: IClient): TinyliciousMem
 	}
 
 	return {
-		userId: tinyliciousUser.id,
-		userName: tinyliciousUser.name,
+		id: tinyliciousUser.id,
+		name: tinyliciousUser.name,
 		connections: [],
 	};
 }

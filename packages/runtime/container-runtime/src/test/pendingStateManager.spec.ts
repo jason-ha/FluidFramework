@@ -4,21 +4,19 @@
  */
 
 import assert from "assert";
+
+import { ICriticalContainerError } from "@fluidframework/container-definitions";
+import { ContainerErrorTypes } from "@fluidframework/container-definitions/internal";
+import { ISequencedDocumentMessage, MessageType } from "@fluidframework/protocol-definitions";
+import { isILoggingError } from "@fluidframework/telemetry-utils/internal";
 import Deque from "double-ended-queue";
 
-import {
-	ContainerErrorTypes,
-	ICriticalContainerError,
-} from "@fluidframework/container-definitions";
-import { ISequencedDocumentMessage, MessageType } from "@fluidframework/protocol-definitions";
-import { isILoggingError } from "@fluidframework/telemetry-utils";
-
-import { IPendingMessage, PendingStateManager } from "../pendingStateManager";
-import { BatchManager, BatchMessage } from "../opLifecycle";
 import type {
 	RecentlyAddedContainerRuntimeMessageDetails,
 	UnknownContainerRuntimeMessage,
-} from "../messageTypes";
+} from "../messageTypes.js";
+import { BatchManager, BatchMessage } from "../opLifecycle/index.js";
+import { IPendingMessage, PendingStateManager } from "../pendingStateManager.js";
 
 type PendingStateManager_WithPrivates = Omit<PendingStateManager, "initialMessages"> & {
 	initialMessages: Deque<IPendingMessage>;
@@ -127,6 +125,7 @@ describe("Pending State Manager", () => {
 					reSubmit: () => {},
 					reSubmitBatch: () => {},
 					isActiveConnection: () => false,
+					isAttached: () => true,
 				},
 				undefined /* initialLocalState */,
 				undefined /* logger */,
@@ -292,6 +291,40 @@ describe("Pending State Manager", () => {
 			);
 			assert.strictEqual(closeError, undefined, "unexpected close");
 		});
+
+		describe("getLocalState", () => {
+			it("removes ops with seq num lower than snapshot", () => {
+				const messages = Array.from({ length: 10 }, (_, i) => ({
+					clientId: "clientId",
+					type: MessageType.Operation,
+					clientSequenceNumber: 0,
+					contents: { prop1: true },
+					sequenceNumber: i,
+				}));
+				submitBatch(messages);
+				process(messages);
+				let pendingState = pendingStateManager.getLocalState(0).pendingStates;
+				assert.strictEqual(pendingState.length, 10);
+				pendingState = pendingStateManager.getLocalState(5).pendingStates;
+				assert.strictEqual(pendingState.length, 5);
+				pendingState = pendingStateManager.getLocalState(10).pendingStates;
+				assert.strictEqual(pendingState.length, 0);
+			});
+
+			it("throws when trying to get unprocessed ops older than snapshot", () => {
+				const messages = Array.from({ length: 10 }, (_, i) => ({
+					clientId: "clientId",
+					type: MessageType.Operation,
+					clientSequenceNumber: 0,
+					contents: { prop1: true },
+					referenceSequenceNumber: i,
+				}));
+				submitBatch(messages);
+				assert.throws(() => pendingStateManager.getLocalState(1));
+				const pendingState = pendingStateManager.getLocalState(0).pendingStates;
+				assert.strictEqual(pendingState.length, 10);
+			});
+		});
 	});
 
 	describe("Local state processing", () => {
@@ -306,6 +339,7 @@ describe("Pending State Manager", () => {
 					reSubmit: () => {},
 					reSubmitBatch: () => {},
 					isActiveConnection: () => false,
+					isAttached: () => true,
 				},
 				{ pendingStates },
 				undefined /* logger */,
@@ -381,6 +415,7 @@ describe("Pending State Manager", () => {
 					reSubmit: () => {},
 					reSubmitBatch: () => {},
 					isActiveConnection: () => false,
+					isAttached: () => true,
 				},
 				{ pendingStates },
 				undefined /* logger */,

@@ -5,20 +5,23 @@
 
 import {
 	type IChannelAttributes,
-	type IFluidDataStoreRuntime,
-	type IChannelServices,
 	type IChannelFactory,
+	type IChannelServices,
+	type IFluidDataStoreRuntime,
 } from "@fluidframework/datastore-definitions";
-import { SharedCounter } from "./counter";
-import { type ISharedCounter } from "./interfaces";
-import { pkgVersion } from "./packageVersion";
+import type { ISharedObjectKind } from "@fluidframework/shared-object-base";
+import { createSharedObjectKind } from "@fluidframework/shared-object-base/internal";
+
+import { SharedCounter as SharedCounterClass } from "./counter.js";
+import { type ISharedCounter } from "./interfaces.js";
+import { pkgVersion } from "./packageVersion.js";
 
 /**
  * {@link @fluidframework/datastore-definitions#IChannelFactory} for {@link SharedCounter}.
  *
  * @sealed
  */
-export class CounterFactory implements IChannelFactory {
+export class CounterFactory implements IChannelFactory<ISharedCounter> {
 	/**
 	 * Static value for {@link CounterFactory."type"}.
 	 */
@@ -56,7 +59,7 @@ export class CounterFactory implements IChannelFactory {
 		services: IChannelServices,
 		attributes: IChannelAttributes,
 	): Promise<ISharedCounter> {
-		const counter = new SharedCounter(id, runtime, attributes);
+		const counter = new SharedCounterClass(id, runtime, attributes);
 		await counter.load(services);
 		return counter;
 	}
@@ -65,8 +68,21 @@ export class CounterFactory implements IChannelFactory {
 	 * {@inheritDoc @fluidframework/datastore-definitions#IChannelFactory.create}
 	 */
 	public create(document: IFluidDataStoreRuntime, id: string): ISharedCounter {
-		const counter = new SharedCounter(id, document, this.attributes);
+		const counter = new SharedCounterClass(id, document, this.attributes);
 		counter.initializeLocal();
 		return counter;
 	}
 }
+
+/**
+ * Entrypoint for {@link ISharedCounter} creation.
+ * @alpha
+ */
+export const SharedCounter: ISharedObjectKind<ISharedCounter> =
+	createSharedObjectKind(CounterFactory);
+
+/**
+ * Alias for {@link ISharedCounter} for compatibility.
+ * @alpha
+ */
+export type SharedCounter = ISharedCounter;

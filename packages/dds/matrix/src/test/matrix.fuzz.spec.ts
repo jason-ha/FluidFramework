@@ -3,33 +3,37 @@
  * Licensed under the MIT License.
  */
 
-import * as path from "path";
 import { strict as assert } from "assert";
+import * as path from "path";
+
+import {
+	AsyncGenerator,
+	Generator,
+	combineReducers,
+	createWeightedGenerator,
+	takeAsync,
+} from "@fluid-private/stochastic-test-utils";
 import {
 	DDSFuzzModel,
 	DDSFuzzSuiteOptions,
 	DDSFuzzTestState,
 	createDDSFuzzSuite,
 } from "@fluid-private/test-dds-utils";
-import {
-	IChannelAttributes,
-	IChannelServices,
-	IFluidDataStoreRuntime,
-} from "@fluidframework/datastore-definitions";
-import {
-	combineReducers,
-	createWeightedGenerator,
-	AsyncGenerator,
-	Generator,
-	takeAsync,
-} from "@fluid-private/stochastic-test-utils";
-import { FlushMode } from "@fluidframework/runtime-definitions";
-import { MatrixItem, SharedMatrix } from "../matrix";
-import { SharedMatrixFactory } from "../runtime";
+import { FlushMode } from "@fluidframework/runtime-definitions/internal";
+
+import type { IFluidHandle } from "@fluidframework/core-interfaces";
+import type { Serializable } from "@fluidframework/datastore-definitions/internal";
+import { isObject } from "@fluidframework/core-utils/internal";
+import { isFluidHandle } from "@fluidframework/runtime-utils/internal";
+import { MatrixItem } from "../ops.js";
+import { SharedMatrixFactory, SharedMatrix } from "../runtime.js";
+
+import { _dirname } from "./dirname.cjs";
+
 /**
  * Supported cell values used within the fuzz model.
  */
-type Value = string | number | undefined;
+type Value = string | number | undefined | Serializable<unknown>;
 
 interface RangeSpec {
 	start: number;
@@ -61,40 +65,37 @@ interface SetCell {
 
 type Operation = InsertRows | InsertColumns | RemoveRows | RemoveColumns | SetCell;
 
-/**
- * @remarks - This makes the DDS fuzz harness typecheck state fields as SharedMatrix<Value> instead of IChannel,
- * which avoids the need to cast elsewhere.
- */
-class TypedMatrixFactory extends SharedMatrixFactory {
-	public async load(
-		runtime: IFluidDataStoreRuntime,
-		id: string,
-		services: IChannelServices,
-		attributes: IChannelAttributes,
-	): Promise<SharedMatrix<Value>> {
-		return (await super.load(runtime, id, services, attributes)) as SharedMatrix<Value>;
-	}
-
-	public create(document: IFluidDataStoreRuntime, id: string): SharedMatrix<Value> {
-		return super.create(document, id) as SharedMatrix<Value>;
-	}
-}
-
 // This type gets used a lot as the state object of the suite; shorthand it here.
-type State = DDSFuzzTestState<TypedMatrixFactory>;
+type State = DDSFuzzTestState<SharedMatrixFactory>;
 
-function assertMatricesAreEquivalent<T>(a: SharedMatrix<T>, b: SharedMatrix<T>) {
+async function assertMatricesAreEquivalent<T>(a: SharedMatrix<T>, b: SharedMatrix<T>) {
 	assert.equal(a.colCount, b.colCount, `${a.id} and ${b.id} have different number of columns.`);
 	assert.equal(a.rowCount, b.rowCount, `${a.id} and ${b.id} have different number of rows.`);
 	for (let row = 0; row < a.rowCount; row++) {
 		for (let col = 0; col < a.colCount; col++) {
 			const aVal = a.getCell(row, col);
 			const bVal = b.getCell(row, col);
-			assert.equal(
-				aVal,
-				bVal,
-				`${a.id} and ${b.id} differ at (${row}, ${col}): ${aVal} vs ${bVal}`,
-			);
+			if (isObject(aVal) === true) {
+				assert(
+					isObject(bVal),
+					`${a.id} and ${b.id} differ at (${row}, ${col}): a is an object, b is not`,
+				);
+				const aHandle = isFluidHandle(aVal) ? await aVal.get() : aVal;
+				const bHandle = isFluidHandle(bVal) ? await bVal.get() : bVal;
+				assert.deepEqual(
+					aHandle,
+					bHandle,
+					`${a.id} and ${b.id} differ at (${row}, ${col}): ${JSON.stringify(
+						aHandle,
+					)} vs ${JSON.stringify(bHandle)}`,
+				);
+			} else {
+				assert.equal(
+					aVal,
+					bVal,
+					`${a.id} and ${b.id} differ at (${row}, ${col}): ${aVal} vs ${bVal}`,
+				);
+			}
 		}
 	}
 }
@@ -183,7 +184,11 @@ function makeGenerator(optionsParam?: Partial<GeneratorOptions>): AsyncGenerator
 		type: "set",
 		row: random.integer(0, client.channel.rowCount - 1),
 		col: random.integer(0, client.channel.colCount - 1),
-		value: random.bool() ? random.integer(1, 50) : random.string(random.integer(1, 2)),
+		value: random.pick([
+			(): number => random.integer(1, 50),
+			(): string => random.string(random.integer(1, 2)),
+			(): IFluidHandle => random.handle(),
+		])(),
 	});
 
 	const syncGenerator = createWeightedGenerator<Operation, State>([
@@ -207,13 +212,23 @@ describe("Matrix fuzz tests", function () {
 	 * This makes some seeds rather slow (since that cost is paid 3 times per recycled row/col per client).
 	 * Despite this accounting for 95% of test runtime when profiled, this codepath doesn't appear to be a bottleneck
 	 * in profiled production scenarios investigated at the time of writing.
+	 *
+	 * This timeout is set to 30s to avoid flakiness on CI, but it's worth noting the vast majority of these test cases
+	 * do not go anywhere near this.
+	 * We've previously skipped the long seeds, but that tended to lead to more code churn when adding features to the
+	 * underlying harness (which affects which seeds are the slow ones).
 	 */
-	this.timeout(5000);
-	const model: Omit<DDSFuzzModel<TypedMatrixFactory, Operation>, "workloadName"> = {
-		factory: new TypedMatrixFactory(),
+	this.timeout(30_000);
+	const model: Omit<DDSFuzzModel<SharedMatrixFactory, Operation>, "workloadName"> = {
+		factory: SharedMatrix.getFactory(),
 		generatorFactory: () => takeAsync(50, makeGenerator()),
 		reducer: async (state, operation) => reducer(state, operation),
-		validateConsistency: assertMatricesAreEquivalent,
+		validateConsistency: async (a, b) => assertMatricesAreEquivalent(a.channel, b.channel),
+		minimizationTransforms: ["count", "start", "row", "col"].map((p) => (op) => {
+			if (p in op && typeof op[p] === "number" && op[p] > 0) {
+				op[p]--;
+			}
+		}),
 	};
 
 	const baseOptions: Partial<DDSFuzzSuiteOptions> = {
@@ -224,10 +239,10 @@ describe("Matrix fuzz tests", function () {
 			clientAddProbability: 0.1,
 		},
 		reconnectProbability: 0,
-		saveFailures: { directory: path.join(__dirname, "../../src/test/results") },
+		saveFailures: { directory: path.join(_dirname, "../../src/test/results") },
 	};
 
-	const nameModel = (workloadName: string): DDSFuzzModel<TypedMatrixFactory, Operation> => ({
+	const nameModel = (workloadName: string): DDSFuzzModel<SharedMatrixFactory, Operation> => ({
 		...model,
 		workloadName,
 	});
@@ -235,8 +250,6 @@ describe("Matrix fuzz tests", function () {
 	createDDSFuzzSuite(nameModel("default"), {
 		...baseOptions,
 		reconnectProbability: 0,
-		// Seed 62 is slow but otherwise passes, see comment on timeout above.
-		skip: [62],
 		// Uncomment to replay a particular seed.
 		// replay: 0,
 	});
@@ -249,8 +262,6 @@ describe("Matrix fuzz tests", function () {
 			clientAddProbability: 0,
 		},
 		reconnectProbability: 0.1,
-		// Seed 53 needs investigation, tracked by AB#7088.
-		skip: [53],
 		// Uncomment to replay a particular seed.
 		// replay: 0,
 	});
@@ -262,8 +273,17 @@ describe("Matrix fuzz tests", function () {
 			flushMode: FlushMode.TurnBased,
 			enableGroupedBatching: true,
 		},
-		// Seed 7 is slow but otherwise passes, see comment on timeout above.
-		skip: [7],
+		// Uncomment to replay a particular seed.
+		// replay: 0,
+	});
+
+	createDDSFuzzSuite(nameModel("with stashing"), {
+		...baseOptions,
+		clientJoinOptions: {
+			maxNumberOfClients: 6,
+			clientAddProbability: 0.1,
+			stashableClientProbability: 0.5,
+		},
 		// Uncomment to replay a particular seed.
 		// replay: 0,
 	});

@@ -3,50 +3,60 @@
  * Licensed under the MIT License.
  */
 
-import * as path from "node:path";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { strict as assert } from "node:assert";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import * as path from "node:path";
+
 import {
 	type AcceptanceCondition,
 	type BaseFuzzTestState,
+	type Generator,
+	type IRandom,
+	type Reducer,
 	chain,
 	createWeightedGenerator,
 	done,
-	type Generator,
 	generatorFromArray,
 	interleave,
-	type IRandom,
 	makeRandom,
 	performFuzzActions,
-	type Reducer,
 	take,
 } from "@fluid-private/stochastic-test-utils";
 import {
-	MockFluidDataStoreRuntime,
-	MockStorage,
-	MockContainerRuntimeFactoryForReconnection,
-	type MockContainerRuntimeForReconnection,
-} from "@fluidframework/test-runtime-utils";
-import {
 	type IChannelServices,
 	type IFluidDataStoreRuntime,
-	type Jsonable,
 } from "@fluidframework/datastore-definitions";
-import { type IClient, type ISummaryTree, SummaryType } from "@fluidframework/protocol-definitions";
-import { type IAudience } from "@fluidframework/container-definitions";
-import { SharedString, SharedStringFactory } from "@fluidframework/sequence";
-import { createInsertOnlyAttributionPolicy } from "@fluidframework/merge-tree";
-import { type IAttributor, OpStreamAttributor } from "../../attributor";
+import { type Jsonable } from "@fluidframework/datastore-definitions/internal";
+import { createInsertOnlyAttributionPolicy } from "@fluidframework/merge-tree/internal";
+import {
+	type ISequencedDocumentMessage,
+	type ISummaryTree,
+	SummaryType,
+	type IQuorumClients,
+	type ISequencedClient,
+} from "@fluidframework/protocol-definitions";
+import { SharedString } from "@fluidframework/sequence/internal";
+import {
+	MockContainerRuntimeFactoryForReconnection,
+	type MockContainerRuntimeForReconnection,
+	MockFluidDataStoreRuntime,
+	MockStorage,
+	MockQuorumClients,
+} from "@fluidframework/test-runtime-utils/internal";
+
+import { type IAttributor, OpStreamAttributor } from "../../attributor.js";
 import {
 	AttributorSerializer,
+	type Encoder,
 	chain as chainEncoders,
 	deltaEncoder,
-	type Encoder,
-} from "../../encoders";
-import { makeLZ4Encoder } from "../../lz4Encoder";
+} from "../../encoders.js";
+import { makeLZ4Encoder } from "../../lz4Encoder.js";
 
-function makeMockAudience(clientIds: string[]): IAudience {
-	const clients = new Map<string, IClient>();
+import { _dirname } from "./dirname.cjs";
+
+function makeMockQuorum(clientIds: string[]): IQuorumClients {
+	const clients = new Map<string, ISequencedClient>();
 	for (const [index, clientId] of clientIds.entries()) {
 		// eslint-disable-next-line unicorn/prefer-code-point
 		const stringId = String.fromCharCode(index + 65);
@@ -59,19 +69,17 @@ function makeMockAudience(clientIds: string[]): IAudience {
 			email,
 		};
 		clients.set(clientId, {
-			mode: "write",
-			details: { capabilities: { interactive: true } },
-			permission: [],
-			user,
-			scopes: [],
+			client: {
+				mode: "write",
+				details: { capabilities: { interactive: true } },
+				permission: [],
+				user,
+				scopes: [],
+			},
+			sequenceNumber: 0,
 		});
 	}
-	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-	return {
-		getMember: (clientId: string): IClient | undefined => {
-			return clients.get(clientId);
-		},
-	} as IAudience;
+	return new MockQuorumClients(...clients.entries());
 }
 
 type PropertySet = Record<string, unknown>;
@@ -235,13 +243,16 @@ function createSharedString(
 ): FuzzTestState {
 	const numClients = 3;
 	const clientIds = Array.from({ length: numClients }, () => random.uuid4());
-	const audience = makeMockAudience(clientIds);
+	const quorum = makeMockQuorum(clientIds);
 	const containerRuntimeFactory = new MockContainerRuntimeFactoryForReconnection();
 	let attributor: IAttributor | undefined;
 	let serializer: Encoder<IAttributor, string> | undefined;
 	const initialState: FuzzTestState = {
 		clients: clientIds.map((clientId, index) => {
-			const dataStoreRuntime = new MockFluidDataStoreRuntime({ clientId });
+			const dataStoreRuntime = new MockFluidDataStoreRuntime({
+				clientId,
+				registry: [SharedString.getFactory()],
+			});
 			dataStoreRuntime.options = {
 				attribution: {
 					track: makeSerializer !== undefined,
@@ -249,25 +260,23 @@ function createSharedString(
 				},
 			};
 			const { deltaManager } = dataStoreRuntime;
-			const sharedString = new SharedString(
-				dataStoreRuntime,
-				// eslint-disable-next-line unicorn/prefer-code-point
+			const sharedString = SharedString.create(
+				dataStoreRuntime, // eslint-disable-next-line unicorn/prefer-code-point
 				String.fromCharCode(index + 65),
-				SharedStringFactory.Attributes,
 			);
 
 			if (index === 0 && makeSerializer !== undefined) {
-				attributor = new OpStreamAttributor(deltaManager, audience);
+				attributor = new OpStreamAttributor(deltaManager, quorum);
 				serializer = makeSerializer(dataStoreRuntime);
 				// DeltaManager mock doesn't have high fidelity but attribution requires DataStoreRuntime implements
-				// audience / op emission.
+				// quorum / op emission.
 				let opIndex = 0;
 				sharedString.on("op", (message) => {
 					opIndex++;
 					message.timestamp = getTimestamp(opIndex);
 					deltaManager.emit("op", message);
 				});
-				dataStoreRuntime.getAudience = (): IAudience => audience;
+				dataStoreRuntime.getQuorum = (): IQuorumClients => quorum;
 			}
 
 			const containerRuntime =
@@ -324,7 +333,7 @@ function createSharedString(
 	);
 }
 
-const directory = path.join(__dirname, "../../../src/test/attribution/documents");
+const directory = path.join(_dirname, "../../../src/test/attribution/documents");
 
 interface TestPaths {
 	directory: string;
@@ -508,6 +517,18 @@ function assertSerializableSummary(
 	}
 }
 
+interface ISummaryTreeWithCatchupOps {
+	tree: {
+		content: {
+			tree: {
+				catchupOps: {
+					content: string | ISequencedDocumentMessage[];
+				};
+			};
+		};
+	};
+}
+
 const summaryFromState = async (state: FuzzTestState): Promise<SerializableISummaryTree> => {
 	state.containerRuntimeFactory.processAllMessages();
 	const { sharedString } = state.clients[0];
@@ -612,7 +633,7 @@ describe("SharedString Attribution", () => {
 								(entries) =>
 									new OpStreamAttributor(
 										runtime.deltaManager,
-										runtime.getAudience(),
+										runtime.getQuorum(),
 										entries,
 									),
 								noopEncoder,
@@ -631,7 +652,7 @@ describe("SharedString Attribution", () => {
 								(entries) =>
 									new OpStreamAttributor(
 										runtime.deltaManager,
-										runtime.getAudience(),
+										runtime.getQuorum(),
 										entries,
 									),
 								noopEncoder,
@@ -650,7 +671,7 @@ describe("SharedString Attribution", () => {
 								(entries) =>
 									new OpStreamAttributor(
 										runtime.deltaManager,
-										runtime.getAudience(),
+										runtime.getQuorum(),
 										entries,
 									),
 								deltaEncoder,
@@ -694,8 +715,27 @@ describe("SharedString Attribution", () => {
 
 				for (const { filename, factory } of dataGenerators) {
 					it(`snapshot at ${filename}`, async () => {
-						const expected = readJson(path.join(paths.directory, filename));
-						const actual = await summaryFromState(factory(operations));
+						const expected = readJson(
+							path.join(paths.directory, filename),
+						) as ISummaryTreeWithCatchupOps;
+						const actual = (await summaryFromState(
+							factory(operations),
+						)) as unknown as ISummaryTreeWithCatchupOps;
+
+						assert.strictEqual(
+							typeof actual.tree.content?.tree?.catchupOps?.content,
+							"string",
+							"invalid catchupOps in produced summary",
+						);
+
+						// Parse the stringified op array into the actual op array so we can deep compare better
+						actual.tree.content.tree.catchupOps.content = JSON.parse(
+							actual.tree.content.tree.catchupOps.content as string,
+						) as ISequencedDocumentMessage[];
+						expected.tree.content.tree.catchupOps.content = JSON.parse(
+							expected.tree.content.tree.catchupOps.content as string,
+						) as ISequencedDocumentMessage[];
+
 						assert.deepEqual(actual, expected);
 					});
 				}

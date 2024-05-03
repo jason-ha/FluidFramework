@@ -14,8 +14,12 @@ import * as services from "@fluidframework/server-services";
 import * as core from "@fluidframework/server-services-core";
 import { Lumberjack } from "@fluidframework/server-services-telemetry";
 import { Provider } from "nconf";
-import { RedisOptions } from "ioredis";
+import { RedisOptions, ClusterOptions } from "ioredis";
 import * as winston from "winston";
+import {
+	RedisClientConnectionManager,
+	type IRedisClientConnectionManager,
+} from "@fluidframework/server-services-utils";
 
 export async function deliCreate(
 	config: Provider,
@@ -28,6 +32,9 @@ export async function deliCreate(
 	const kafkaReplicationFactor = config.get("kafka:lib:replicationFactor");
 	const kafkaMaxBatchSize = config.get("kafka:lib:maxBatchSize");
 	const kafkaSslCACertFilePath: string = config.get("kafka:lib:sslCACertFilePath");
+	const kafkaProducerGlobalAdditionalConfig = config.get(
+		"kafka:lib:producerGlobalAdditionalConfig",
+	);
 	const eventHubConnString: string = config.get("kafka:lib:eventHubConnString");
 
 	const kafkaForwardClientId = config.get("deli:kafkaClientId");
@@ -46,6 +53,9 @@ export async function deliCreate(
 
 	const kafkaCheckpointOnReprocessingOp =
 		(config.get("checkpoints:kafkaCheckpointOnReprocessingOp") as boolean) ?? true;
+
+	const enableLeaveOpNoClientServerMetadata =
+		(config.get("deli:enableLeaveOpNoClientServerMetadata") as boolean) ?? false;
 
 	// Generate tenant manager which abstracts access to the underlying storage provider
 	const authEndpoint = config.get("auth:endpoint");
@@ -67,6 +77,11 @@ export async function deliCreate(
 		(config.get("deli:enableEphemeralContainerSummaryCleanup") as boolean | undefined) ?? true;
 	core.DefaultServiceConfiguration.deli.enableEphemeralContainerSummaryCleanup =
 		enableEphemeralContainerSummaryCleanup;
+
+	const ephemeralContainerSoftDeleteTimeInMs =
+		(config.get("deli:ephemeralContainerSoftDeleteTimeInMs") as number | undefined) ?? -1; // -1 means not soft deletion but hard deletion directly
+	core.DefaultServiceConfiguration.deli.ephemeralContainerSoftDeleteTimeInMs =
+		ephemeralContainerSoftDeleteTimeInMs;
 
 	let globalDb: core.IDb;
 	if (globalDbEnabled) {
@@ -101,6 +116,7 @@ export async function deliCreate(
 		kafkaMaxBatchSize,
 		kafkaSslCACertFilePath,
 		eventHubConnString,
+		kafkaProducerGlobalAdditionalConfig,
 	);
 	const reverseProducer = services.createProducer(
 		kafkaLibrary,
@@ -114,10 +130,11 @@ export async function deliCreate(
 		kafkaMaxBatchSize,
 		kafkaSslCACertFilePath,
 		eventHubConnString,
+		kafkaProducerGlobalAdditionalConfig,
 	);
 
 	const redisConfig = config.get("redis");
-	const redisOptions: RedisOptions = {
+	const redisOptions: RedisOptions & ClusterOptions = {
 		host: redisConfig.host,
 		port: redisConfig.port,
 		password: redisConfig.pass,
@@ -127,7 +144,15 @@ export async function deliCreate(
 			servername: redisConfig.host,
 		};
 	}
-	const publisher = new services.SocketIoRedisPublisher(redisOptions);
+	const redisClientConnectionManager: IRedisClientConnectionManager =
+		customizations?.redisClientConnectionManager ??
+		new RedisClientConnectionManager(
+			redisOptions,
+			undefined,
+			redisConfig.enableClustering,
+			redisConfig.slotsRefreshTimeout,
+		);
+	const publisher = new services.SocketIoRedisPublisher(redisClientConnectionManager);
 	publisher.on("error", (err) => {
 		winston.error("Error with Redis Publisher:", err);
 		Lumberjack.error("Error with Redis Publisher:", undefined, err);
@@ -158,6 +183,7 @@ export async function deliCreate(
 			...core.DefaultServiceConfiguration.deli,
 			restartOnCheckpointFailure,
 			kafkaCheckpointOnReprocessingOp,
+			enableLeaveOpNoClientServerMetadata,
 		},
 	};
 

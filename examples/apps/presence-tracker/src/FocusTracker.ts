@@ -4,10 +4,10 @@
  */
 
 import { Signaler } from "@fluid-experimental/data-objects";
-import { IEvent } from "@fluidframework/core-interfaces";
 import { TypedEventEmitter } from "@fluid-internal/client-utils";
-import { IContainer } from "@fluidframework/container-definitions";
-import { ITinyliciousAudience } from "@fluidframework/tinylicious-client";
+import { IContainer } from "@fluidframework/container-definitions/internal";
+import { IEvent } from "@fluidframework/core-interfaces";
+import { ITinyliciousAudience } from "@fluidframework/tinylicious-client/internal";
 import { IMember } from "fluid-framework";
 
 export interface IFocusTrackerEvents extends IEvent {
@@ -55,11 +55,11 @@ export class FocusTracker extends TypedEventEmitter<IFocusTrackerEvents> {
 		super();
 
 		this.audience.on("memberRemoved", (clientId: string, member: IMember) => {
-			const focusClientIdMap = this.focusMap.get(member.userId);
+			const focusClientIdMap = this.focusMap.get(member.id);
 			if (focusClientIdMap !== undefined) {
 				focusClientIdMap.delete(clientId);
 				if (focusClientIdMap.size === 0) {
-					this.focusMap.delete(member.userId);
+					this.focusMap.delete(member.id);
 				}
 			}
 			this.emit("focusChanged");
@@ -95,7 +95,7 @@ export class FocusTracker extends TypedEventEmitter<IFocusTrackerEvents> {
 	 */
 	private sendFocusSignal(hasFocus: boolean) {
 		this.signaler.submitSignal(FocusTracker.focusSignalType, {
-			userId: this.audience.getMyself()?.userId,
+			userId: this.audience.getMyself()?.id,
 			focus: hasFocus,
 		});
 	}

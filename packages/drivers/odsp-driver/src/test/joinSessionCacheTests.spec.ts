@@ -3,10 +3,14 @@
  * Licensed under the MIT License.
  */
 
-import { strict as assert } from "assert";
-import { IOdspResolvedUrl, ISocketStorageDiscovery } from "@fluidframework/odsp-driver-definitions";
-import { OdspDocumentServiceFactory } from "../odspDocumentServiceFactory";
-import { getJoinSessionCacheKey } from "../odspUtils";
+import { strict as assert } from "node:assert";
+import { IResolvedUrl } from "@fluidframework/driver-definitions/internal";
+import {
+	IOdspResolvedUrl,
+	ISocketStorageDiscovery,
+} from "@fluidframework/odsp-driver-definitions/internal";
+import { OdspDocumentServiceFactory } from "../odspDocumentServiceFactory.js";
+import { getJoinSessionCacheKey } from "../odspUtils.js";
 
 describe("expose joinSessionInfo Tests", () => {
 	const siteUrl = "https://www.localhost.xxx";
@@ -18,7 +22,7 @@ describe("expose joinSessionInfo Tests", () => {
 		driveId,
 		itemId,
 		odspResolvedUrl: true,
-	} as any as IOdspResolvedUrl;
+	} as unknown as IOdspResolvedUrl;
 
 	const joinSessionResponse: ISocketStorageDiscovery = {
 		deltaStorageUrl: "https://fake/deltaStorageUrl",
@@ -39,7 +43,7 @@ describe("expose joinSessionInfo Tests", () => {
 	});
 
 	it("Response present in join session cache", async () => {
-		// eslint-disable-next-line @typescript-eslint/dot-notation
+		// eslint-disable-next-line @typescript-eslint/dot-notation, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
 		odspDocumentServiceFactory["nonPersistentCache"].sessionJoinCache.add(
 			getJoinSessionCacheKey(resolvedUrl),
 			async () => {
@@ -56,8 +60,8 @@ describe("expose joinSessionInfo Tests", () => {
 			await odspDocumentServiceFactory.getRelayServiceSessionInfo({
 				...resolvedUrl,
 				odspResolvedUrl: false,
-			} as any);
-		} catch (error) {
+			} as unknown as IResolvedUrl);
+		} catch {
 			failed = true;
 		}
 		assert(failed, "resolved url not correct");

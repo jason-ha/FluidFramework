@@ -3,44 +3,45 @@
  * Licensed under the MIT License.
  */
 
-import { v4 as uuid } from "uuid";
-import {
-	ITelemetryLoggerExt,
-	mixinMonitoringContext,
-	MonitoringContext,
-	PerformanceEvent,
-	sessionStorageConfigProvider,
-	createChildMonitoringContext,
-	UsageError,
-} from "@fluidframework/telemetry-utils";
-import {
-	ITelemetryBaseLogger,
-	FluidObject,
-	IRequest,
-	IConfigProviderBase,
-} from "@fluidframework/core-interfaces";
 import {
 	IContainer,
+	IFluidCodeDetails,
 	IFluidModule,
 	IHostLoader,
 	ILoader,
 	ILoaderOptions as ILoaderOptions1,
-	LoaderHeader,
 	IProvideFluidCodeDetailsComparer,
-	IFluidCodeDetails,
-} from "@fluidframework/container-definitions";
+	LoaderHeader,
+} from "@fluidframework/container-definitions/internal";
+import {
+	FluidObject,
+	IConfigProviderBase,
+	IRequest,
+	ITelemetryBaseLogger,
+} from "@fluidframework/core-interfaces";
 import {
 	IDocumentServiceFactory,
 	IDocumentStorageService,
 	IResolvedUrl,
 	IUrlResolver,
-} from "@fluidframework/driver-definitions";
+} from "@fluidframework/driver-definitions/internal";
 import { IClientDetails } from "@fluidframework/protocol-definitions";
-import { Container, IPendingContainerState } from "./container";
-import { IParsedUrl, tryParseCompatibleResolvedUrl } from "./utils";
-import { pkgVersion } from "./packageVersion";
-import { ProtocolHandlerBuilder } from "./protocol";
-import { DebugLogger } from "./debugLogger";
+import {
+	ITelemetryLoggerExt,
+	MonitoringContext,
+	PerformanceEvent,
+	createChildMonitoringContext,
+	mixinMonitoringContext,
+	sessionStorageConfigProvider,
+} from "@fluidframework/telemetry-utils/internal";
+import { v4 as uuid } from "uuid";
+
+import { Container } from "./container.js";
+import { DebugLogger } from "./debugLogger.js";
+import { pkgVersion } from "./packageVersion.js";
+import { ProtocolHandlerBuilder } from "./protocol.js";
+import type { IPendingContainerState } from "./serializedStateManager.js";
+import { tryParseCompatibleResolvedUrl } from "./utils.js";
 
 function ensureResolvedUrlDefined(
 	resolved: IResolvedUrl | undefined,
@@ -332,18 +333,17 @@ export class Loader implements IHostLoader {
 	public async resolve(request: IRequest, pendingLocalState?: string): Promise<IContainer> {
 		const eventName = pendingLocalState === undefined ? "Resolve" : "ResolveWithPendingState";
 		return PerformanceEvent.timedExecAsync(this.mc.logger, { eventName }, async () => {
-			const resolved = await this.resolveCore(
+			return this.resolveCore(
 				request,
 				pendingLocalState !== undefined ? JSON.parse(pendingLocalState) : undefined,
 			);
-			return resolved.container;
 		});
 	}
 
 	private async resolveCore(
 		request: IRequest,
 		pendingLocalState?: IPendingContainerState,
-	): Promise<{ container: Container; parsed: IParsedUrl }> {
+	): Promise<Container> {
 		const resolvedAsFluid = await this.services.urlResolver.resolve(request);
 		ensureResolvedUrlDefined(resolvedAsFluid);
 
@@ -368,29 +368,8 @@ export class Loader implements IHostLoader {
 		// If set in both query string and headers, use query string.  Also write the value from the query string into the header either way.
 		request.headers[LoaderHeader.version] =
 			parsed.version ?? request.headers[LoaderHeader.version];
-		const fromSequenceNumber = request.headers[LoaderHeader.sequenceNumber] as
-			| number
-			| undefined;
-		const opsBeforeReturn = request.headers[LoaderHeader.loadMode]?.opsBeforeReturn as
-			| string
-			| undefined;
 
-		if (
-			opsBeforeReturn === "sequenceNumber" &&
-			(fromSequenceNumber === undefined || fromSequenceNumber < 0)
-		) {
-			// If opsBeforeReturn is set to "sequenceNumber", then fromSequenceNumber should be set to a non-negative integer.
-			throw new UsageError("sequenceNumber must be set to a non-negative integer");
-		} else if (opsBeforeReturn !== "sequenceNumber" && fromSequenceNumber !== undefined) {
-			// If opsBeforeReturn is not set to "sequenceNumber", then fromSequenceNumber should be undefined (default value).
-			// In this case, we should throw an error since opsBeforeReturn is not explicitly set to "sequenceNumber".
-			throw new UsageError('opsBeforeReturn must be set to "sequenceNumber"');
-		}
-
-		return {
-			container: await this.loadContainer(request, resolvedAsFluid, pendingLocalState),
-			parsed,
-		};
+		return this.loadContainer(request, resolvedAsFluid, pendingLocalState);
 	}
 
 	private async loadContainer(
@@ -404,7 +383,6 @@ export class Loader implements IHostLoader {
 				version: request.headers?.[LoaderHeader.version] ?? undefined,
 				loadMode: request.headers?.[LoaderHeader.loadMode],
 				pendingLocalState,
-				loadToSequenceNumber: request.headers?.[LoaderHeader.sequenceNumber],
 			},
 			{
 				canReconnect: request.headers?.[LoaderHeader.reconnect],

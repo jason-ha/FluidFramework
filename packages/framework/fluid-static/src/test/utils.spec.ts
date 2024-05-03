@@ -4,11 +4,13 @@
  */
 
 import { strict as assert } from "node:assert";
-import { DataObject, DataObjectFactory } from "@fluidframework/aqueduct";
-import { MapFactory, SharedMap } from "@fluidframework/map";
-import { SharedString, SharedStringFactory } from "@fluidframework/sequence";
-import { parseDataObjectsFromSharedObjects } from "../utils";
-import { type ContainerSchema } from "../types";
+
+import { DataObject, DataObjectFactory } from "@fluidframework/aqueduct/internal";
+import { MapFactory, SharedMap } from "@fluidframework/map/internal";
+import { SharedString } from "@fluidframework/sequence/internal";
+
+import { type ContainerSchema } from "../types.js";
+import { parseDataObjectsFromSharedObjects } from "../utils.js";
 
 class TestDataObject extends DataObject {
 	public static readonly Name = "@fluid-example/test-data-object";
@@ -28,7 +30,7 @@ describe("parseDataObjectsFromSharedObjects", () => {
 				map: SharedMap,
 				text: SharedString,
 			},
-		};
+		} satisfies ContainerSchema;
 		const [registryEntries, sharedObjects] = parseDataObjectsFromSharedObjects(schema);
 
 		assert.strictEqual(registryEntries.length, 0, "We should have no registry entries");
@@ -36,7 +38,11 @@ describe("parseDataObjectsFromSharedObjects", () => {
 
 		const types = sharedObjects.map((item) => item.type);
 		assert.strictEqual(types[0], MapFactory.Type, "SharedMap should be included");
-		assert.strictEqual(types[1], SharedStringFactory.Type, "SharedString should be included");
+		assert.strictEqual(
+			types[1],
+			SharedString.getFactory().type,
+			"SharedString should be included",
+		);
 	});
 
 	it("should be able to handle dup DDS types", () => {
@@ -46,7 +52,7 @@ describe("parseDataObjectsFromSharedObjects", () => {
 				text: SharedString,
 				text2: SharedString,
 			},
-		};
+		} satisfies ContainerSchema;
 		const [registryEntries, sharedObjects] = parseDataObjectsFromSharedObjects(schema);
 
 		assert.strictEqual(registryEntries.length, 0, "We should have no registry entries");
@@ -54,7 +60,11 @@ describe("parseDataObjectsFromSharedObjects", () => {
 
 		const types = sharedObjects.map((item) => item.type);
 		assert.strictEqual(types[0], MapFactory.Type, "SharedMap should be included");
-		assert.strictEqual(types[1], SharedStringFactory.Type, "SharedString should be included");
+		assert.strictEqual(
+			types[1],
+			SharedString.getFactory().type,
+			"SharedString should be included",
+		);
 	});
 
 	it("should be able to handle Data Objects", () => {
@@ -63,7 +73,7 @@ describe("parseDataObjectsFromSharedObjects", () => {
 				map: SharedMap,
 				do: TestDataObject,
 			},
-		};
+		} satisfies ContainerSchema;
 		const [registryEntries, sharedObjects] = parseDataObjectsFromSharedObjects(schema);
 
 		assert.strictEqual(registryEntries.length, 1, "We should have one registry entry");
@@ -80,7 +90,7 @@ describe("parseDataObjectsFromSharedObjects", () => {
 				do: TestDataObject,
 				do2: TestDataObject,
 			},
-		};
+		} satisfies ContainerSchema;
 		const [registryEntries, sharedObjects] = parseDataObjectsFromSharedObjects(schema);
 
 		assert.strictEqual(registryEntries.length, 1, "We should have one registry entry");
@@ -97,7 +107,7 @@ describe("parseDataObjectsFromSharedObjects", () => {
 				do: TestDataObject,
 			},
 			dynamicObjectTypes: [SharedString, TestDataObject],
-		};
+		} satisfies ContainerSchema;
 		const [registryEntries, sharedObjects] = parseDataObjectsFromSharedObjects(schema);
 
 		assert.strictEqual(registryEntries.length, 1, "We should have one registry entry");

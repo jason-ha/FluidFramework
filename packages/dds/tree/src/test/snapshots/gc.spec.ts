@@ -4,15 +4,18 @@
  */
 
 import { strict as assert } from "assert";
-import { createIdCompressor } from "@fluidframework/id-compressor";
+
 import { IGCTestProvider, runGCTests } from "@fluid-private/test-dds-utils";
+import { toFluidHandleInternal } from "@fluidframework/runtime-utils/internal";
+import { createIdCompressor } from "@fluidframework/id-compressor/internal";
 import {
 	MockContainerRuntimeFactory,
 	MockFluidDataStoreRuntime,
 	MockStorage,
-} from "@fluidframework/test-runtime-utils";
-import { SharedTree, SharedTreeFactory } from "../../shared-tree/index.js";
+} from "@fluidframework/test-runtime-utils/internal";
+
 import { typeboxValidator } from "../../external-utilities/index.js";
+import { SharedTree, SharedTreeFactory } from "../../shared-tree/index.js";
 import { SchemaFactory, TreeConfiguration } from "../../simple-tree/index.js";
 
 const builder = new SchemaFactory("test");
@@ -35,13 +38,7 @@ function createConnectedTree(id: string, runtimeFactory: MockContainerRuntimeFac
 	const dataStoreRuntime = new MockFluidDataStoreRuntime({
 		idCompressor: createIdCompressor(),
 	});
-	const tree = new SharedTree(
-		id,
-		dataStoreRuntime,
-		new SharedTreeFactory().attributes,
-		{},
-		"SharedTree",
-	);
+	const tree = new SharedTree(id, dataStoreRuntime, new SharedTreeFactory().attributes, {});
 	runtimeFactory.createContainerRuntime(dataStoreRuntime);
 	const services = {
 		deltaConnection: dataStoreRuntime.createDeltaConnection(),
@@ -91,7 +88,10 @@ describe("Garbage Collection", () => {
 
 			this.tree1View.handles.insertAtEnd(subtree1.handle, subtree2.handle);
 
-			this._expectedRoutes.push(subtree1.handle.absolutePath, subtree2.handle.absolutePath);
+			this._expectedRoutes.push(
+				toFluidHandleInternal(subtree1.handle).absolutePath,
+				toFluidHandleInternal(subtree2.handle).absolutePath,
+			);
 			this.containerRuntimeFactory.processAllMessages();
 		}
 
@@ -101,7 +101,10 @@ describe("Garbage Collection", () => {
 			// Get the handles that were last added.
 			const deletedHandles = this.tree1View.handles;
 			// Get the routes of the handles.
-			const deletedHandleRoutes = Array.from(deletedHandles, (handle) => handle.absolutePath);
+			const deletedHandleRoutes = Array.from(
+				deletedHandles,
+				(handle) => toFluidHandleInternal(handle).absolutePath,
+			);
 
 			// Remove the last added handles.
 			this.tree1View.handles.removeRange(0, lastElementIndex + 1);
@@ -135,7 +138,10 @@ describe("Garbage Collection", () => {
 				nestedHandles: [subtree1.handle, subtree2.handle],
 			});
 
-			this._expectedRoutes.push(subtree1.handle.absolutePath, subtree2.handle.absolutePath);
+			this._expectedRoutes.push(
+				toFluidHandleInternal(subtree1.handle).absolutePath,
+				toFluidHandleInternal(subtree2.handle).absolutePath,
+			);
 			this.containerRuntimeFactory.processAllMessages();
 		}
 	}

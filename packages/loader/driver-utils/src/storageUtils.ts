@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import { ISnapshot } from "@fluidframework/driver-definitions";
+import { ISnapshot } from "@fluidframework/driver-definitions/internal";
 import { ISnapshotTree } from "@fluidframework/protocol-definitions";
 
 /**
@@ -15,4 +15,12 @@ export function isInstanceOfISnapshot(
 	obj: ISnapshotTree | ISnapshot | undefined,
 ): obj is ISnapshot {
 	return obj !== undefined && "snapshotFormatV" in obj && obj.snapshotFormatV === 1;
+}
+
+/**
+ * Utility API to return ISnapshotTree either from ISnapshot or ISnapshotTree itself.
+ * @internal
+ */
+export function getSnapshotTree(tree: ISnapshotTree | ISnapshot): ISnapshotTree {
+	return isInstanceOfISnapshot(tree) ? tree.snapshotTree : tree;
 }

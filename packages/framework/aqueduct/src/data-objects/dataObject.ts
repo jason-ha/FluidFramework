@@ -3,9 +3,11 @@
  * Licensed under the MIT License.
  */
 
-import { type ISharedDirectory, MapFactory, SharedDirectory } from "@fluidframework/map";
-import { PureDataObject } from "./pureDataObject";
-import { type DataObjectTypes } from "./types";
+// eslint-disable-next-line import/no-deprecated
+import { type ISharedDirectory, MapFactory, SharedDirectory } from "@fluidframework/map/internal";
+
+import { PureDataObject } from "./pureDataObject.js";
+import { type DataObjectTypes } from "./types.js";
 
 /**
  * DataObject is a base data store that is primed with a root directory. It
@@ -60,6 +62,7 @@ export abstract class DataObject<
 			}
 		} else {
 			// Create a root directory and register it before calling initializingFirstTime
+			// eslint-disable-next-line import/no-deprecated
 			this.internalRoot = SharedDirectory.create(this.runtime, this.rootDirectoryId);
 			this.internalRoot.bindToContext();
 		}

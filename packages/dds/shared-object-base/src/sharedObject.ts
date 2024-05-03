@@ -3,44 +3,53 @@
  * Licensed under the MIT License.
  */
 
-import { v4 as uuid } from "uuid";
-import { IFluidHandle, ITelemetryProperties } from "@fluidframework/core-interfaces";
-import {
-	ITelemetryLoggerExt,
-	createChildLogger,
-	DataProcessingError,
-	EventEmitterWithErrorHandling,
-	loggerToMonitoringContext,
-	MonitoringContext,
-	SampledTelemetryHelper,
-	tagCodeArtifacts,
-} from "@fluidframework/telemetry-utils";
-import { assert } from "@fluidframework/core-utils";
 import { EventEmitterEventType } from "@fluid-internal/client-utils";
 import { AttachState } from "@fluidframework/container-definitions";
 import {
+	IFluidHandle,
+	type IFluidHandleInternal,
+	ITelemetryBaseProperties,
+} from "@fluidframework/core-interfaces/internal";
+import { assert } from "@fluidframework/core-utils/internal";
+import {
 	IChannelAttributes,
-	IFluidDataStoreRuntime,
-	IChannelStorageService,
+	type IChannelFactory,
 	IChannelServices,
+	IChannelStorageService,
+	IFluidDataStoreRuntime,
 } from "@fluidframework/datastore-definitions";
 import { ISequencedDocumentMessage } from "@fluidframework/protocol-definitions";
 import {
+	IExperimentalIncrementalSummaryContext,
 	IGarbageCollectionData,
 	ISummaryTreeWithStats,
 	ITelemetryContext,
+} from "@fluidframework/runtime-definitions";
+import {
 	blobCountPropertyName,
 	totalBlobSizePropertyName,
-	IExperimentalIncrementalSummaryContext,
-} from "@fluidframework/runtime-definitions";
-import { FluidSerializer, IFluidSerializer } from "./serializer";
-import { SharedObjectHandle } from "./handle";
-import { SummarySerializer } from "./summarySerializer";
-import { ISharedObject, ISharedObjectEvents } from "./types";
+} from "@fluidframework/runtime-definitions/internal";
+import {
+	ITelemetryLoggerExt,
+	DataProcessingError,
+	EventEmitterWithErrorHandling,
+	MonitoringContext,
+	SampledTelemetryHelper,
+	createChildLogger,
+	loggerToMonitoringContext,
+	tagCodeArtifacts,
+} from "@fluidframework/telemetry-utils/internal";
+import { v4 as uuid } from "uuid";
+
+import { SharedObjectHandle } from "./handle.js";
+import { FluidSerializer, IFluidSerializer } from "./serializer.js";
+import { SummarySerializer } from "./summarySerializer.js";
+import { ISharedObject, ISharedObjectEvents } from "./types.js";
+import { makeHandlesSerializable, parseHandles } from "./utils.js";
 
 /**
  * Base class from which all shared objects derive.
- * @public
+ * @alpha
  */
 export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISharedObjectEvents>
 	extends EventEmitterWithErrorHandling<TEvent>
@@ -56,7 +65,7 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 	/**
 	 * The handle referring to this SharedObject
 	 */
-	public readonly handle: IFluidHandle;
+	public readonly handle: IFluidHandleInternal;
 
 	/**
 	 * Telemetry logger for the shared object
@@ -122,8 +131,6 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 		this.mc = loggerToMonitoringContext(this.logger);
 
 		[this.opProcessingHelper, this.callbacksHelper] = this.setUpSampledTelemetryHelpers();
-
-		this.attachListeners();
 	}
 
 	/**
@@ -145,7 +152,7 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 			this.logger,
 			this.mc.config.getNumber("Fluid.SharedObject.OpProcessingTelemetrySampling") ?? 1000,
 			true,
-			new Map<string, ITelemetryProperties>([
+			new Map<string, ITelemetryBaseProperties>([
 				["local", { localOp: true }],
 				["remote", { localOp: false }],
 			]),
@@ -209,14 +216,21 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 		throw error;
 	}
 
-	private attachListeners() {
-		// Only listen to these events if not attached.
-		if (!this.isAttached()) {
-			this.runtime.once("attaching", () => {
-				// Calling this will let the dds to do any custom processing based on attached
-				// like starting generating ops.
-				this.didAttach();
-			});
+	private setBoundAndHandleAttach() {
+		// Ensure didAttach is only called once, and we only register a single event
+		// but we still call setConnectionState as our existing mocks don't
+		// always propagate connection state
+		this.setBoundAndHandleAttach = () => this.setConnectionState(this.runtime.connected);
+		this._isBoundToContext = true;
+		const runDidAttach = () => {
+			// Allows objects to do any custom processing if it is attached.
+			this.didAttach();
+			this.setConnectionState(this.runtime.connected);
+		};
+		if (this.isAttached()) {
+			runDidAttach();
+		} else {
+			this.runtime.once("attaching", runDidAttach);
 		}
 	}
 
@@ -226,13 +240,13 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 	 * @param services - Services used by the shared object
 	 */
 	public async load(services: IChannelServices): Promise<void> {
-		if (this.runtime.attachState !== AttachState.Detached) {
-			this.services = services;
-		}
+		this.services = services;
+		// set this before load so that isAttached is true
+		// for attached runtimes when load core is running
+		this._isBoundToContext = true;
 		await this.loadCore(services.objectStorage);
-		if (this.runtime.attachState !== AttachState.Detached) {
-			this.attachDeltaHandler();
-		}
+		this.attachDeltaHandler();
+		this.setBoundAndHandleAttach();
 	}
 
 	/**
@@ -247,28 +261,36 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 	 * {@inheritDoc (ISharedObject:interface).bindToContext}
 	 */
 	public bindToContext(): void {
-		if (this._isBoundToContext) {
-			return;
+		// ensure the method only runs once by removing the implementation
+		// without this the method suffers from re-entrancy issues
+		this.bindToContext = () => {};
+		if (!this._isBoundToContext) {
+			this.runtime.bindChannel(this);
+			// must set after bind channel so isAttached doesn't report true
+			// before binding is complete
+			this.setBoundAndHandleAttach();
 		}
-
-		this._isBoundToContext = true;
-
-		this.runtime.bindChannel(this);
 	}
 
 	/**
 	 * {@inheritDoc @fluidframework/datastore-definitions#(IChannel:interface).connect}
 	 */
 	public connect(services: IChannelServices) {
-		this.services = services;
-		this.attachDeltaHandler();
+		// handle the case where load is called
+		// before connect; loading detached data stores
+		if (this.services === undefined) {
+			this.services = services;
+			this.attachDeltaHandler();
+		}
+
+		this.setBoundAndHandleAttach();
 	}
 
 	/**
 	 * {@inheritDoc @fluidframework/datastore-definitions#(IChannel:interface).isAttached}
 	 */
 	public isAttached(): boolean {
-		return this.services !== undefined && this.runtime.attachState !== AttachState.Detached;
+		return this._isBoundToContext && this.runtime.attachState !== AttachState.Detached;
 	}
 
 	/**
@@ -346,8 +368,14 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 	protected abstract onDisconnect();
 
 	/**
+	 * The serializer to serialize / parse handles.
+	 */
+	protected abstract get serializer(): IFluidSerializer;
+
+	/**
 	 * Submits a message by the local client to the runtime.
-	 * @param content - Content of the message
+	 * @param content - Content of the message. Note: handles contained in the
+	 * message object should not be encoded in any way
 	 * @param localOpMetadata - The local metadata associated with the message. This is kept locally by the runtime
 	 * and not sent to the server. This will be sent back when this message is received back from the server. This is
 	 * also sent if we are asked to resubmit the message.
@@ -356,7 +384,10 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 		this.verifyNotClosed();
 		if (this.isAttached()) {
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-			this.services!.deltaConnection.submit(content, localOpMetadata);
+			this.services!.deltaConnection.submit(
+				makeHandlesSerializable(content, this.serializer, this.handle),
+				localOpMetadata,
+			);
 		}
 	}
 
@@ -431,10 +462,6 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 			this.services !== undefined,
 			0x07a /* "Services should be there to attach delta handler" */,
 		);
-		this._isBoundToContext = true;
-		// Allows objects to do any custom processing if it is attached.
-		this.didAttach();
-
 		// attachDeltaHandler is only called after services is assigned
 		this.services.deltaConnection.attach({
 			process: (
@@ -442,7 +469,11 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 				local: boolean,
 				localOpMetadata: unknown,
 			) => {
-				this.process(message, local, localOpMetadata);
+				this.process(
+					{ ...message, contents: parseHandles(message.contents, this.serializer) },
+					local,
+					localOpMetadata,
+				);
 			},
 			setConnectionState: (connected: boolean) => {
 				this.setConnectionState(connected);
@@ -450,17 +481,13 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 			reSubmit: (content: any, localOpMetadata: unknown) => {
 				this.reSubmit(content, localOpMetadata);
 			},
-			applyStashedOp: (content: any): unknown => {
-				return this.applyStashedOp(content);
+			applyStashedOp: (content: any): void => {
+				this.applyStashedOp(parseHandles(content, this.serializer));
 			},
 			rollback: (content: any, localOpMetadata: unknown) => {
 				this.rollback(content, localOpMetadata);
 			},
 		});
-
-		// Trigger initial state
-		// attachDeltaHandler is only called after services is assigned
-		this.setConnectionState(this.services.deltaConnection.connected);
 	}
 
 	/**
@@ -468,7 +495,10 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 	 * @param connected - true if connected, false otherwise.
 	 */
 	private setConnectionState(connected: boolean) {
-		if (this._connected === connected) {
+		// only an attached shared object can transition its
+		// connected state. This is defensive, as some
+		// of our test harnesses don't handle this correctly
+		if (!this.isAttached() || this._connected === connected) {
 			// Not changing state, nothing the same.
 			return;
 		}
@@ -529,14 +559,23 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 	}
 
 	/**
-	 * Apply changes from an op. Used when rehydrating an attached container
-	 * with pending changes. This prepares the SharedObject for seeing an ACK
-	 * for the op or resubmitting the op upon reconnection.
+	 * Apply changes from the provided op content just as if a local client has made the change,
+	 * including submitting the op. Used when rehydrating an attached container
+	 * with pending changes. The rehydration process replays all remote ops
+	 * and applies stashed ops after the remote op with a sequence number
+	 * that matches that of the stashed op is applied. This ensures
+	 * stashed ops are applied at the same state they were originally created.
+	 *
+	 * It is possible that stashed ops have been sent in the past, and will be found when
+	 * the shared object catches up with remotes ops.
+	 * So this prepares the SharedObject for seeing potentially seeing the ACK.
+	 * If no matching remote op is found, all the applied stashed ops will go
+	 * through the normal resubmit flow upon reconnection, which allows the dds
+	 * to rebase them to the latest state, and then resubmit them.
+	 *
 	 * @param content - Contents of a stashed op.
-	 * @returns localMetadata of the op, to be passed to process() or resubmit()
-	 * when the op is ACKed or resubmitted, respectively
 	 */
-	protected abstract applyStashedOp(content: any): unknown;
+	protected abstract applyStashedOp(content: any): void;
 
 	/**
 	 * Emit an event. This function is only intended for use by DDS classes that extend SharedObject/SharedObjectCore,
@@ -550,19 +589,7 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 	 */
 	public emit(event: EventEmitterEventType, ...args: any[]): boolean {
 		return this.callbacksHelper.measure(() => {
-			// Creating ops while handling a DDS event can lead
-			// to undefined behavior and events observed in the wrong order.
-			// For example, we have two callbacks registered for a DDS, A and B.
-			// Then if on change #1 callback A creates change #2, the invocation flow will be:
-			//
-			// A because of #1
-			// A because of #2
-			// B because of #2
-			// B because of #1
-			//
-			// The runtime must enforce op coherence by not allowing any ops to be created during
-			// the event handler
-			return this.runtime.ensureNoDataModelChanges(() => super.emit(event, ...args));
+			return super.emit(event, ...args);
 		});
 	}
 
@@ -581,7 +608,7 @@ export abstract class SharedObjectCore<TEvent extends ISharedObjectEvents = ISha
 /**
  * SharedObject with simplified, synchronous summarization and GC.
  * DDS implementations with async and incremental summarization should extend SharedObjectCore directly instead.
- * @public
+ * @alpha
  */
 export abstract class SharedObject<
 	TEvent extends ISharedObjectEvents = ISharedObjectEvents,
@@ -742,4 +769,62 @@ export abstract class SharedObject<
 			0) as number;
 		telemetryContext?.set(this.telemetryContextPrefix, propertyName, prevTotal + incrementBy);
 	}
+}
+
+/**
+ * Defines a kind of shared object.
+ * Used in containers to register a shared object implementation, and to create new instances of a given type of shared object.
+ * @public
+ */
+export interface ISharedObjectKind<TSharedObject> {
+	/**
+	 * Get a factory which can be used by the Fluid Framework to programmatically instantiate shared objects within containers.
+	 * @remarks
+	 * The produced factory is intended for use with the FluidDataStoreRegistry and is used by the Fluid Framework to instantiate already existing Channels.
+	 * To create new shared objects use:
+	 *
+	 * - {@link @fluidframework/fluid-static#IFluidContainer.create} if using `@fluidframework/fluid-static`, for example via `@fluidframework/azure-client`.
+	 *
+	 * - {@link ISharedObjectKind.create} if using a custom container definitions (and thus not using {@link @fluidframework/fluid-static#IFluidContainer}).
+	 */
+	getFactory(): IChannelFactory<TSharedObject>;
+
+	/**
+	 * Create a shared object.
+	 * @param runtime - The data store runtime that the new shared object belongs to.
+	 * @param id - Optional name of the shared object.
+	 * @returns Newly created shared object.
+	 *
+	 * @example
+	 * To create a `SharedTree`, call the static create method:
+	 *
+	 * ```typescript
+	 * const myTree = SharedTree.create(this.runtime, id);
+	 * ```
+	 * @remarks
+	 * The created object is local (detached): insert a handle to it into an attached object to share (attach) it.
+	 * If using `@fluidframework/fluid-static` (for example via `@fluidframework/azure-client`), use {@link @fluidframework/fluid-static#IFluidContainer.create} instead of calling this directly.
+	 *
+	 * @privateRemarks
+	 * This can only be used with a `MockFluidDataStoreRuntime` when that mock is created with a `registry` containing a factory for this shared object.
+	 */
+	create(runtime: IFluidDataStoreRuntime, id?: string): TSharedObject;
+}
+
+/**
+ * Utility for creating ISharedObjectKind instances.
+ * @internal
+ */
+export function createSharedObjectKind<TSharedObject>(
+	factory: (new () => IChannelFactory<TSharedObject>) & { Type: string },
+): ISharedObjectKind<TSharedObject> {
+	return {
+		getFactory(): IChannelFactory<TSharedObject> {
+			return new factory();
+		},
+
+		create(runtime: IFluidDataStoreRuntime, id?: string): TSharedObject {
+			return runtime.createChannel(id, factory.Type) as TSharedObject;
+		},
+	};
 }

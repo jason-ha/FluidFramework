@@ -2,10 +2,12 @@
  * Copyright (c) Microsoft Corporation and contributors. All rights reserved.
  * Licensed under the MIT License.
  */
+
 import { type ITelemetryBaseLogger } from "@fluidframework/core-interfaces";
-import type { IMember, IServiceAudience } from "@fluidframework/fluid-static";
 import { IConfigProviderBase } from "@fluidframework/core-interfaces";
-import { IOdspTokenProvider } from "./token";
+import type { IMember, IServiceAudience } from "@fluidframework/fluid-static";
+
+import { IOdspTokenProvider } from "./token.js";
 
 /**
  * Defines the necessary properties that will be applied to all containers
@@ -94,7 +96,7 @@ export interface OdspMember extends IMember {
 	/**
 	 * The object ID (oid) for the user, unique among each individual user connecting to the session.
 	 */
-	userId: string;
+	id: string;
 	/**
 	 * The user's name
 	 */

@@ -3,11 +3,10 @@
  * Licensed under the MIT License.
  */
 
-import { IDisposable } from "@fluidframework/core-interfaces";
-import { ITelemetryLoggerExt } from "@fluidframework/telemetry-utils";
 import { bufferToString, stringToBuffer } from "@fluid-internal/client-utils";
-import { assert } from "@fluidframework/core-utils";
-import { ISnapshotTreeWithBlobContents } from "@fluidframework/container-definitions";
+import { ISnapshotTreeWithBlobContents } from "@fluidframework/container-definitions/internal";
+import { IDisposable } from "@fluidframework/core-interfaces";
+import { assert } from "@fluidframework/core-utils/internal";
 import {
 	FetchSource,
 	IDocumentService,
@@ -16,8 +15,8 @@ import {
 	ISnapshot,
 	ISnapshotFetchOptions,
 	ISummaryContext,
-} from "@fluidframework/driver-definitions";
-import { UsageError } from "@fluidframework/driver-utils";
+} from "@fluidframework/driver-definitions/internal";
+import { UsageError } from "@fluidframework/driver-utils/internal";
 import {
 	ICreateBlobResponse,
 	ISnapshotTree,
@@ -25,9 +24,16 @@ import {
 	ISummaryTree,
 	IVersion,
 } from "@fluidframework/protocol-definitions";
-import { IDetachedBlobStorage } from "./loader";
-import { ProtocolTreeStorageService } from "./protocolTreeDocumentStorageService";
-import { RetriableDocumentStorageService } from "./retriableDocumentStorageService";
+import { ITelemetryLoggerExt } from "@fluidframework/telemetry-utils/internal";
+
+import { IDetachedBlobStorage } from "./loader.js";
+import { ProtocolTreeStorageService } from "./protocolTreeDocumentStorageService.js";
+import { RetriableDocumentStorageService } from "./retriableDocumentStorageService.js";
+import type {
+	ISerializedStateManagerDocumentStorageService,
+	ISnapshotInfo,
+} from "./serializedStateManager.js";
+import { convertSnapshotInfoToSnapshot, getDocumentAttributes } from "./utils.js";
 
 /**
  * Stringified blobs from a summary/snapshot tree.
@@ -41,7 +47,9 @@ export interface ISerializableBlobContents {
  * This class wraps the actual storage and make sure no wrong apis are called according to
  * container attach state.
  */
-export class ContainerStorageAdapter implements IDocumentStorageService, IDisposable {
+export class ContainerStorageAdapter
+	implements ISerializedStateManagerDocumentStorageService, IDocumentStorageService, IDisposable
+{
 	private _storageService: IDocumentStorageService & Partial<IDisposable>;
 
 	private _summarizeProtocolTree: boolean | undefined;
@@ -52,11 +60,20 @@ export class ContainerStorageAdapter implements IDocumentStorageService, IDispos
 		return this._summarizeProtocolTree === true;
 	}
 
+	private _loadedGroupIdSnapshots: Record<string, ISnapshot> = {};
+	/**
+	 * Any loading group id (virtualized) snapshot download from storage will be stored here.
+	 */
+	public get loadedGroupIdSnapshots(): Record<string, ISnapshot> {
+		return this._loadedGroupIdSnapshots;
+	}
+
 	/**
 	 * An adapter that ensures we're using detachedBlobStorage up until we connect to a real service, and then
 	 * after connecting to a real service augments it with retry and combined summary tree enforcement.
 	 * @param detachedBlobStorage - The detached blob storage to use up until we connect to a real service
 	 * @param logger - Telemetry logger
+	 * @param loadingGroupIdSnapshotsFromPendingState - in offline mode, any loading group snapshots we've downloaded from the service that were stored in the pending state
 	 * @param addProtocolSummaryIfMissing - a callback to permit the container to inspect the summary we're about to
 	 * upload, and fix it up with a protocol tree if needed
 	 * @param forceEnableSummarizeProtocolTree - Enforce uploading a protocol summary regardless of the service's policy
@@ -68,6 +85,7 @@ export class ContainerStorageAdapter implements IDocumentStorageService, IDispos
 		 * ArrayBufferLikes or utf8 encoded strings, containing blobs from a snapshot
 		 */
 		private readonly blobContents: { [id: string]: ArrayBufferLike | string } = {},
+		private loadingGroupIdSnapshotsFromPendingState: Record<string, ISnapshotInfo> | undefined,
 		private readonly addProtocolSummaryIfMissing: (summaryTree: ISummaryTree) => ISummaryTree,
 		forceEnableSummarizeProtocolTree: boolean | undefined,
 	) {
@@ -109,6 +127,10 @@ export class ContainerStorageAdapter implements IDocumentStorageService, IDispos
 		}
 	}
 
+	public clearPendingState() {
+		this.loadingGroupIdSnapshotsFromPendingState = undefined;
+	}
+
 	public get policies(): IDocumentStorageServicePolicies | undefined {
 		// back-compat 0.40 containerRuntime requests policies even in detached container if storage is present
 		// and storage is always present in >=0.41.
@@ -116,10 +138,6 @@ export class ContainerStorageAdapter implements IDocumentStorageService, IDispos
 			return this._storageService.policies;
 		} catch (e) {}
 		return undefined;
-	}
-
-	public get repositoryUrl(): string {
-		return this._storageService.repositoryUrl;
 	}
 
 	public async getSnapshotTree(
@@ -130,12 +148,43 @@ export class ContainerStorageAdapter implements IDocumentStorageService, IDispos
 	}
 
 	public async getSnapshot(snapshotFetchOptions?: ISnapshotFetchOptions): Promise<ISnapshot> {
-		if (this._storageService.getSnapshot !== undefined) {
-			return this._storageService.getSnapshot(snapshotFetchOptions);
+		let snapshot: ISnapshot;
+		if (
+			this.loadingGroupIdSnapshotsFromPendingState !== undefined &&
+			snapshotFetchOptions?.loadingGroupIds !== undefined
+		) {
+			const localSnapshot =
+				this.loadingGroupIdSnapshotsFromPendingState[
+					snapshotFetchOptions.loadingGroupIds[0]
+				];
+			assert(localSnapshot !== undefined, "Local snapshot must be present");
+			const attributes = await getDocumentAttributes(this, localSnapshot.baseSnapshot);
+			snapshot = convertSnapshotInfoToSnapshot(localSnapshot, attributes.sequenceNumber);
+		} else {
+			if (this._storageService.getSnapshot === undefined) {
+				throw new UsageError(
+					"getSnapshot api should exist in internal storage in ContainerStorageAdapter",
+				);
+			}
+			snapshot = await this._storageService.getSnapshot(snapshotFetchOptions);
 		}
-		throw new UsageError(
-			"getSnapshot api should exist in internal storage in ContainerStorageAdapter",
-		);
+
+		// Track the latest snapshot for each loading group id
+		const loadingGroupIds = snapshotFetchOptions?.loadingGroupIds;
+		assert(snapshot.sequenceNumber !== undefined, "Snapshot must have sequence number");
+		if (loadingGroupIds !== undefined) {
+			for (const loadingGroupId of loadingGroupIds) {
+				// Do we actually want to update the stored snapshot?
+				// What if the incoming snapshot is way newer than the stored snapshot?
+				// We only want to update the stored snapshot if the incoming snapshot is newer (stored sequence number < incoming sequence number)
+				const storedSeqNum =
+					this._loadedGroupIdSnapshots[loadingGroupId]?.sequenceNumber ?? -1;
+				if (storedSeqNum < snapshot.sequenceNumber) {
+					this._loadedGroupIdSnapshots[loadingGroupId] = snapshot;
+				}
+			}
+		}
+		return snapshot;
 	}
 
 	public async readBlob(id: string): Promise<ArrayBufferLike> {
@@ -204,10 +253,6 @@ class BlobOnlyStorage implements IDocumentStorageService {
 		return this.notCalled();
 	}
 
-	public get repositoryUrl(): string {
-		return this.notCalled();
-	}
-
 	/* eslint-disable @typescript-eslint/unbound-method */
 	public getSnapshotTree: () => Promise<ISnapshotTree | null> = this.notCalled;
 	public getSnapshot: () => Promise<ISnapshot> = this.notCalled;
@@ -242,7 +287,7 @@ const redirectTableBlobName = ".redirectTable";
  */
 export async function getBlobContentsFromTree(
 	snapshot: ISnapshotTree,
-	storage: IDocumentStorageService,
+	storage: Pick<IDocumentStorageService, "readBlob">,
 ): Promise<ISerializableBlobContents> {
 	const blobs = {};
 	await getBlobContentsFromTreeCore(snapshot, blobs, storage);
@@ -252,7 +297,7 @@ export async function getBlobContentsFromTree(
 async function getBlobContentsFromTreeCore(
 	tree: ISnapshotTree,
 	blobs: ISerializableBlobContents,
-	storage: IDocumentStorageService,
+	storage: Pick<IDocumentStorageService, "readBlob">,
 	root = true,
 ) {
 	const treePs: Promise<any>[] = [];
@@ -275,7 +320,7 @@ async function getBlobContentsFromTreeCore(
 async function getBlobManagerTreeFromTree(
 	tree: ISnapshotTree,
 	blobs: ISerializableBlobContents,
-	storage: IDocumentStorageService,
+	storage: Pick<IDocumentStorageService, "readBlob">,
 ) {
 	const id = tree.blobs[redirectTableBlobName];
 	const blob = await storage.readBlob(id);
