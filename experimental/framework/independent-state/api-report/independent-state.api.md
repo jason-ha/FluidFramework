@@ -4,14 +4,14 @@
 
 ```ts
 
-import { AliasResult } from '@fluidframework/runtime-definitions';
-import { FluidDataStoreRuntime } from '@fluidframework/datastore';
-import type { IContainerRuntime } from '@fluidframework/container-runtime-definitions';
-import type { IContainerRuntimeBase } from '@fluidframework/runtime-definitions';
+import { AliasResult } from '@fluidframework/runtime-definitions/internal';
+import { FluidDataStoreRuntime } from '@fluidframework/datastore/internal';
+import type { IContainerRuntime } from '@fluidframework/container-runtime-definitions/internal';
+import type { IContainerRuntimeBase } from '@fluidframework/runtime-definitions/internal';
 import type { IEvent } from '@fluidframework/core-interfaces';
 import type { IEventProvider } from '@fluidframework/core-interfaces';
 import type { IFluidDataStoreRuntime } from '@fluidframework/datastore-definitions';
-import type { NamedFluidDataStoreRegistryEntry } from '@fluidframework/runtime-definitions';
+import type { NamedFluidDataStoreRegistryEntry } from '@fluidframework/runtime-definitions/internal';
 
 // @beta
 export type ClientId = string;

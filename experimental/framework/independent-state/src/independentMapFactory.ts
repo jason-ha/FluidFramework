@@ -3,16 +3,16 @@
  * Licensed under the MIT License.
  */
 
-import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions";
+import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
 import type { IFluidHandle } from "@fluidframework/core-interfaces";
-import { assert } from "@fluidframework/core-utils";
-import { FluidDataStoreRuntime } from "@fluidframework/datastore";
+import { assert } from "@fluidframework/core-utils/internal";
+import { FluidDataStoreRuntime } from "@fluidframework/datastore/internal";
 import type {
 	IContainerRuntimeBase,
 	IFluidDataStoreContext,
 	IFluidDataStoreFactory,
 	NamedFluidDataStoreRegistryEntry,
-} from "@fluidframework/runtime-definitions";
+} from "@fluidframework/runtime-definitions/internal";
 
 import type { IndependentMap, IndependentMapSchema } from "./types.js";
 

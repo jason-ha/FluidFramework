@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import type { JsonDeserialized } from "../jsonDeserialized";
+import type { JsonDeserialized } from "../jsonDeserialized.js";
 
 // TODO: add testing infrastructure
 function describe(desc: string, test: () => void) {

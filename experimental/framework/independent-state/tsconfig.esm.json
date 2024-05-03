@@ -1,8 +1,0 @@
-{
-	"extends": "./tsconfig.base.json",
-	"compilerOptions": {
-		"outDir": "./lib",
-		"module": "Node16",
-		"moduleResolution": "Node16",
-	},
-}

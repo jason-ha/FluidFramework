@@ -44,6 +44,8 @@ export type {
 
 // Below here are things that are used by the above, but not part of the desired API surface.
 import type * as InternalTypes from "./exposedInternalTypes.js";
+/** @beta */
 export { InternalTypes };
 import type * as InternalUtilityTypes from "./exposedUtilityTypes.js";
+/** @beta */
 export { InternalUtilityTypes };
