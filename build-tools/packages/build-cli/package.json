@@ -1,6 +1,6 @@
 {
 	"name": "@fluid-tools/build-cli",
-	"version": "0.38.0",
+	"version": "0.39.0",
 	"description": "Build tools for the Fluid Framework",
 	"homepage": "https://fluidframework.com",
 	"repository": {
@@ -67,7 +67,7 @@
 		"@fluid-tools/version-tools": "workspace:~",
 		"@fluidframework/build-tools": "workspace:~",
 		"@fluidframework/bundle-size-tools": "workspace:~",
-		"@microsoft/api-extractor": "^7.42.3",
+		"@microsoft/api-extractor": "^7.43.1",
 		"@oclif/core": "^3.26.5",
 		"@oclif/plugin-autocomplete": "^3.0.16",
 		"@oclif/plugin-commands": "^3.3.1",

@@ -9,7 +9,6 @@ import {
 	IAudience,
 	ISelf,
 	ICriticalContainerError,
-	IDeltaManager,
 } from "@fluidframework/container-definitions";
 import {
 	IBatchMessage,
@@ -19,6 +18,7 @@ import {
 	IRuntime,
 	LoaderHeader,
 	type IAudienceEvents,
+	IDeltaManager,
 } from "@fluidframework/container-definitions/internal";
 import {
 	IContainerRuntime,
@@ -131,7 +131,7 @@ import { IPerfSignalReport, ReportOpPerfTelemetry } from "./connectionTelemetry.
 import { ContainerFluidHandleContext } from "./containerHandleContext.js";
 import { channelToDataStore } from "./dataStore.js";
 import { FluidDataStoreRegistry } from "./dataStoreRegistry.js";
-import { DeltaManagerSummarizerProxy } from "./deltaManagerSummarizerProxy.js";
+import { DeltaManagerPendingOpsProxy, DeltaManagerSummarizerProxy } from "./deltaManagerProxies.js";
 import {
 	GCNodeType,
 	GarbageCollector,
@@ -466,10 +466,7 @@ export interface IContainerRuntimeOptions {
 	 * message to be sent to the service.
 	 * The grouping an ungrouping of such messages is handled by the "OpGroupingManager".
 	 *
-	 * By default, the feature is disabled. If enabled from options, the `Fluid.ContainerRuntime.DisableGroupedBatching`
-	 * flag can be used to disable it at runtime.
-	 *
-	 * @experimental Not ready for use.
+	 * By default, the feature is enabled.
 	 */
 	readonly enableGroupedBatching?: boolean;
 
@@ -802,7 +799,7 @@ export class ContainerRuntime
 			maxBatchSizeInBytes = defaultMaxBatchSizeInBytes,
 			enableRuntimeIdCompressor,
 			chunkSizeInBytes = defaultChunkSizeInBytes,
-			enableGroupedBatching = false,
+			enableGroupedBatching = true,
 			explicitSchemaControl = false,
 		} = runtimeOptions;
 
@@ -963,9 +960,6 @@ export class ContainerRuntime
 			}
 		};
 
-		const disableGroupedBatching = mc.config.getBoolean(
-			"Fluid.ContainerRuntime.DisableGroupedBatching",
-		);
 		const disableCompression = mc.config.getBoolean(
 			"Fluid.ContainerRuntime.CompressionDisabled",
 		);
@@ -973,8 +967,6 @@ export class ContainerRuntime
 			disableCompression !== true &&
 			compressionOptions.minimumBatchSizeInBytes !== Infinity &&
 			compressionOptions.compressionAlgorithm === "lz4";
-
-		const opGroupingEnabled = disableGroupedBatching !== true && enableGroupedBatching;
 
 		const documentSchemaController = new DocumentsSchemaController(
 			existing,
@@ -984,7 +976,7 @@ export class ContainerRuntime
 				explicitSchemaControl,
 				compressionLz4,
 				idCompressorMode,
-				opGroupingEnabled,
+				opGroupingEnabled: enableGroupedBatching,
 				disallowedVersions: [],
 			},
 			(schema) => {
@@ -993,7 +985,6 @@ export class ContainerRuntime
 		);
 
 		const featureGatesForTelemetry: Record<string, boolean | number | undefined> = {
-			disableGroupedBatching,
 			disableCompression,
 		};
 
@@ -1197,6 +1188,8 @@ export class ContainerRuntime
 
 	private readonly summarizerNode: IRootSummarizerNodeWithGC;
 
+	private readonly logger: ITelemetryLoggerExt;
+
 	private readonly maxConsecutiveReconnects: number;
 	private readonly defaultMaxConsecutiveReconnects = 7;
 
@@ -1357,7 +1350,8 @@ export class ContainerRuntime
 		dataStoreAliasMap: [string, string][],
 		private readonly runtimeOptions: Readonly<Required<IContainerRuntimeOptions>>,
 		private readonly containerScope: FluidObject,
-		public readonly logger: ITelemetryLoggerExt,
+		// Create a custom ITelemetryBaseLogger to output telemetry events.
+		public readonly baseLogger: ITelemetryBaseLogger,
 		existing: boolean,
 		blobManagerSnapshot: IBlobManagerLoadInfo,
 		private readonly _storage: IDocumentStorageService,
@@ -1398,6 +1392,7 @@ export class ContainerRuntime
 			snapshotWithContents,
 		} = context;
 
+		this.logger = createChildLogger({ logger: this.baseLogger });
 		this.mc = createChildMonitoringContext({
 			logger: this.logger,
 			namespace: "ContainerRuntime",
@@ -1415,7 +1410,6 @@ export class ContainerRuntime
 		};
 
 		this.innerDeltaManager = deltaManager;
-		this.deltaManager = new DeltaManagerSummarizerProxy(this.innerDeltaManager);
 
 		// Here we could wrap/intercept on these functions to block/modify outgoing messages if needed.
 		// This makes ContainerRuntime the final gatekeeper for outgoing messages.
@@ -1520,6 +1514,44 @@ export class ContainerRuntime
 			opGroupingManager,
 		);
 
+		const pendingRuntimeState = pendingLocalState as IPendingRuntimeState | undefined;
+		this.pendingStateManager = new PendingStateManager(
+			{
+				applyStashedOp: this.applyStashedOp.bind(this),
+				clientId: () => this.clientId,
+				close: this.closeFn,
+				connected: () => this.connected,
+				reSubmit: (message: IPendingBatchMessage) => {
+					this.reSubmit(message);
+					this.flush();
+				},
+				reSubmitBatch: this.reSubmitBatch.bind(this),
+				isActiveConnection: () => this.innerDeltaManager.active,
+				isAttached: () => this.attachState !== AttachState.Detached,
+			},
+			pendingRuntimeState?.pending,
+			this.logger,
+		);
+
+		let outerDeltaManager: IDeltaManager<ISequencedDocumentMessage, IDocumentMessage>;
+		const useDeltaManagerOpsProxy =
+			this.mc.config.getBoolean("Fluid.ContainerRuntime.DeltaManagerOpsProxy") !== false;
+		// The summarizerDeltaManager Proxy is used to lie to the summarizer to convince it is in the right state as a summarizer client.
+		const summarizerDeltaManagerProxy = new DeltaManagerSummarizerProxy(this.innerDeltaManager);
+		outerDeltaManager = summarizerDeltaManagerProxy;
+
+		// The DeltaManagerPendingOpsProxy is used to control the minimum sequence number
+		// It allows us to lie to the layers below so that they can maintain enough local state for rebasing ops.
+		if (useDeltaManagerOpsProxy) {
+			const pendingOpsDeltaManagerProxy = new DeltaManagerPendingOpsProxy(
+				summarizerDeltaManagerProxy,
+				this.pendingStateManager,
+			);
+			outerDeltaManager = pendingOpsDeltaManagerProxy;
+		}
+
+		this.deltaManager = outerDeltaManager;
+
 		this.handleContext = new ContainerFluidHandleContext("", this);
 
 		if (this.summaryConfiguration.state === "enabled") {
@@ -1544,8 +1576,6 @@ export class ContainerRuntime
 		} else {
 			this._flushMode = runtimeOptions.flushMode;
 		}
-
-		const pendingRuntimeState = pendingLocalState as IPendingRuntimeState | undefined;
 
 		if (context.attachState === AttachState.Attached) {
 			const maxSnapshotCacheDurationMs = this._storage?.policies?.maximumCacheDurationMs;
@@ -1673,24 +1703,6 @@ export class ContainerRuntime
 			createChildLogger({ logger: this.logger, namespace: "ScheduleManager" }),
 		);
 
-		this.pendingStateManager = new PendingStateManager(
-			{
-				applyStashedOp: this.applyStashedOp.bind(this),
-				clientId: () => this.clientId,
-				close: this.closeFn,
-				connected: () => this.connected,
-				reSubmit: (message: IPendingBatchMessage) => {
-					this.reSubmit(message);
-					this.flush();
-				},
-				reSubmitBatch: this.reSubmitBatch.bind(this),
-				isActiveConnection: () => this.innerDeltaManager.active,
-				isAttached: () => this.attachState !== AttachState.Detached,
-			},
-			pendingRuntimeState?.pending,
-			this.logger,
-		);
-
 		const disablePartialFlush = this.mc.config.getBoolean(
 			"Fluid.ContainerRuntime.DisablePartialFlush",
 		);
@@ -1742,7 +1754,7 @@ export class ContainerRuntime
 			let oldClientId = this.clientId;
 			this.on("connected", () => {
 				const clientId = this.clientId;
-				assert(clientId !== undefined, "can't be undefined");
+				assert(clientId !== undefined, 0x975 /* can't be undefined */);
 				(audience as unknown as TypedEventEmitter<IAudienceEvents>).emit(
 					"selfChanged",
 					{ clientId: oldClientId },
@@ -1851,7 +1863,7 @@ export class ContainerRuntime
 		}
 
 		// logging hardware telemetry
-		logger.sendTelemetryEvent({
+		this.logger.sendTelemetryEvent({
 			eventName: "DeviceSpec",
 			...getDeviceSpec(),
 		});
@@ -2334,6 +2346,7 @@ export class ContainerRuntime
 		let newState: boolean;
 
 		try {
+			this.submitIdAllocationOpIfNeeded(true);
 			// replay the ops
 			this.pendingStateManager.replayPendingStates();
 		} finally {
@@ -2386,8 +2399,6 @@ export class ContainerRuntime
 				return;
 			case ContainerMessageType.BlobAttach:
 				return;
-			case ContainerMessageType.ChunkedOp:
-				throw new Error("chunkedOp not expected here");
 			case ContainerMessageType.Rejoin:
 				throw new Error("rejoin not expected here");
 			case ContainerMessageType.GC:
@@ -2400,7 +2411,7 @@ export class ContainerRuntime
 				const compatBehavior = opContents.compatDetails?.behavior;
 				if (!compatBehaviorAllowsMessageType(opContents.type, compatBehavior)) {
 					const error = DataProcessingError.create(
-						"Stashed runtime message of unknown type",
+						"Stashed runtime message of unexpected type",
 						"applyStashedOp",
 						undefined /* sequencedMessage */,
 						{
@@ -2433,7 +2444,7 @@ export class ContainerRuntime
 					for (const range of ops) {
 						compressor.finalizeCreationRange(range);
 					}
-					assert(this.pendingIdCompressorOps.length === 0, "No new ops added");
+					assert(this.pendingIdCompressorOps.length === 0, 0x976 /* No new ops added */);
 					this._idCompressor = compressor;
 				})
 				.catch((error) => {
@@ -2447,8 +2458,11 @@ export class ContainerRuntime
 	public setConnectionState(connected: boolean, clientId?: string) {
 		// Validate we have consistent state
 		const currentClientId = this._audience.getSelf()?.clientId;
-		assert(clientId === currentClientId, "input clientId does not match Audience");
-		assert(this.clientId === currentClientId, "this.clientId does not match Audience");
+		assert(clientId === currentClientId, 0x977 /* input clientId does not match Audience */);
+		assert(
+			this.clientId === currentClientId,
+			0x978 /* this.clientId does not match Audience */,
+		);
 
 		if (connected && this.idCompressorMode === "delayed") {
 			// eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -2595,6 +2609,17 @@ export class ContainerRuntime
 	 */
 	private processCore(messageWithContext: MessageWithContext) {
 		const { message, local } = messageWithContext;
+
+		// Intercept to reduce minimum sequence number to the delta manager's minimum sequence number.
+		// Sequence numbers are not guaranteed to follow any sort of order. Re-entrancy is one of those situations
+		if (
+			this.deltaManager.minimumSequenceNumber <
+			messageWithContext.message.minimumSequenceNumber
+		) {
+			messageWithContext.message.minimumSequenceNumber =
+				this.deltaManager.minimumSequenceNumber;
+		}
+
 		// Surround the actual processing of the operation with messages to the schedule manager indicating
 		// the beginning and end. This allows it to emit appropriate events and/or pause the processing of new
 		// messages once a batch has been fully processed.
@@ -2685,7 +2710,7 @@ export class ContainerRuntime
 					} else {
 						assert(
 							this.pendingIdCompressorOps.length === 0,
-							"there should be no pending ops!",
+							0x979 /* there should be no pending ops! */,
 						);
 						this._idCompressor.finalizeCreationRange(range);
 					}
@@ -3217,7 +3242,7 @@ export class ContainerRuntime
 
 			return { stats, summary };
 		} finally {
-			this.mc.logger.sendTelemetryEvent({
+			summaryLogger.sendTelemetryEvent({
 				eventName: "SummarizeTelemetry",
 				details: telemetryContext.serialize(),
 			});
@@ -3898,9 +3923,11 @@ export class ContainerRuntime
 		return this.blobManager.createBlob(blob, signal);
 	}
 
-	private submitIdAllocationOpIfNeeded(): void {
+	private submitIdAllocationOpIfNeeded(resubmitOutstandingRanges = false): void {
 		if (this._idCompressor) {
-			const idRange = this._idCompressor.takeNextCreationRange();
+			const idRange = resubmitOutstandingRanges
+				? this.idCompressor?.takeUnfinalizedCreationRange()
+				: this._idCompressor.takeNextCreationRange();
 			// Don't include the idRange if there weren't any Ids allocated
 			if (idRange?.ids !== undefined) {
 				const idAllocationMessage: ContainerRuntimeIdAllocationMessage = {
@@ -4116,11 +4143,15 @@ export class ContainerRuntime
 				this.channelCollection.reSubmit(message.type, message.contents, localOpMetadata);
 				break;
 			case ContainerMessageType.IdAllocation: {
-				this.submit(message, localOpMetadata);
+				// Allocation ops are never resubmitted/rebased. This is because they require special handling to
+				// avoid being submitted out of order. For example, if the pending state manager contained
+				// [idOp1, dataOp1, idOp2, dataOp2] and the resubmission of dataOp1 generated idOp3, that would be
+				// placed into the outbox in the same batch as idOp1, but before idOp2 is resubmitted.
+				// To avoid this, allocation ops are simply never resubmitted. Prior to invoking the pending state
+				// manager to replay pending ops, the runtime will always submit a new allocation range that includes
+				// all pending IDs. The resubmitted allocation ops are then ignored here.
 				break;
 			}
-			case ContainerMessageType.ChunkedOp:
-				throw new Error(`chunkedOp not expected here`);
 			case ContainerMessageType.BlobAttach:
 				this.blobManager.reSubmit(opMetadata);
 				break;
@@ -4147,7 +4178,7 @@ export class ContainerRuntime
 					});
 				} else {
 					const error = DataProcessingError.create(
-						"Resubmitting runtime message of unknown type",
+						"Resubmitting runtime message of unexpected type",
 						"reSubmitCore",
 						undefined /* sequencedMessage */,
 						{

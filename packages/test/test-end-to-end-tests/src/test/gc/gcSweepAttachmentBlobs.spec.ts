@@ -189,6 +189,10 @@ describeCompat("GC attachment blob sweep tests", "NoCompat", (getTestObjectProvi
 
 	beforeEach("setup", async function () {
 		provider = getTestObjectProvider({ syncSummarizer: true });
+		// Skip these tests for drivers / services that do not support attachment blobs.
+		if (!driverSupportsBlobs(provider.driver)) {
+			this.skip();
+		}
 
 		configProvider.set(
 			"Fluid.GarbageCollection.TestOverride.TombstoneTimeoutMs",
@@ -201,12 +205,6 @@ describeCompat("GC attachment blob sweep tests", "NoCompat", (getTestObjectProvi
 	});
 
 	describe("Attachment blobs in attached container", () => {
-		beforeEach("skipNonLocal", async function () {
-			if (provider.driver.type !== "local") {
-				this.skip();
-			}
-		});
-
 		itExpects(
 			"fails retrieval of deleted attachment blobs",
 			[
@@ -454,12 +452,6 @@ describeCompat("GC attachment blob sweep tests", "NoCompat", (getTestObjectProvi
 			const mainDataStore = (await mainContainer.getEntryPoint()) as ITestDataObject;
 			return { mainContainer, mainDataStore };
 		}
-
-		beforeEach("conditionalSkip", async function () {
-			if (!driverSupportsBlobs(provider.driver)) {
-				this.skip();
-			}
-		});
 
 		itExpects(
 			"deletes blobs uploaded in detached container",
@@ -801,12 +793,6 @@ describeCompat("GC attachment blob sweep tests", "NoCompat", (getTestObjectProvi
 			return { summarizer, summarizerContainer };
 		}
 
-		beforeEach("skipNonLocal", async function () {
-			if (provider.driver.type !== "local") {
-				this.skip();
-			}
-		});
-
 		itExpects(
 			"deletes blobs uploaded in disconnected container",
 			[
@@ -1094,12 +1080,6 @@ describeCompat("GC attachment blob sweep tests", "NoCompat", (getTestObjectProvi
 	});
 
 	describe("Deleted blob in summary", () => {
-		beforeEach("skipNonLocal", async function () {
-			if (provider.driver.type !== "local") {
-				this.skip();
-			}
-		});
-
 		[true, undefined].forEach((disableDatastoreSweep) =>
 			it(`updates deleted blob state in the summary [disableDatastoreSweep=${disableDatastoreSweep}]`, async () => {
 				configProvider.set(disableDatastoreSweepKey, disableDatastoreSweep);
