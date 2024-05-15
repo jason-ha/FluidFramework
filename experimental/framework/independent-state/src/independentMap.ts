@@ -79,7 +79,7 @@ interface ValueElementMap<_TSchema extends IndependentMapSchema> {
 /**
  * This interface is a subset of IFluidDataStoreRuntime that is needed by the IndependentMap.
  *
- * @beta
+ * @internal
  */
 export type IFluidEphemeralDataStoreRuntime = Pick<
 	IFluidDataStoreRuntime,
@@ -314,7 +314,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
  * `alpha` entrypoint for now.
  * @param initialContent - The initial value managers to register.
  *
- * @beta
+ * @internal
  */
 export function createIndependentMap<TSchema extends IndependentMapSchema>(
 	runtime: IFluidEphemeralDataStoreRuntime,

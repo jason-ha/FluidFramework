@@ -16,7 +16,7 @@ import type { NamedFluidDataStoreRegistryEntry } from '@fluidframework/runtime-d
 // @beta
 export type ClientId = string;
 
-// @beta
+// @internal
 export function createIndependentMap<TSchema extends IndependentMapSchema>(runtime: IFluidEphemeralDataStoreRuntime, initialContent: TSchema): IndependentMap<TSchema>;
 
 // @beta
@@ -29,7 +29,7 @@ type FullyReadonly<T> = {
     readonly [K in keyof T]: FullyReadonly<T[K]>;
 };
 
-// @beta
+// @internal
 export type IFluidEphemeralDataStoreRuntime = Pick<IFluidDataStoreRuntime, "clientId" | "getAudience" | "off" | "on" | "submitSignal">;
 
 // @beta (undocumented)
