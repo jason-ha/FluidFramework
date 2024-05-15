@@ -3,7 +3,11 @@
  * Licensed under the MIT License.
  */
 
-import { IndependentValue, ManagerFactory, ValueDirectoryOrState } from "./exposedInternalTypes.js";
+import type {
+	IndependentValue,
+	ManagerFactory,
+	ValueDirectoryOrState,
+} from "./exposedInternalTypes.js";
 
 /**
  * Single entry in {@link IndependentMapSchema}.

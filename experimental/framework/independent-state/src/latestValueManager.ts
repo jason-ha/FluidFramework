@@ -76,29 +76,29 @@ class LatestValueManagerImpl<T, Key extends string>
 		super();
 	}
 
-	get local(): FullyReadonly<JsonDeserialized<T>> {
+	public get local(): FullyReadonly<JsonDeserialized<T>> {
 		return this.value.value;
 	}
 
-	set local(value: JsonEncodable<T> & JsonDeserialized<T>) {
+	public set local(value: JsonEncodable<T> & JsonDeserialized<T>) {
 		this.value.rev += 1;
 		this.value.timestamp = Date.now();
 		this.value.value = value;
 		this.datastore.localUpdate(this.key, this.value, /* forceUpdate */ false);
 	}
 
-	clientValues(): IterableIterator<LatestValueClientData<T>> {
+	public clientValues(): IterableIterator<LatestValueClientData<T>> {
 		throw new Error("Method not implemented.");
 	}
 
-	clients(): ClientId[] {
+	public clients(): ClientId[] {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		return Object.keys(allKnownStates.states).filter(
 			(clientId) => clientId !== allKnownStates.self,
 		);
 	}
 
-	clientValue(clientId: ClientId): LatestValueData<T> {
+	public clientValue(clientId: ClientId): LatestValueData<T> {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		if (clientId in allKnownStates.states) {
 			const { value, rev: revision } = allKnownStates.states[clientId];
@@ -107,7 +107,7 @@ class LatestValueManagerImpl<T, Key extends string>
 		throw new Error("No entry for clientId");
 	}
 
-	update(clientId: string, _received: number, value: ValueRequiredState<T>): void {
+	public update(clientId: string, _received: number, value: ValueRequiredState<T>): void {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		if (clientId in allKnownStates.states) {
 			const currentState = allKnownStates.states[clientId];

@@ -24,7 +24,7 @@ class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 {
 	public readonly type = "@fluidframework/independent-state-map-data-store";
 
-	constructor(
+	public constructor(
 		private readonly initialContent: TSchema,
 		private readonly runtimeClass: typeof FluidDataStoreRuntime = FluidDataStoreRuntime,
 	) {}
@@ -68,7 +68,7 @@ class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
 	private readonly dataStoreFactory: IndependentMapDataStoreFactory<TSchema>;
 
-	constructor(
+	public constructor(
 		initialContent: TSchema,
 		private readonly alias: string = "independent-state-map.0",
 		runtimeClass: typeof FluidDataStoreRuntime = FluidDataStoreRuntime,

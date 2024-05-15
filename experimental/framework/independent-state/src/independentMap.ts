@@ -139,7 +139,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 	private readonly datastore: ValueElementMap<TSchema> = {};
 	public readonly nodes: MapEntries<TSchema>;
 
-	constructor(
+	public constructor(
 		private readonly runtime: IFluidEphemeralDataStoreRuntime,
 		initialContent: TSchema,
 	) {
@@ -178,7 +178,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 					const newNodeData = nodeFactory(key, handleFromDatastore(this));
 					acc.nodes[key as keyof TSchema] = newNodeData.manager;
 					acc.datastore[key] = {};
-					if (clientId) {
+					if (clientId !== undefined && clientId) {
 						// Should be able to use newNodeData.value, but Jsonable allowance for undefined appears
 						// to cause a problem. Or it could be that datastore is not precisely typed
 						acc.datastore[key][clientId] = unbrandIVM(newNodeData.manager).value;
@@ -195,7 +195,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		}
 	}
 
-	knownValues<Key extends keyof TSchema & string>(
+	public knownValues<Key extends keyof TSchema & string>(
 		key: Key,
 	): {
 		self: string | undefined;
@@ -207,7 +207,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		};
 	}
 
-	localUpdate<Key extends keyof TSchema & string>(
+	public localUpdate<Key extends keyof TSchema & string>(
 		key: Key,
 		value: MapSchemaElement<TSchema, "value", Key>,
 		_forceBroadcast: boolean,
@@ -219,7 +219,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		this.runtime.submitSignal("IndependentMapValueUpdate", content);
 	}
 
-	update<Key extends keyof TSchema & string>(
+	public update<Key extends keyof TSchema & string>(
 		key: Key,
 		clientId: string,
 		value: MapSchemaElement<TSchema, "value", Key>,
@@ -228,7 +228,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		allKnownState[clientId] = mergeValueDirectory(allKnownState[clientId], value, 0);
 	}
 
-	add<TKey extends string, TValue extends ValueDirectoryOrState<unknown>, TValueManager>(
+	public add<TKey extends string, TValue extends ValueDirectoryOrState<unknown>, TValueManager>(
 		key: TKey,
 		nodeFactory: ManagerFactory<TKey, TValue, TValueManager>,
 	): asserts this is IndependentMap<
@@ -244,10 +244,11 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 			this.datastore[key] = {};
 		}
 		// If we have a clientId, then add the local state entry to the all state.
-		if (this.runtime.clientId) {
+		const { clientId } = this.runtime;
+		if (clientId !== undefined && clientId) {
 			// Should be able to use .value from factory, but Jsonable allowance for undefined appears
 			// to cause a problem. Or it could be that datastore is not precisely typed.
-			this.datastore[key][this.runtime.clientId] = unbrandIVM(node).value;
+			this.datastore[key][clientId] = unbrandIVM(node).value;
 		}
 	}
 

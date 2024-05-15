@@ -201,7 +201,7 @@ export interface MapValueState<T> {
 
 class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 	private countDefined: number;
-	constructor(
+	public constructor(
 		private readonly value: MapValueState<T>,
 		private readonly localUpdate: (updates: MapValueState<T>, forceUpdate: boolean) => void,
 	) {
@@ -220,10 +220,10 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 		this.localUpdate(update, /* forceUpdate */ false);
 	}
 
-	clear(): void {
+	public clear(): void {
 		throw new Error("Method not implemented.");
 	}
-	delete(key: K): boolean {
+	public delete(key: K): boolean {
 		const { items } = this.value;
 		const hasKey = items[key]?.value !== undefined;
 		if (hasKey) {
@@ -232,7 +232,7 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 		}
 		return hasKey;
 	}
-	forEach(
+	public forEach(
 		callbackfn: (
 			value: FullyReadonly<JsonDeserialized<T>>,
 			key: K,
@@ -247,13 +247,13 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 			}
 		}
 	}
-	get(key: K): FullyReadonly<JsonDeserialized<T>> | undefined {
+	public get(key: K): FullyReadonly<JsonDeserialized<T>> | undefined {
 		return this.value.items[key]?.value;
 	}
-	has(key: K): boolean {
+	public has(key: K): boolean {
 		return this.value.items[key]?.value !== undefined;
 	}
-	set(key: K, value: JsonEncodable<T> & JsonDeserialized<T>): this {
+	public set(key: K, value: JsonEncodable<T> & JsonDeserialized<T>): this {
 		if (!(key in this.value.items)) {
 			this.countDefined += 1;
 			this.value.items[key] = { rev: 0, timestamp: 0, value };
@@ -261,10 +261,10 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 		this.updateItem(key, value);
 		return this;
 	}
-	get size(): number {
+	public get size(): number {
 		return this.countDefined;
 	}
-	keys(): IterableIterator<K> {
+	public keys(): IterableIterator<K> {
 		const keys: K[] = [];
 		for (const [key, item] of Object.entries(this.value.items)) {
 			if (item.value !== undefined) {
@@ -332,18 +332,18 @@ class LatestMapValueManagerImpl<
 
 	public readonly local: ValueMap<Keys, T>;
 
-	clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>> {
+	public clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>> {
 		throw new Error("Method not implemented.");
 	}
 
-	clients(): ClientId[] {
+	public clients(): ClientId[] {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		return Object.keys(allKnownStates.states).filter(
 			(clientId) => clientId !== allKnownStates.self,
 		);
 	}
 
-	clientValue<SpecificClientId extends ClientId>(
+	public clientValue<SpecificClientId extends ClientId>(
 		clientId: SpecificClientId,
 	): LatestMapValueClientData<SpecificClientId, T, Keys> {
 		const allKnownStates = this.datastore.knownValues(this.key);
@@ -364,7 +364,7 @@ class LatestMapValueManagerImpl<
 		return { clientId, items };
 	}
 
-	update<SpecificClientId extends ClientId>(
+	public update<SpecificClientId extends ClientId>(
 		clientId: SpecificClientId,
 		_received: number,
 		value: MapValueState<T>,
@@ -408,7 +408,7 @@ class LatestMapValueManagerImpl<
 					metadata,
 				});
 				allUpdates.items.set(key, { value: item.value, metadata });
-			} else if (hadPriorValue) {
+			} else if (hadPriorValue !== undefined) {
 				this.emit("itemRemoved", {
 					clientId,
 					key,

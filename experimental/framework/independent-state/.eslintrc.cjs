@@ -4,16 +4,17 @@
  */
 
 module.exports = {
-	extends: [require.resolve("@fluidframework/eslint-config-fluid/recommended"), "prettier"],
+	extends: [require.resolve("@fluidframework/eslint-config-fluid/strict"), "prettier"],
 	parserOptions: {
 		project: ["./tsconfig.json", "./src/test/tsconfig.json"],
 	},
 	rules: {
+		// The clarity of explicit index signatures is helpful in many places with this package.
+		"@typescript-eslint/consistent-indexed-object-style": "off",
+
 		// TODO: Reenable no-explicit-any once need with ValueDirectoryOrState is
 		// understood. If any is still needed disable is on a per line basis.
 		"@typescript-eslint/no-explicit-any": "off",
-
-		"@typescript-eslint/strict-boolean-expressions": "off",
 
 		// This library is used in the browser, so we don't want dependencies on most node libraries.
 		"import/no-nodejs-modules": ["error", { allow: ["events"] }],

@@ -4,7 +4,7 @@
  */
 
 import type { ClientId } from "./baseTypes.js";
-import { ValueDirectoryOrState } from "./exposedInternalTypes.js";
+import type { ValueDirectoryOrState } from "./exposedInternalTypes.js";
 
 /**
  * @internal
