@@ -5,8 +5,10 @@
 
 import type { JsonDeserialized } from "../jsonDeserialized.js";
 
+/* eslint-disable unicorn/no-null */
+
 // TODO: add testing infrastructure
-function describe(desc: string, test: () => void) {
+function describe(desc: string, test: () => void): void {
 	test();
 }
 const it = describe;
@@ -21,6 +23,7 @@ const string: string = "";
 const symbol = Symbol("symbol");
 const uniqueSymbol: unique symbol = Symbol("unique symbol");
 const bigint: bigint = 0n;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const aFunction = (): any => {};
 const voidValue = null as unknown as void;
 const never = null as never;
@@ -137,6 +140,7 @@ describe("JsonDeserialized", () => {
 
 	it("explicit `any` generic still limits allowed types", () => {
 		// @ts-expect-error `any` is not an open door (expects `JsonTypeWith<never>`)
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		passThru<any>(undefined);
 	});
 
@@ -176,3 +180,5 @@ describe("JsonDeserialized", () => {
 		passThru(ComputedEnum) satisfies typeof ComputedEnum;
 	});
 });
+
+/* eslint-enable unicorn/no-null */

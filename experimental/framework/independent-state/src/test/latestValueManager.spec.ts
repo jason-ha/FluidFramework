@@ -35,7 +35,7 @@ map.caret.local.pos = 0;
 function logClientValue<T>({
 	clientId,
 	value,
-}: Pick<LatestValueClientData<T>, "clientId" | "value">) {
+}: Pick<LatestValueClientData<T>, "clientId" | "value">): void {
 	console.log(clientId, value);
 }
 
@@ -46,9 +46,9 @@ cursor.local = { x: 1, y: 2 };
 cursor.on("updated", logClientValue);
 cursor.off("updated", logClientValue);
 
-cursor.clients().forEach((clientId) => {
+for (const clientId of cursor.clients()) {
 	logClientValue({ clientId, ...cursor.clientValue(clientId) });
-});
+}
 
 for (const { clientId, value } of cursor.clientValues()) {
 	logClientValue({ clientId, value });

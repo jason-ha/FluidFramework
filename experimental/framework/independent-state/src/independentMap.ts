@@ -19,7 +19,7 @@ import { unbrandIVM } from "./independentValue.js";
 import type { ClientRecord } from "./internalTypes.js";
 import type { IndependentMap, IndependentMapMethods, IndependentMapSchema } from "./types.js";
 
-interface IndependentMapValueUpdate<TValue extends ValueDirectoryOrState<any>> {
+interface IndependentMapValueUpdate<TValue extends ValueDirectoryOrState<unknown>> {
 	key: string;
 	content: TValue;
 	keepUnregistered?: true;
@@ -105,7 +105,9 @@ function mergeValueDirectory<T, TValueState extends ValueRequiredState<T> | Valu
 	}
 
 	let mergeBase: ValueDirectory<T>;
-	if (base !== undefined) {
+	if (base === undefined) {
+		mergeBase = { rev: update.rev, items: {} };
+	} else {
 		const baseIsDirectory = isValueDirectory(base);
 		if (base.rev >= update.rev) {
 			if (!baseIsDirectory) {
@@ -118,13 +120,11 @@ function mergeValueDirectory<T, TValueState extends ValueRequiredState<T> | Valu
 		} else {
 			mergeBase = { rev: update.rev, items: baseIsDirectory ? base.items : {} };
 		}
-	} else {
-		mergeBase = { rev: update.rev, items: {} };
 	}
-	Object.entries(update.items).forEach(([key, value]) => {
+	for (const [key, value] of Object.entries(update.items)) {
 		const baseElement = mergeBase.items[key];
 		mergeBase.items[key] = mergeValueDirectory(baseElement, value, timeDelta);
-	});
+	}
 	return mergeBase;
 }
 
@@ -144,34 +144,35 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		initialContent: TSchema,
 	) {
 		this.runtime.getAudience().on("addMember", (clientId) => {
-			Object.entries(this.datastore).forEach(([_key, allKnownState]) => {
+			for (const [_key, allKnownState] of Object.entries(this.datastore)) {
 				assert(!(clientId in allKnownState), "New client already in independent map");
-			});
+			}
 			// TODO: Send all current state to the new client
 		});
 		runtime.on("disconnected", () => {
 			const { clientId } = this.runtime;
 			assert(clientId !== undefined, "Disconnected without local clientId");
-			Object.entries(this.datastore).forEach(([_key, allKnownState]) => {
+			for (const [_key, allKnownState] of Object.entries(this.datastore)) {
 				// eslint-disable-next-line @typescript-eslint/no-dynamic-delete
 				delete allKnownState[clientId];
-			});
+			}
 			// TODO: Consider caching prior (current) clientId to broadcast when reconnecting so others may remap state.
 		});
 		runtime.on("connected", () => {
 			const { clientId } = this.runtime;
 			assert(clientId !== undefined, "Connected without local clientId");
-			Object.entries(this.datastore).forEach(([key, allKnownState]) => {
+			for (const [key, allKnownState] of Object.entries(this.datastore)) {
 				if (key in this.nodes) {
 					allKnownState[clientId] = unbrandIVM(this.nodes[key]).value;
 				}
-			});
+			}
 		});
 		runtime.on("signal", this.processSignal.bind(this));
 
 		// Prepare initial map content from initial state
 		{
 			const clientId = this.runtime.clientId;
+			// eslint-disable-next-line unicorn/no-array-reduce
 			const initial = Object.entries(initialContent).reduce(
 				(acc, [key, nodeFactory]) => {
 					const newNodeData = nodeFactory(key, handleFromDatastore(this));
@@ -227,7 +228,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		allKnownState[clientId] = mergeValueDirectory(allKnownState[clientId], value, 0);
 	}
 
-	add<TKey extends string, TValue extends ValueDirectoryOrState<any>, TValueManager>(
+	add<TKey extends string, TValue extends ValueDirectoryOrState<unknown>, TValueManager>(
 		key: TKey,
 		nodeFactory: ManagerFactory<TKey, TValue, TValueManager>,
 	): asserts this is IndependentMap<
@@ -250,7 +251,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		}
 	}
 
-	private processSignal(message: IInboundSignalMessage, local: boolean) {
+	private processSignal(message: IInboundSignalMessage, local: boolean): void {
 		if (local) {
 			return;
 		}
@@ -330,13 +331,13 @@ export function createIndependentMap<TSchema extends IndependentMapSchema>(
 	};
 
 	return new Proxy(wrapper as IndependentMap<TSchema>, {
-		get(target, p, receiver) {
+		get(target, p, receiver): unknown {
 			if (typeof p === "string") {
 				return target[p] ?? nodes[p];
 			}
 			return Reflect.get(target, p, receiver);
 		},
-		set(_target, _p, _newValue, _receiver) {
+		set(_target, _p, _newValue, _receiver): false {
 			return false;
 		},
 	});

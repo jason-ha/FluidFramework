@@ -12,7 +12,6 @@ import type { JsonDeserialized } from "./jsonDeserialized.js";
  *
  * @beta
  */
-
 export interface LatestValueMetadata {
 	/**
 	 * The revision number for value that increases as value is changed.

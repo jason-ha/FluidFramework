@@ -125,7 +125,7 @@ export type IsExactlyObject<T extends object> =
  *
  * @beta
  */
-export type FlattenIntersection<T> = T extends Record<any, any>
+export type FlattenIntersection<T> = T extends Record<string | number | symbol, unknown>
 	? {
 			[K in keyof T]: T[K];
 	  }

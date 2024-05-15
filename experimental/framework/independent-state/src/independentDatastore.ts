@@ -38,19 +38,23 @@ export interface IndependentDatastore<
 }
 
 /**
+ * Helper to get a handle from a datastore.
+ *
  * @internal
  */
 export function handleFromDatastore<
 	// Constraining TSchema would be great, but it seems nested types (at least with undefined) cause trouble.
-	// TSchema as `any` still provides some type safety.
+	// TSchema as `unknown` still provides some type safety.
 	// TSchema extends IndependentDatastoreSchema,
 	TKey extends string /* & keyof TSchema */,
-	TValue extends ValueDirectoryOrState<any>,
+	TValue extends ValueDirectoryOrState<unknown>,
 >(datastore: IndependentDatastore<TKey, TValue>): IndependentDatastoreHandle<TKey, TValue> {
 	return datastore as unknown as IndependentDatastoreHandle<TKey, TValue>;
 }
 
 /**
+ * Helper to get the datastore back from its handle.
+ *
  * @internal
  */
 export function datastoreFromHandle<TKey extends string, TValue extends ValueDirectoryOrState<any>>(

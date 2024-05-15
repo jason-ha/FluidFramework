@@ -41,7 +41,7 @@ export interface LatestMapValueClientData<
 
 	/**
 	 * @privateRemarks This could be regular map currently as no Map is
-	 * stored internally and an new instance is created for every request.
+	 * stored internally and a new instance is created for every request.
 	 */
 	items: ReadonlyMap<Keys, LatestValueData<T>>;
 }
@@ -123,7 +123,7 @@ export interface ValueMap<K extends string | number, V> {
 	 * transmitted to all other clients. For better performance limit the number of deleted
 	 * entries and reuse keys when possible.
 	 * @privateRemarks In the future we may add a mechanism to remove the placeholder, at least
-	 * from transmissions after sufficient has passed.
+	 * from transmissions after sufficient time has passed.
 	 */
 	delete(key: K): boolean;
 
@@ -136,7 +136,7 @@ export interface ValueMap<K extends string | number, V> {
 			key: K,
 			map: ValueMap<K, V>,
 		) => void,
-		thisArg?: any,
+		thisArg?: unknown,
 	): void;
 
 	/**
@@ -210,7 +210,7 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 		this.countDefined = Object.keys(value.items).length;
 	}
 
-	private updateItem(key: K, value: ValueOptionalState<T>["value"]) {
+	private updateItem(key: K, value: ValueOptionalState<T>["value"]): void {
 		this.value.rev += 1;
 		const item = this.value.items[key];
 		item.rev += 1;
@@ -238,14 +238,14 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 			key: K,
 			map: ValueMap<K, T>,
 		) => void,
-		thisArg?: any,
+		thisArg?: unknown,
 	): void {
-		Object.entries(this.value.items).forEach(([key, item]) => {
+		for (const [key, item] of Object.entries(this.value.items)) {
 			if (item.value !== undefined) {
 				// TODO: see about typing MapValueState with K
 				callbackfn(item.value, key as K, this);
 			}
-		});
+		}
 	}
 	get(key: K): FullyReadonly<JsonDeserialized<T>> | undefined {
 		return this.value.items[key]?.value;
@@ -266,11 +266,11 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 	}
 	keys(): IterableIterator<K> {
 		const keys: K[] = [];
-		Object.entries(this.value.items).forEach(([key, item]) => {
+		for (const [key, item] of Object.entries(this.value.items)) {
 			if (item.value !== undefined) {
 				keys.push(key as K);
 			}
-		});
+		}
 		return keys[Symbol.iterator]();
 	}
 }
@@ -352,7 +352,7 @@ class LatestMapValueManagerImpl<
 		}
 		const clientStateMap = allKnownStates.states[clientId];
 		const items = new Map<Keys, LatestValueData<T>>();
-		Object.entries(clientStateMap.items).forEach(([key, item]) => {
+		for (const [key, item] of Object.entries(clientStateMap.items)) {
 			const value = item.value;
 			if (value !== undefined) {
 				items.set(key as Keys, {
@@ -360,7 +360,7 @@ class LatestMapValueManagerImpl<
 					metadata: { revision: item.rev, timestamp: item.timestamp },
 				});
 			}
-		});
+		}
 		return { clientId, items };
 	}
 
@@ -377,11 +377,11 @@ class LatestMapValueManagerImpl<
 		const currentState = allKnownStates.states[clientId];
 		// Accumulate individual update keys
 		const updatedItemKeys: Keys[] = [];
-		Object.entries(value.items).forEach(([key, item]) => {
+		for (const [key, item] of Object.entries(value.items)) {
 			if (!(key in currentState.items) || currentState.items[key].rev < item.rev) {
 				updatedItemKeys.push(key as Keys);
 			}
-		});
+		}
 
 		if (updatedItemKeys.length === 0) {
 			return;
@@ -395,7 +395,7 @@ class LatestMapValueManagerImpl<
 			clientId,
 			items: new Map<Keys, LatestValueData<T>>(),
 		} satisfies LatestMapValueClientData<SpecificClientId, T, Keys>;
-		updatedItemKeys.forEach((key) => {
+		for (const key of updatedItemKeys) {
 			const item = value.items[key];
 			const hadPriorValue = currentState.items[key]?.value;
 			currentState.items[key] = item;
@@ -415,7 +415,7 @@ class LatestMapValueManagerImpl<
 					metadata,
 				});
 			}
-		});
+		}
 		this.datastore.update(this.key, clientId, currentState);
 		this.emit("updated", allUpdates);
 	}
@@ -437,9 +437,9 @@ export function LatestMap<
 	const value: MapValueState<T> = { rev: 0, items: {} };
 	// LatestMapValueManager takes ownership of values within initialValues.
 	if (initialValues !== undefined) {
-		Object.keys(initialValues).forEach((key) => {
+		for (const key of Object.keys(initialValues)) {
 			value.items[key] = { rev: 0, timestamp, value: initialValues[key as Keys] };
-		});
+		}
 	}
 	return (
 		key: RegistrationKey,

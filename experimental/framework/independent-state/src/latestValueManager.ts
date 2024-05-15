@@ -42,8 +42,8 @@ export interface LatestValueManagerEvents<T> extends IEvent {
  */
 export interface LatestValueManager<T> extends IEventProvider<LatestValueManagerEvents<T>> {
 	/**
-	 * Currently state for this client.
-	 * Set state for this client which will be transmitted to all other connected clients.
+	 * Current state for this client.
+	 * State for this client that will be transmitted to all other connected clients.
 	 * @remarks Manager assumes ownership of the value and its references. Make a deep clone before
 	 * setting, if needed. No comparison is done to detect changes; all sets are transmitted.
 	 */
@@ -54,9 +54,13 @@ export interface LatestValueManager<T> extends IEventProvider<LatestValueManager
 	 * @remarks This is not yet implemented.
 	 */
 	clientValues(): IterableIterator<LatestValueClientData<T>>;
-	/** Array of known clients' identifiers. */
+	/**
+	 * Array of known clients' identifiers.
+	 */
 	clients(): ClientId[];
-	/** Access to a specific client's value. */
+	/**
+	 * Access to a specific client's value.
+	 */
 	clientValue(clientId: ClientId): LatestValueData<T>;
 }
 

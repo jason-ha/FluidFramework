@@ -12,14 +12,14 @@ import { IndependentValue, ManagerFactory, ValueDirectoryOrState } from "./expos
  */
 export type IndependentMapEntry<
 	TKey extends string,
-	TValue extends ValueDirectoryOrState<any>,
+	TValue extends ValueDirectoryOrState<unknown>,
 	TManager = unknown,
 > = ManagerFactory<TKey, TValue, TManager>;
 
 /**
  * Schema for an {@link IndependentMap}.
  *
- * Keys of schema are the keys of the {@link IndependentMap} providing access to `Value Managers`.
+ * Keys of schema are the keys of the {@link IndependentMap} providing access to `Value Manager`s.
  *
  * @beta
  */
@@ -47,12 +47,14 @@ export interface IndependentMapSchema {
 }
 
 /**
- * Map of `Value Managers` registered with {@link IndependentMap}.
+ * Map of `Value Manager`s registered with {@link IndependentMap}.
  *
  * @beta
  */
 export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
-	/** Registered `Value Manager` */
+	/**
+	 * Registered `Value Manager`s
+	 */
 	readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<
 		TSchema[Key]
 	>["manager"] extends IndependentValue<infer TManager>
@@ -61,7 +63,7 @@ export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
 };
 
 /**
- * Provides methods for managing `Value Managers` in {@link IndependentMap}.
+ * Provides methods for managing `Value Manager`s in {@link IndependentMap}.
  *
  * @beta
  */
@@ -80,10 +82,10 @@ export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
 }
 
 /**
- * `IndependentMap` maintains a registry of `Value Managers` that all share and provide access to
+ * `IndependentMap` maintains a registry of `Value Manager`s that all share and provide access to
  * independent state values across client members in a session.
  *
- * `Value Managers` offer variations on how to manage states, but all share same principle that
+ * `Value Manager`s offer variations on how to manage states, but all share same principle that
  * each client's state is independent and may only be updated by originating client.
  *
  * @beta

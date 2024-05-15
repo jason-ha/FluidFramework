@@ -49,7 +49,7 @@ mapImpl.add("caret", createValueManager(initialCaret));
 const fakeAdd = mapImpl.camera.z + mapImpl.cursor.x + mapImpl.caret.pos;
 
 // @ts-expect-error should error on typo detection
-console.log(mapImpl.curso.x); // error to highlight typo detection (proper typing in effect)
+console.log(mapImpl.curso); // error to highlight typo detection (proper typing in effect)
 
 // example of second add at existing key - results in union of types (should throw at runtime)
 mapImpl.add("caret", createValueManager({ dupe: 0 }));

@@ -7,6 +7,8 @@ import type { IndependentValue, ValueDirectoryOrState } from "./exposedInternalT
 import type { ValueManager } from "./internalTypes.js";
 
 /**
+ * Given a value manager, return opaque IndependentValue.
+ *
  * @internal
  */
 export function brandIVM<
@@ -20,6 +22,8 @@ export function brandIVM<
 }
 
 /**
+ * Extract the value manager from an opaque IndependentValue.
+ *
  * @internal
  */
 export function unbrandIVM<

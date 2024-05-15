@@ -4,7 +4,7 @@
 
 ```ts
 
-import { AliasResult } from '@fluidframework/runtime-definitions/internal';
+import type { AliasResult } from '@fluidframework/runtime-definitions/internal';
 import { FluidDataStoreRuntime } from '@fluidframework/datastore/internal';
 import type { IContainerRuntime } from '@fluidframework/container-runtime-definitions/internal';
 import type { IContainerRuntimeBase } from '@fluidframework/runtime-definitions/internal';
@@ -20,7 +20,7 @@ export type ClientId = string;
 export function createIndependentMap<TSchema extends IndependentMapSchema>(runtime: IFluidEphemeralDataStoreRuntime, initialContent: TSchema): IndependentMap<TSchema>;
 
 // @beta
-type FlattenIntersection<T> = T extends Record<any, any> ? {
+type FlattenIntersection<T> = T extends Record<string | number | symbol, unknown> ? {
     [K in keyof T]: T[K];
 } : T;
 
@@ -41,12 +41,14 @@ export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMa
 
 // @beta
 export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
-    /** Registered `Value Manager` */
+    /**
+    * Registered `Value Manager`s
+    */
     readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<TSchema[Key]>["manager"] extends IndependentValue<infer TManager> ? TManager : never;
 };
 
 // @beta
-export type IndependentMapEntry<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
+export type IndependentMapEntry<TKey extends string, TValue extends ValueDirectoryOrState<unknown>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
 
 // @alpha
 export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
@@ -282,7 +284,7 @@ export interface ValueMap<K extends string | number, V> {
     clear(): void;
     // (undocumented)
     delete(key: K): boolean;
-    forEach(callbackfn: (value: FullyReadonly<JsonDeserialized<V>>, key: K, map: ValueMap<K, V>) => void, thisArg?: any): void;
+    forEach(callbackfn: (value: FullyReadonly<JsonDeserialized<V>>, key: K, map: ValueMap<K, V>) => void, thisArg?: unknown): void;
     get(key: K): FullyReadonly<JsonDeserialized<V>> | undefined;
     // (undocumented)
     has(key: K): boolean;

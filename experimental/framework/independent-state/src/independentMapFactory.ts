@@ -8,6 +8,7 @@ import type { IFluidHandle } from "@fluidframework/core-interfaces";
 import { assert } from "@fluidframework/core-utils/internal";
 import { FluidDataStoreRuntime } from "@fluidframework/datastore/internal";
 import type {
+	AliasResult,
 	IContainerRuntimeBase,
 	IFluidDataStoreContext,
 	IFluidDataStoreFactory,
@@ -33,7 +34,10 @@ class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 	 *
 	 * @param context - data store context used to load a data store runtime
 	 */
-	public async instantiateDataStore(context: IFluidDataStoreContext, existing: boolean) {
+	public async instantiateDataStore(
+		context: IFluidDataStoreContext,
+		existing: boolean,
+	): Promise<FluidDataStoreRuntime> {
 		// Create a new runtime for our data store, as if via new FluidDataStoreRuntime,
 		// The runtime is what Fluid uses to route to our data store.
 		const runtime: FluidDataStoreRuntime = new this.runtimeClass( // calls new FluidDataStoreRuntime(...)
@@ -51,7 +55,7 @@ class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 		return runtime;
 	}
 
-	public get IFluidDataStoreFactory() {
+	public get IFluidDataStoreFactory(): IFluidDataStoreFactory {
 		return this;
 	}
 }
@@ -79,7 +83,9 @@ export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
 	/**
 	 * Creates exclusive data store for ${@link IndependentMap} to work in.
 	 */
-	public async initializingFirstTime(containerRuntime: IContainerRuntimeBase) {
+	public async initializingFirstTime(
+		containerRuntime: IContainerRuntimeBase,
+	): Promise<AliasResult> {
 		return containerRuntime
 			.createDataStore(this.dataStoreFactory.type)
 			.then(async (datastore) => datastore.trySetAlias(this.alias));

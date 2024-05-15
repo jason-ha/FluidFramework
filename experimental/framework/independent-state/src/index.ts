@@ -43,9 +43,15 @@ export type {
 } from "./latestValueTypes.js";
 
 // Below here are things that are used by the above, but not part of the desired API surface.
+/* eslint-disable unicorn/prefer-export-from */
 import type * as InternalTypes from "./exposedInternalTypes.js";
-/** @beta */
+/**
+ * @beta
+ */
 export { InternalTypes };
 import type * as InternalUtilityTypes from "./exposedUtilityTypes.js";
-/** @beta */
+/**
+ * @beta
+ */
 export { InternalUtilityTypes };
+/* eslint-enable unicorn/prefer-export-from */

@@ -58,7 +58,7 @@ function logClientValue<T>({
 	clientId,
 	key,
 	value,
-}: Pick<LatestMapItemValueClientData<T, string | number>, "clientId" | "key" | "value">) {
+}: Pick<LatestMapItemValueClientData<T, string | number>, "clientId" | "key" | "value">): void {
 	console.log(clientId, key, value);
 }
 
@@ -67,13 +67,15 @@ localPointers.set("pen", { x: 1, y: 2 });
 pointers.on("itemUpdated", logClientValue);
 pointers.off("itemUpdated", logClientValue);
 
-pointers.clients().forEach((clientId) => {
+for (const clientId of pointers.clients()) {
 	const clientData = pointers.clientValue(clientId);
-	clientData.items.forEach(({ value }, key) => logClientValue({ clientId, key, value }));
-});
+	for (const [key, { value }] of clientData.items.entries()) {
+		logClientValue({ clientId, key, value });
+	}
+}
 
 for (const { clientId, items } of pointers.clientValues()) {
-	items.forEach(({ value }, key) => logClientValue({ clientId, key, value }));
+	for (const [key, { value }] of items.entries()) logClientValue({ clientId, key, value });
 }
 
 pointers.on("itemRemoved", ({ clientId, key }) =>
@@ -81,5 +83,5 @@ pointers.on("itemRemoved", ({ clientId, key }) =>
 );
 
 pointers.on("updated", ({ clientId, items }) => {
-	items.forEach(({ value }, key) => logClientValue({ clientId, key, value }));
+	for (const [key, { value }] of items.entries()) logClientValue({ clientId, key, value });
 });
