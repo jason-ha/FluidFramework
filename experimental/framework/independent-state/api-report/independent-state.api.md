@@ -8,8 +8,6 @@ import type { AliasResult } from '@fluidframework/runtime-definitions/internal';
 import { FluidDataStoreRuntime } from '@fluidframework/datastore/internal';
 import type { IContainerRuntime } from '@fluidframework/container-runtime-definitions/internal';
 import type { IContainerRuntimeBase } from '@fluidframework/runtime-definitions/internal';
-import type { IEvent } from '@fluidframework/core-interfaces';
-import type { IEventProvider } from '@fluidframework/core-interfaces';
 import type { IFluidDataStoreRuntime } from '@fluidframework/datastore-definitions';
 import type { NamedFluidDataStoreRegistryEntry } from '@fluidframework/runtime-definitions/internal';
 
@@ -18,6 +16,11 @@ export type ClientId = string;
 
 // @internal
 export function createIndependentMap<TSchema extends IndependentMapSchema>(runtime: IFluidEphemeralDataStoreRuntime, initialContent: TSchema): IndependentMap<TSchema>;
+
+// @beta
+export type Events<E> = {
+    [P in (string | symbol) & keyof E as IsEvent<E[P]> extends true ? P : never]: E[P];
+};
 
 // @beta
 type FlattenIntersection<T> = T extends Record<string | number | symbol, unknown> ? {
@@ -116,7 +119,15 @@ type IsEnumLike<T extends object> = T extends readonly (infer _)[] ? false : T e
 }[keyof T] ? false : true : false;
 
 // @beta
+export type IsEvent<Event> = Event extends (...args: any[]) => any ? true : false;
+
+// @beta
 type IsExactlyObject<T extends object> = object extends Required<T> ? false extends T ? false : true : false;
+
+// @beta
+export interface ISubscribable<E extends Events<E>> {
+    on<K extends keyof Events<E>>(eventName: K, listener: E[K]): () => void;
+}
 
 // @beta
 export type JsonDeserialized<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonTypeWith<TReplaced> : unknown extends T ? JsonTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends readonly (infer _)[] ? {
@@ -182,18 +193,18 @@ export interface LatestMapValueManager<T, Keys extends string | number = string 
     clients(): ClientId[];
     clientValue<SpecificClientId extends ClientId>(clientId: SpecificClientId): LatestMapValueClientData<SpecificClientId, T, Keys>;
     clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>>;
-    readonly events: IEventProvider<LatestMapValueManagerEvents<T, Keys>>;
+    readonly events: ISubscribable<LatestMapValueManagerEvents<T, Keys>>;
     readonly local: ValueMap<Keys, T>;
 }
 
 // @beta (undocumented)
-export interface LatestMapValueManagerEvents<T, K extends string | number> extends IEvent {
+export interface LatestMapValueManagerEvents<T, K extends string | number> {
     // @eventProperty
-    (event: "updated", listener: (updates: LatestMapValueClientData<ClientId, T, K>) => void): void;
+    itemRemoved: (removedItem: LatestMapItemRemovedClientData<K>) => void;
     // @eventProperty
-    (event: "itemUpdated", listener: (updatedItem: LatestMapItemValueClientData<T, K>) => void): void;
+    itemUpdated: (updatedItem: LatestMapItemValueClientData<T, K>) => void;
     // @eventProperty
-    (event: "itemRemoved", listener: (removedItem: LatestMapItemRemovedClientData<K>) => void): void;
+    updated: (updates: LatestMapValueClientData<ClientId, T, K>) => void;
 }
 
 // @beta
@@ -215,15 +226,15 @@ export interface LatestValueManager<T> {
     clients(): ClientId[];
     clientValue(clientId: ClientId): LatestValueData<T>;
     clientValues(): IterableIterator<LatestValueClientData<T>>;
-    readonly events: IEventProvider<LatestValueManagerEvents<T>>;
+    readonly events: ISubscribable<LatestValueManagerEvents<T>>;
     get local(): FullyReadonly<JsonDeserialized<T>>;
     set local(value: JsonEncodable<T> & JsonDeserialized<T>);
 }
 
 // @beta (undocumented)
-export interface LatestValueManagerEvents<T> extends IEvent {
+export interface LatestValueManagerEvents<T> {
     // @eventProperty
-    (event: "updated", listener: (update: LatestValueClientData<T>) => void): void;
+    updated: (update: LatestValueClientData<T>) => void;
 }
 
 // @beta

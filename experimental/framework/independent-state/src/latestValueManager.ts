@@ -3,10 +3,9 @@
  * Licensed under the MIT License.
  */
 
-import { TypedEventEmitter } from "@fluid-internal/client-utils";
-import type { IEvent, IEventProvider } from "@fluidframework/core-interfaces";
-
 import type { ClientId } from "./baseTypes.js";
+import type { ISubscribable } from "./events.js";
+import { createEmitter } from "./events.js";
 import type {
 	IndependentDatastoreHandle,
 	ManagerFactory,
@@ -23,13 +22,13 @@ import type { LatestValueClientData, LatestValueData } from "./latestValueTypes.
 /**
  * @beta
  */
-export interface LatestValueManagerEvents<T> extends IEvent {
+export interface LatestValueManagerEvents<T> {
 	/**
 	 * Raised when remote client's value is updated, which may be the same value.
 	 *
 	 * @eventProperty
 	 */
-	(event: "updated", listener: (update: LatestValueClientData<T>) => void): void;
+	updated: (update: LatestValueClientData<T>) => void;
 }
 
 /**
@@ -44,7 +43,7 @@ export interface LatestValueManager<T> {
 	/**
 	 * Events for Latest value manager.
 	 */
-	readonly events: IEventProvider<LatestValueManagerEvents<T>>;
+	readonly events: ISubscribable<LatestValueManagerEvents<T>>;
 
 	/**
 	 * Current state for this client.
@@ -72,7 +71,7 @@ export interface LatestValueManager<T> {
 class LatestValueManagerImpl<T, Key extends string>
 	implements LatestValueManager<T>, ValueManager<T, ValueRequiredState<T>>
 {
-	public readonly events = new TypedEventEmitter<LatestValueManagerEvents<T>>();
+	public readonly events = createEmitter<LatestValueManagerEvents<T>>();
 
 	public constructor(
 		private readonly key: Key,

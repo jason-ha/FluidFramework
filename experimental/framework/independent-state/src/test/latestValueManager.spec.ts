@@ -32,7 +32,7 @@ const fakeAdd = map.caret.local.pos + map.camera.local.z + map.cursor.local.x;
 // @ts-expect-error local may be set wholly, but partially it is readonly
 map.caret.local.pos = 0;
 
-function logClientValue<T>({
+function logClientValue<T /* to fix events.on error use: extends Record<string, unknown> */>({
 	clientId,
 	value,
 }: Pick<LatestValueClientData<T>, "clientId" | "value">): void {
@@ -43,8 +43,8 @@ const cursor = map.cursor;
 
 cursor.local = { x: 1, y: 2 };
 
-cursor.events.on("updated", logClientValue);
-cursor.events.off("updated", logClientValue);
+const cursorUpdatedOff = cursor.events.on("updated", logClientValue);
+cursorUpdatedOff();
 
 for (const clientId of cursor.clients()) {
 	logClientValue({ clientId, ...cursor.clientValue(clientId) });
