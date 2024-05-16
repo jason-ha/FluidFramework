@@ -40,7 +40,12 @@ export interface LatestValueManagerEvents<T> extends IEvent {
  *
  * @beta
  */
-export interface LatestValueManager<T> extends IEventProvider<LatestValueManagerEvents<T>> {
+export interface LatestValueManager<T> {
+	/**
+	 * Events for Latest value manager.
+	 */
+	readonly events: IEventProvider<LatestValueManagerEvents<T>>;
+
 	/**
 	 * Current state for this client.
 	 * State for this client that will be transmitted to all other connected clients.
@@ -65,16 +70,15 @@ export interface LatestValueManager<T> extends IEventProvider<LatestValueManager
 }
 
 class LatestValueManagerImpl<T, Key extends string>
-	extends TypedEventEmitter<LatestValueManagerEvents<T>>
 	implements LatestValueManager<T>, ValueManager<T, ValueRequiredState<T>>
 {
+	public readonly events = new TypedEventEmitter<LatestValueManagerEvents<T>>();
+
 	public constructor(
 		private readonly key: Key,
 		private readonly datastore: IndependentDatastore<Key, ValueRequiredState<T>>,
 		public readonly value: ValueRequiredState<T>,
-	) {
-		super();
-	}
+	) {}
 
 	public get local(): FullyReadonly<JsonDeserialized<T>> {
 		return this.value.value;
@@ -116,7 +120,7 @@ class LatestValueManagerImpl<T, Key extends string>
 			}
 		}
 		this.datastore.update(this.key, clientId, value);
-		this.emit("updated", {
+		this.events.emit("updated", {
 			clientId,
 			value: value.value,
 			metadata: { revision: value.rev, timestamp: value.timestamp },

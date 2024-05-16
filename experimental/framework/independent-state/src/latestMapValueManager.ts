@@ -285,8 +285,12 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
  *
  * @beta
  */
-export interface LatestMapValueManager<T, Keys extends string | number = string | number>
-	extends IEventProvider<LatestMapValueManagerEvents<T, Keys>> {
+export interface LatestMapValueManager<T, Keys extends string | number = string | number> {
+	/**
+	 * Events for LatestMap value manager.
+	 */
+	readonly events: IEventProvider<LatestMapValueManagerEvents<T, Keys>>;
+
 	/**
 	 * Current value map for this client.
 	 */
@@ -313,15 +317,15 @@ class LatestMapValueManagerImpl<
 		RegistrationKey extends string,
 		Keys extends string | number = string | number,
 	>
-	extends TypedEventEmitter<LatestMapValueManagerEvents<T, Keys>>
 	implements LatestMapValueManager<T, Keys>, ValueManager<T, MapValueState<T>>
 {
+	public readonly events = new TypedEventEmitter<LatestMapValueManagerEvents<T, Keys>>();
+
 	public constructor(
 		private readonly key: RegistrationKey,
 		private readonly datastore: IndependentDatastore<RegistrationKey, MapValueState<T>>,
 		public readonly value: MapValueState<T>,
 	) {
-		super();
 		this.local = new ValueMapImpl<T, Keys>(
 			value,
 			(updates: MapValueState<T>, forceUpdate: boolean) => {
@@ -401,7 +405,7 @@ class LatestMapValueManagerImpl<
 			currentState.items[key] = item;
 			const metadata = { revision: item.rev, timestamp: item.timestamp };
 			if (item.value !== undefined) {
-				this.emit("itemUpdated", {
+				this.events.emit("itemUpdated", {
 					clientId,
 					key,
 					value: item.value,
@@ -409,7 +413,7 @@ class LatestMapValueManagerImpl<
 				});
 				allUpdates.items.set(key, { value: item.value, metadata });
 			} else if (hadPriorValue !== undefined) {
-				this.emit("itemRemoved", {
+				this.events.emit("itemRemoved", {
 					clientId,
 					key,
 					metadata,
@@ -417,7 +421,7 @@ class LatestMapValueManagerImpl<
 			}
 		}
 		this.datastore.update(this.key, clientId, currentState);
-		this.emit("updated", allUpdates);
+		this.events.emit("updated", allUpdates);
 	}
 }
 

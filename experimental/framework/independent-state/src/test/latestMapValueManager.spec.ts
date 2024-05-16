@@ -64,8 +64,8 @@ function logClientValue<T>({
 
 localPointers.set("pen", { x: 1, y: 2 });
 
-pointers.on("itemUpdated", logClientValue);
-pointers.off("itemUpdated", logClientValue);
+pointers.events.on("itemUpdated", logClientValue);
+pointers.events.off("itemUpdated", logClientValue);
 
 for (const clientId of pointers.clients()) {
 	const clientData = pointers.clientValue(clientId);
@@ -78,10 +78,10 @@ for (const { clientId, items } of pointers.clientValues()) {
 	for (const [key, { value }] of items.entries()) logClientValue({ clientId, key, value });
 }
 
-pointers.on("itemRemoved", ({ clientId, key }) =>
+pointers.events.on("itemRemoved", ({ clientId, key }) =>
 	logClientValue<string>({ clientId, key, value: "<removed>" }),
 );
 
-pointers.on("updated", ({ clientId, items }) => {
+pointers.events.on("updated", ({ clientId, items }) => {
 	for (const [key, { value }] of items.entries()) logClientValue({ clientId, key, value });
 });

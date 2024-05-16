@@ -178,10 +178,11 @@ export interface LatestMapValueClientData<SpecificClientId extends ClientId, T, 
 }
 
 // @beta
-export interface LatestMapValueManager<T, Keys extends string | number = string | number> extends IEventProvider<LatestMapValueManagerEvents<T, Keys>> {
+export interface LatestMapValueManager<T, Keys extends string | number = string | number> {
     clients(): ClientId[];
     clientValue<SpecificClientId extends ClientId>(clientId: SpecificClientId): LatestMapValueClientData<SpecificClientId, T, Keys>;
     clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>>;
+    readonly events: IEventProvider<LatestMapValueManagerEvents<T, Keys>>;
     readonly local: ValueMap<Keys, T>;
 }
 
@@ -210,10 +211,11 @@ export interface LatestValueData<T> {
 }
 
 // @beta
-export interface LatestValueManager<T> extends IEventProvider<LatestValueManagerEvents<T>> {
+export interface LatestValueManager<T> {
     clients(): ClientId[];
     clientValue(clientId: ClientId): LatestValueData<T>;
     clientValues(): IterableIterator<LatestValueClientData<T>>;
+    readonly events: IEventProvider<LatestValueManagerEvents<T>>;
     get local(): FullyReadonly<JsonDeserialized<T>>;
     set local(value: JsonEncodable<T> & JsonDeserialized<T>);
 }
