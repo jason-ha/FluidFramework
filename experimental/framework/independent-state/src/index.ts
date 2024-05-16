@@ -13,6 +13,7 @@ export type {
 	IndependentMapSchema,
 } from "./types.js";
 
+export type { Events, IsEvent, ISubscribable } from "./events.js";
 export type { JsonDeserialized } from "./jsonDeserialized.js";
 export type { JsonEncodable } from "./jsonEncodable.js";
 export type { JsonTypeWith } from "./jsonType.js";

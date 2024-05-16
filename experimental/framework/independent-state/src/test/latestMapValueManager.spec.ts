@@ -64,8 +64,8 @@ function logClientValue<T>({
 
 localPointers.set("pen", { x: 1, y: 2 });
 
-pointers.events.on("itemUpdated", logClientValue);
-pointers.events.off("itemUpdated", logClientValue);
+const pointerItemUpdatedOff = pointers.events.on("itemUpdated", logClientValue);
+pointerItemUpdatedOff();
 
 for (const clientId of pointers.clients()) {
 	const clientData = pointers.clientValue(clientId);

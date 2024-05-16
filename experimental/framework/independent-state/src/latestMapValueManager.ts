@@ -3,10 +3,9 @@
  * Licensed under the MIT License.
  */
 
-import { TypedEventEmitter } from "@fluid-internal/client-utils";
-import type { IEvent, IEventProvider } from "@fluidframework/core-interfaces";
-
 import type { ClientId } from "./baseTypes.js";
+import type { ISubscribable } from "./events.js";
+import { createEmitter } from "./events.js";
 import type {
 	IndependentDatastoreHandle,
 	ManagerFactory,
@@ -70,7 +69,7 @@ export interface LatestMapItemRemovedClientData<K extends string | number> {
 /**
  * @beta
  */
-export interface LatestMapValueManagerEvents<T, K extends string | number> extends IEvent {
+export interface LatestMapValueManagerEvents<T, K extends string | number> {
 	/**
 	 * Raised when any item's value for remote client is updated.
 	 * @param updates - Map of one or more values updated.
@@ -79,7 +78,7 @@ export interface LatestMapValueManagerEvents<T, K extends string | number> exten
 	 *
 	 * @eventProperty
 	 */
-	(event: "updated", listener: (updates: LatestMapValueClientData<ClientId, T, K>) => void): void;
+	updated: (updates: LatestMapValueClientData<ClientId, T, K>) => void;
 
 	/**
 	 * Raised when specific item's value is updated.
@@ -87,10 +86,7 @@ export interface LatestMapValueManagerEvents<T, K extends string | number> exten
 	 *
 	 * @eventProperty
 	 */
-	(
-		event: "itemUpdated",
-		listener: (updatedItem: LatestMapItemValueClientData<T, K>) => void,
-	): void;
+	itemUpdated: (updatedItem: LatestMapItemValueClientData<T, K>) => void;
 
 	/**
 	 * Raised when specific item is removed.
@@ -98,10 +94,7 @@ export interface LatestMapValueManagerEvents<T, K extends string | number> exten
 	 *
 	 * @eventProperty
 	 */
-	(
-		event: "itemRemoved",
-		listener: (removedItem: LatestMapItemRemovedClientData<K>) => void,
-	): void;
+	itemRemoved: (removedItem: LatestMapItemRemovedClientData<K>) => void;
 }
 
 /**
@@ -289,7 +282,7 @@ export interface LatestMapValueManager<T, Keys extends string | number = string 
 	/**
 	 * Events for LatestMap value manager.
 	 */
-	readonly events: IEventProvider<LatestMapValueManagerEvents<T, Keys>>;
+	readonly events: ISubscribable<LatestMapValueManagerEvents<T, Keys>>;
 
 	/**
 	 * Current value map for this client.
@@ -319,7 +312,7 @@ class LatestMapValueManagerImpl<
 	>
 	implements LatestMapValueManager<T, Keys>, ValueManager<T, MapValueState<T>>
 {
-	public readonly events = new TypedEventEmitter<LatestMapValueManagerEvents<T, Keys>>();
+	public readonly events = createEmitter<LatestMapValueManagerEvents<T, Keys>>();
 
 	public constructor(
 		private readonly key: RegistrationKey,
