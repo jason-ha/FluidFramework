@@ -8,5 +8,16 @@ module.exports = {
 		require.resolve("@fluidframework/eslint-config-fluid/minimal-deprecated"),
 		"prettier",
 	],
-	rules: {},
+	rules: {
+		"import/no-internal-modules": [
+			"error",
+			{
+				allow: [
+					"@fluid-experimental/*/alpha",
+					// While this is examples, it uses internal APIs :(.
+					"@fluidframework/*/internal",
+				],
+			},
+		],
+	},
 };

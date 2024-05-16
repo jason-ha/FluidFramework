@@ -609,6 +609,7 @@ importers:
       '@biomejs/biome': ^1.6.2
       '@fluid-example/example-utils': workspace:~
       '@fluid-experimental/data-objects': workspace:~
+      '@fluid-experimental/independent-state': workspace:~
       '@fluid-internal/client-utils': workspace:~
       '@fluid-tools/build-cli': ^0.38.0
       '@fluidframework/build-common': ^2.0.3
@@ -638,6 +639,8 @@ importers:
       process: ^0.11.10
       puppeteer: ^22.2.0
       rimraf: ^4.4.0
+      source-map-loader: ^2.0.0
+      tinylicious: ^4.0.0
       ts-jest: ^29.1.1
       ts-loader: ^9.3.0
       typescript: ~5.1.6
@@ -648,6 +651,7 @@ importers:
     dependencies:
       '@fluid-example/example-utils': link:../../utils/example-utils
       '@fluid-experimental/data-objects': link:../../../experimental/framework/data-objects
+      '@fluid-experimental/independent-state': link:../../../experimental/framework/independent-state
       '@fluid-internal/client-utils': link:../../../packages/common/client-utils
       '@fluidframework/container-definitions': link:../../../packages/common/container-definitions
       '@fluidframework/container-runtime-definitions': link:../../../packages/runtime/container-runtime-definitions
@@ -679,6 +683,8 @@ importers:
       prettier: 3.0.3
       puppeteer: 22.2.0_typescript@5.1.6
       rimraf: 4.4.1
+      source-map-loader: 2.0.2_webpack@5.89.0
+      tinylicious: 4.0.0
       ts-jest: 29.1.1_gvmt7aj7nai5bnvsxmiksfugce
       ts-loader: 9.5.1_535b6rdv6xzubhvm4whegmtnju
       typescript: 5.1.6
