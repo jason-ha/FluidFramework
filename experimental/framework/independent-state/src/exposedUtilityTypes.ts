@@ -3,6 +3,9 @@
  * Licensed under the MIT License.
  */
 
+import type { JsonDeserialized } from "./jsonDeserialized.js";
+import type { JsonEncodable } from "./jsonEncodable.js";
+
 /**
  * Returns non-symbol keys for optional properties of an object type.
  *
@@ -138,4 +141,37 @@ export type FlattenIntersection<T> = T extends Record<string | number | symbol, 
  */
 export type FullyReadonly<T> = {
 	readonly [K in keyof T]: FullyReadonly<T[K]>;
+};
+
+/**
+ * `true` iff the given type is an acceptable shape for a notification
+ * @beta
+ */
+export type IsNotificationEvent<Event> = Event extends <T>(
+	...args: (JsonEncodable<T> & FullyReadonly<JsonDeserialized<T>>)[]
+) => void
+	? true
+	: false;
+
+/**
+ * Used to specify the kinds of notifcations emitted by a {@link NotificationSubscribable}.
+ *
+ * @remarks
+ *
+ * Any object type is a valid NotificationEvents, but only the notification-like
+ * properties of that type will be included.
+ *
+ * @example
+ *
+ * ```typescript
+ * interface MyNotifications {
+ *   load: (user: string, data: IUserData) => void;
+ *   requestPause: (period: number) => void;
+ * }
+ * ```
+ *
+ * @beta
+ */
+export type NotificationEvents<E> = {
+	[P in string & keyof E as IsNotificationEvent<E[P]> extends true ? P : never]: E[P];
 };

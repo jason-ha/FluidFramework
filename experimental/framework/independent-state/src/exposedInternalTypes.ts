@@ -4,6 +4,7 @@
  */
 
 import type { JsonDeserialized } from "./jsonDeserialized.js";
+import type { JsonEncodable } from "./jsonEncodable.js";
 
 /**
  * @beta
@@ -90,3 +91,11 @@ export type ManagerFactory<
 	value: TValue;
 	manager: IndependentValue<TManager>;
 };
+
+/**
+ * @beta
+ */
+export interface NotificationType {
+	name: string;
+	args: (JsonEncodable<unknown> & JsonDeserialized<unknown>)[];
+}

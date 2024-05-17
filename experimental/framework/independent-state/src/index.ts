@@ -43,6 +43,15 @@ export type {
 	LatestValueMetadata,
 } from "./latestValueTypes.js";
 
+export {
+	type NotificationEmitter,
+	type NotificationSubscribable,
+	type NotificationSubscriptions,
+	Notifications,
+	type NotificationsManager,
+	type NotificationsManagerEvents,
+} from "./notificationsManager.js";
+
 // Below here are things that are used by the above, but not part of the desired API surface.
 /* eslint-disable unicorn/prefer-export-from */
 import type * as InternalTypes from "./exposedInternalTypes.js";

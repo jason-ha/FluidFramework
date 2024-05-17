@@ -90,7 +90,8 @@ declare namespace InternalTypes {
         IndependentDatastoreHandle,
         IndependentValueBrand,
         IndependentValue,
-        ManagerFactory
+        ManagerFactory,
+        NotificationType
     }
 }
 export { InternalTypes }
@@ -105,7 +106,9 @@ declare namespace InternalUtilityTypes {
         IsEnumLike,
         IsExactlyObject,
         FlattenIntersection,
-        FullyReadonly
+        FullyReadonly,
+        IsNotificationEvent,
+        NotificationEvents
     }
 }
 export { InternalUtilityTypes }
@@ -123,6 +126,9 @@ export type IsEvent<Event> = Event extends (...args: any[]) => any ? true : fals
 
 // @beta
 type IsExactlyObject<T extends object> = object extends Required<T> ? false extends T ? false : true : false;
+
+// @beta
+type IsNotificationEvent<Event> = Event extends <T>(...args: (JsonEncodable<T> & FullyReadonly<JsonDeserialized<T>>)[]) => void ? true : false;
 
 // @beta
 export interface ISubscribable<E extends Events<E>> {
@@ -278,6 +284,51 @@ type NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf<T extends object> = Exc
 type NonSymbolWithRequiredPropertyOf<T extends object> = Exclude<{
     [K in keyof T]: T extends Record<K, T[K]> ? K : never;
 }[keyof T], undefined | symbol>;
+
+// @beta
+export interface NotificationEmitter<E extends NotificationEvents<E>> {
+    broadcast<K extends string & keyof NotificationEvents<E>>(notificationName: K, ...args: Parameters<E[K]>): void;
+    unicast<K extends string & keyof NotificationEvents<E>>(notificationName: K, targetClientId: ClientId, ...args: Parameters<E[K]>): void;
+}
+
+// @beta
+type NotificationEvents<E> = {
+    [P in string & keyof E as IsNotificationEvent<E[P]> extends true ? P : never]: E[P];
+};
+
+// @beta
+export function Notifications<T extends NotificationEvents<T>, Key extends string>(initialSubscriptions: NotificationSubscriptions<T>): ManagerFactory<Key, ValueRequiredState<NotificationType>, NotificationsManager<T>>;
+
+// @beta
+export interface NotificationsManager<T extends NotificationEvents<T>> {
+    readonly emit: NotificationEmitter<T>;
+    readonly events: ISubscribable<NotificationsManagerEvents<T>>;
+    readonly notifications: NotificationSubscribable<T>;
+}
+
+// @beta (undocumented)
+export interface NotificationsManagerEvents<T> {
+    // @eventProperty
+    unsubscribedNotification: (name: string, sender: ClientId, ...content: unknown[]) => void;
+}
+
+// @beta
+export interface NotificationSubscribable<E extends NotificationEvents<E>> {
+    on<K extends keyof NotificationEvents<E>>(notificationName: K, listener: (sender: ClientId, ...args: Parameters<E[K]>) => void): () => void;
+}
+
+// @beta
+export type NotificationSubscriptions<E extends NotificationEvents<E>> = {
+    [K in string & keyof NotificationEvents<E>]: (sender: ClientId, ...args: Parameters<E[K]>) => void;
+};
+
+// @beta (undocumented)
+interface NotificationType {
+    // (undocumented)
+    args: (JsonEncodable<unknown> & JsonDeserialized<unknown>)[];
+    // (undocumented)
+    name: string;
+}
 
 // @beta (undocumented)
 interface ValueDirectory<T> {
