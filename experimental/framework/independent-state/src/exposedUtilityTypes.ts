@@ -144,17 +144,20 @@ export type FullyReadonly<T> = {
 };
 
 /**
- * `true` iff the given type is an acceptable shape for a notification
+ * `true` iff the given type is an acceptable shape for a notification.
+ *
  * @beta
  */
-export type IsNotificationEvent<Event> = Event extends <T>(
-	...args: (JsonEncodable<T> & FullyReadonly<JsonDeserialized<T>>)[]
-) => void
-	? true
+export type IsNotificationEvent<Event> = Event extends (...args: infer P) => void
+	? P extends JsonDeserialized<P> & JsonEncodable<P>
+		? JsonDeserialized<P> & JsonEncodable<P> extends P
+			? true
+			: false
+		: false
 	: false;
 
 /**
- * Used to specify the kinds of notifcations emitted by a {@link NotificationSubscribable}.
+ * Used to specify the kinds of notifications emitted by a {@link NotificationSubscribable}.
  *
  * @remarks
  *
@@ -175,3 +178,25 @@ export type IsNotificationEvent<Event> = Event extends <T>(
 export type NotificationEvents<E> = {
 	[P in string & keyof E as IsNotificationEvent<E[P]> extends true ? P : never]: E[P];
 };
+
+/**
+ * JsonDeserialized version of the parameters of a function.
+ *
+ * @beta
+ */
+export type JsonDeserializedParameters<T extends (...args: any) => any> = T extends (
+	...args: infer P
+) => any
+	? JsonDeserialized<P>
+	: never;
+
+/**
+ * JsonEncodable version of the parameters of a function.
+ *
+ * @beta
+ */
+export type JsonEncodableParameters<T extends (...args: any) => any> = T extends (
+	...args: infer P
+) => any
+	? JsonEncodable<P>
+	: never;

@@ -12,7 +12,11 @@ import type {
 	NotificationType,
 	ValueRequiredState,
 } from "./exposedInternalTypes.js";
-import type { NotificationEvents } from "./exposedUtilityTypes.js";
+import type {
+	JsonDeserializedParameters,
+	JsonEncodableParameters,
+	NotificationEvents,
+} from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
 import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
@@ -20,13 +24,13 @@ import type { ValueManager } from "./internalTypes.js";
 /**
  * @beta
  */
-export interface NotificationsManagerEvents<T> {
+export interface NotificationsManagerEvents {
 	/**
-	 * Raised when notification is received, but there no subscribers were found.
+	 * Raised when notification is received, but no subscribers were found.
 	 *
 	 * @eventProperty
 	 */
-	unsubscribedNotification: (name: string, sender: ClientId, ...content: unknown[]) => void;
+	unattendedNotification: (name: string, sender: ClientId, ...content: unknown[]) => void;
 }
 
 /**
@@ -37,15 +41,15 @@ export interface NotificationsManagerEvents<T> {
  */
 export interface NotificationSubscribable<E extends NotificationEvents<E>> {
 	/**
-	 * Register an event listener.
-	 * @param notificationName - the name of the event
-	 * @param listener - the handler to run when the event is fired by the emitter
-	 * @returns a function which will deregister the listener when run. This function has undefined behavior
-	 * if called more than once.
+	 * Register a notification listener.
+	 * @param notificationName - the name of the notification
+	 * @param listener - the handler to run when the notification is received from other client
+	 * @returns a function which will deregister the listener when run. This function
+	 * has undefined behavior if called more than once.
 	 */
 	on<K extends keyof NotificationEvents<E>>(
 		notificationName: K,
-		listener: (sender: ClientId, ...args: Parameters<E[K]>) => void,
+		listener: (sender: ClientId, ...args: JsonDeserializedParameters<E[K]>) => void,
 	): () => void;
 }
 
@@ -57,12 +61,13 @@ export interface NotificationSubscribable<E extends NotificationEvents<E>> {
 export type NotificationSubscriptions<E extends NotificationEvents<E>> = {
 	[K in string & keyof NotificationEvents<E>]: (
 		sender: ClientId,
-		...args: Parameters<E[K]>
+		...args: JsonEncodableParameters<E[K]>
 	) => void;
 };
 
 /**
  * Interface for a notification emitter that can send typed notification to other clients.
+ *
  * @beta
  */
 export interface NotificationEmitter<E extends NotificationEvents<E>> {
@@ -90,7 +95,8 @@ export interface NotificationEmitter<E extends NotificationEvents<E>> {
 }
 
 /**
- * Value manager that provides notifications from this client to others and subscription to their notifications.
+ * Value manager that provides notifications from this client to others and subscription
+ * to their notifications.
  *
  * @remarks Create using {@link Latest} registered to {@link IndependentMap}.
  *
@@ -100,7 +106,7 @@ export interface NotificationsManager<T extends NotificationEvents<T>> {
 	/**
 	 * Events for Notifications manager.
 	 */
-	readonly events: ISubscribable<NotificationsManagerEvents<T>>;
+	readonly events: ISubscribable<NotificationsManagerEvents>;
 
 	/**
 	 * Send notifications to other clients.
@@ -118,7 +124,7 @@ class NotificationsManagerImpl<T extends NotificationEvents<T>, Key extends stri
 		NotificationsManager<T>,
 		ValueManager<NotificationType, ValueRequiredState<NotificationType>>
 {
-	public readonly events = createEmitter<NotificationsManagerEvents<T>>();
+	public readonly events = createEmitter<NotificationsManagerEvents>();
 
 	public readonly emit: NotificationEmitter<T> = {
 		broadcast: (name, ...args) => {
@@ -157,7 +163,7 @@ class NotificationsManagerImpl<T extends NotificationEvents<T>, Key extends stri
 		value: ValueRequiredState<NotificationType>,
 	): void {
 		this.events.emit(
-			"unsubscribedNotification",
+			"unattendedNotification",
 			value.value.name,
 			clientId,
 			// @ts-expect-error ISubscribable recursion defect? or Json* defect?

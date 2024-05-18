@@ -108,7 +108,9 @@ declare namespace InternalUtilityTypes {
         FlattenIntersection,
         FullyReadonly,
         IsNotificationEvent,
-        NotificationEvents
+        NotificationEvents,
+        JsonDeserializedParameters,
+        JsonEncodableParameters
     }
 }
 export { InternalUtilityTypes }
@@ -128,7 +130,7 @@ export type IsEvent<Event> = Event extends (...args: any[]) => any ? true : fals
 type IsExactlyObject<T extends object> = object extends Required<T> ? false extends T ? false : true : false;
 
 // @beta
-type IsNotificationEvent<Event> = Event extends <T>(...args: (JsonEncodable<T> & FullyReadonly<JsonDeserialized<T>>)[]) => void ? true : false;
+type IsNotificationEvent<Event> = Event extends (...args: infer P) => void ? P extends JsonDeserialized<P> & JsonEncodable<P> ? JsonDeserialized<P> & JsonEncodable<P> extends P ? true : false : false : false;
 
 // @beta
 export interface ISubscribable<E extends Events<E>> {
@@ -145,6 +147,9 @@ export type JsonDeserialized<T, TReplaced = never> = boolean extends (T extends 
 }> : never : never;
 
 // @beta
+type JsonDeserializedParameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? JsonDeserialized<P> : never;
+
+// @beta
 export type JsonEncodable<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonTypeWith<TReplaced> : unknown extends T ? JsonTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends readonly (infer _)[] ? {
     [K in keyof T]: JsonForArrayItem<T[K], TReplaced, JsonEncodable<T[K], TReplaced>>;
 } : IsExactlyObject<T> extends true ? JsonTypeWith<TReplaced> : IsEnumLike<T> extends true ? T : FlattenIntersection<{
@@ -154,6 +159,9 @@ export type JsonEncodable<T, TReplaced = never> = boolean extends (T extends nev
 } & {
     [K in keyof T & symbol]: never;
 }> : never : never;
+
+// @beta
+type JsonEncodableParameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? JsonEncodable<P> : never;
 
 // @beta
 type JsonForArrayItem<T, TReplaced, TBlessed> = boolean extends (T extends never ? true : false) ? TBlessed : unknown extends T ? TBlessed : T extends null | boolean | number | string | TReplaced ? T : undefined extends T ? "error-array-or-tuple-may-not-allow-undefined-value-consider-null" : TBlessed;
@@ -302,24 +310,24 @@ export function Notifications<T extends NotificationEvents<T>, Key extends strin
 // @beta
 export interface NotificationsManager<T extends NotificationEvents<T>> {
     readonly emit: NotificationEmitter<T>;
-    readonly events: ISubscribable<NotificationsManagerEvents<T>>;
+    readonly events: ISubscribable<NotificationsManagerEvents>;
     readonly notifications: NotificationSubscribable<T>;
 }
 
 // @beta (undocumented)
-export interface NotificationsManagerEvents<T> {
+export interface NotificationsManagerEvents {
     // @eventProperty
-    unsubscribedNotification: (name: string, sender: ClientId, ...content: unknown[]) => void;
+    unattendedNotification: (name: string, sender: ClientId, ...content: unknown[]) => void;
 }
 
 // @beta
 export interface NotificationSubscribable<E extends NotificationEvents<E>> {
-    on<K extends keyof NotificationEvents<E>>(notificationName: K, listener: (sender: ClientId, ...args: Parameters<E[K]>) => void): () => void;
+    on<K extends keyof NotificationEvents<E>>(notificationName: K, listener: (sender: ClientId, ...args: JsonDeserializedParameters<E[K]>) => void): () => void;
 }
 
 // @beta
 export type NotificationSubscriptions<E extends NotificationEvents<E>> = {
-    [K in string & keyof NotificationEvents<E>]: (sender: ClientId, ...args: Parameters<E[K]>) => void;
+    [K in string & keyof NotificationEvents<E>]: (sender: ClientId, ...args: JsonEncodableParameters<E[K]>) => void;
 };
 
 // @beta (undocumented)

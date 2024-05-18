@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /*!
  * Copyright (c) Microsoft Corporation and contributors. All rights reserved.
  * Licensed under the MIT License.
@@ -36,7 +34,7 @@ const mapInferred = createIndependentMap(
 const map: typeof mapInferred = mapInferred;
 
 const NF = Notifications({
-	newId: (clientId: ClientId, id: number) => {
+	newId: (clientId: ClientId, id: number): void => {
 		console.log(`${clientId} has a new id: ${id}`);
 	},
 });
@@ -54,20 +52,13 @@ map.add("my_events", NF);
 // 	}),
 // );
 
-// const fakeAdd = map.caret.local.pos + map.camera.local.z + map.notifications.local.x;
-
-// // @ts-expect-error local may be set wholly, but partially it is readonly
-// map.caret.local.pos = 0;
-
-function logClientValue<
-	T /* following extends should not be required: */ extends Record<string, unknown>,
->(name: string, clientId: ClientId, ...content: unknown[]): void {
-	console.log(`${clientId} sent unattended notification '${name}' with conent`, ...content);
+function logUnattended(name: string, clientId: ClientId, ...content: unknown[]): void {
+	console.log(`${clientId} sent unattended notification '${name}' with content`, ...content);
 }
 
 const notifications = map.notifications;
 
 notifications.emit.broadcast("msg", "howdy");
 
-const unattendedOff = notifications.events.on("unsubscribedNotification", logClientValue);
+const unattendedOff = notifications.events.on("unattendedNotification", logUnattended);
 unattendedOff();
