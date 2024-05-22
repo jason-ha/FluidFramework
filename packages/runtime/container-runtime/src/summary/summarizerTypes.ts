@@ -10,12 +10,9 @@ import {
 	ITelemetryBaseProperties,
 	ITelemetryBaseLogger,
 } from "@fluidframework/core-interfaces";
-import {
-	IDocumentMessage,
-	ISequencedDocumentMessage,
-	ISummaryTree,
-} from "@fluidframework/protocol-definitions";
-import { ISummaryStats } from "@fluidframework/runtime-definitions";
+import { ISequencedDocumentMessage, ISummaryTree } from "@fluidframework/driver-definitions";
+import { IDocumentMessage } from "@fluidframework/driver-definitions/internal";
+import { ISummaryStats } from "@fluidframework/runtime-definitions/internal";
 import {
 	ITelemetryLoggerExt,
 	ITelemetryLoggerPropertyBag,
@@ -118,13 +115,6 @@ export interface ISummarizerRuntime extends IConnectableRuntime {
 export interface ISummarizeOptions {
 	/** True to generate the full tree with no handle reuse optimizations; defaults to false */
 	readonly fullTree?: boolean;
-	/**
-	 * True to ask the server what the latest summary is first; defaults to false
-	 *
-	 * @deprecated Summarize will not refresh latest snapshot state anymore. Instead it updates the cache and closes.
-	 * It's expected a new summarizer client will be created, likely by the same parent.
-	 */
-	readonly refreshLatestAck?: boolean;
 }
 
 /**
@@ -189,13 +179,21 @@ export interface IGeneratedSummaryStats extends ISummaryStats {
 }
 
 /**
+ * Type for summarization failures that are retriable.
+ * @alpha
+ */
+export interface IRetriableFailureError extends Error {
+	readonly retryAfterSeconds?: number;
+}
+
+/**
  * Base results for all submitSummary attempts.
  * @alpha
  */
 export interface IBaseSummarizeResult {
 	readonly stage: "base";
-	/** Error object related to failed summarize attempt. */
-	readonly error: Error | undefined;
+	/** Retriable error object related to failed summarize attempt. */
+	readonly error: IRetriableFailureError | undefined;
 	/** Reference sequence number as of the generate summary attempt. */
 	readonly referenceSequenceNumber: number;
 	readonly minimumSequenceNumber: number;
@@ -213,8 +211,6 @@ export interface IGenerateSummaryTreeResult extends Omit<IBaseSummarizeResult, "
 	readonly summaryStats: IGeneratedSummaryStats;
 	/** Time it took to generate the summary tree and stats. */
 	readonly generateDuration: number;
-	/** True if the full tree regeneration with no handle reuse optimizations was forced. */
-	readonly forcedFullTree: boolean;
 }
 
 /**
@@ -271,18 +267,10 @@ export type SubmitSummaryResult =
 export type SummaryStage = SubmitSummaryResult["stage"] | "unknown";
 
 /**
- * Type for summarization failures that are retriable.
- * @alpha
- */
-export interface IRetriableFailureResult {
-	readonly retryAfterSeconds?: number;
-}
-
-/**
  * The data in summarizer result when submit summary stage fails.
  * @alpha
  */
-export interface SubmitSummaryFailureData extends IRetriableFailureResult {
+export interface SubmitSummaryFailureData {
 	stage: SummaryStage;
 }
 
@@ -305,7 +293,7 @@ export interface IAckSummaryResult {
 /**
  * @alpha
  */
-export interface INackSummaryResult extends IRetriableFailureResult {
+export interface INackSummaryResult {
 	readonly summaryNackOp: ISummaryNackMessage;
 	readonly ackNackDuration: number;
 }
@@ -322,7 +310,7 @@ export type SummarizeResultPart<TSuccess, TFailure = undefined> =
 			success: false;
 			data: TFailure | undefined;
 			message: string;
-			error: any;
+			error: IRetriableFailureError;
 	  };
 
 /**
@@ -540,10 +528,6 @@ type ISummarizeTelemetryRequiredProperties =
 type ISummarizeTelemetryOptionalProperties =
 	/** Number of attempts within the last time window, used for calculating the throttle delay. */
 	| "summaryAttempts"
-	/** Number of attempts within the current phase (currently capped at 2 ) */
-	| "summaryAttemptsPerPhase"
-	/** One-based count of phases we've attempted (used to index into an array of ISummarizeOptions */
-	| "summaryAttemptPhase"
 	/** Summarization may be attempted multiple times. This tells whether this is the final summarization attempt */
 	| "finalAttempt"
 	| keyof ISummarizeOptions;
