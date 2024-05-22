@@ -17,6 +17,8 @@ import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
 import type { JsonDeserialized } from "./jsonDeserialized.js";
 import type { JsonEncodable } from "./jsonEncodable.js";
+import type { LatestValueControls } from "./latestValueControls.js";
+import { LatestValueControl } from "./latestValueControls.js";
 import type {
 	LatestValueClientData,
 	LatestValueData,
@@ -285,6 +287,11 @@ export interface LatestMapValueManager<T, Keys extends string | number = string 
 	readonly events: ISubscribable<LatestMapValueManagerEvents<T, Keys>>;
 
 	/**
+	 * Controls for management of sending updates.
+	 */
+	readonly controls: LatestValueControls;
+
+	/**
 	 * Current value map for this client.
 	 */
 	readonly local: ValueMap<Keys, T>;
@@ -313,12 +320,16 @@ class LatestMapValueManagerImpl<
 	implements LatestMapValueManager<T, Keys>, ValueManager<T, MapValueState<T>>
 {
 	public readonly events = createEmitter<LatestMapValueManagerEvents<T, Keys>>();
+	public readonly controls: LatestValueControl;
 
 	public constructor(
 		private readonly key: RegistrationKey,
 		private readonly datastore: IndependentDatastore<RegistrationKey, MapValueState<T>>,
 		public readonly value: MapValueState<T>,
+		controlSettings: LatestValueControls,
 	) {
+		this.controls = new LatestValueControl(controlSettings);
+
 		this.local = new ValueMapImpl<T, Keys>(
 			value,
 			(updates: MapValueState<T>, forceUpdate: boolean) => {
@@ -427,9 +438,12 @@ export function LatestMap<
 	T extends object,
 	RegistrationKey extends string,
 	Keys extends string | number = string | number,
->(initialValues?: {
-	[K in Keys]: JsonEncodable<T> & JsonDeserialized<T>;
-}): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>> {
+>(
+	initialValues?: {
+		[K in Keys]: JsonEncodable<T> & JsonDeserialized<T>;
+	},
+	controls?: LatestValueControls,
+): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>> {
 	const timestamp = Date.now();
 	const value: MapValueState<T> = { rev: 0, items: {} };
 	// LatestMapValueManager takes ownership of values within initialValues.
@@ -438,13 +452,24 @@ export function LatestMap<
 			value.items[key] = { rev: 0, timestamp, value: initialValues[key as Keys] };
 		}
 	}
+	const controlSettings = controls
+		? { ...controls }
+		: {
+				allowableUpdateLatency: 60,
+				forcedRefreshInterval: 0,
+		  };
 	return (
 		key: RegistrationKey,
 		datastoreHandle: IndependentDatastoreHandle<RegistrationKey, MapValueState<T>>,
 	) => ({
 		value,
 		manager: brandIVM<LatestMapValueManagerImpl<T, RegistrationKey, Keys>, T, MapValueState<T>>(
-			new LatestMapValueManagerImpl(key, datastoreFromHandle(datastoreHandle), value),
+			new LatestMapValueManagerImpl(
+				key,
+				datastoreFromHandle(datastoreHandle),
+				value,
+				controlSettings,
+			),
 		),
 	});
 }

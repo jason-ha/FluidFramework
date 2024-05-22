@@ -38,17 +38,23 @@ function logClientValue<
 	console.log(clientId, value);
 }
 
+// Create new cursor state
 const cursor = map.cursor;
 
+// Update our cursor position
 cursor.local = { x: 1, y: 2 };
 
-const cursorUpdatedOff = cursor.events.on("updated", logClientValue);
+// Listen to others cursor updates
+const cursorUpdatedOff = cursor.events.on("updated", ({ clientId, value }) =>
+	console.log(`client ${clientId}'s cursor is now at (${value.x},${value.y})`),
+);
 cursorUpdatedOff();
 
 for (const clientId of cursor.clients()) {
 	logClientValue({ clientId, ...cursor.clientValue(clientId) });
 }
 
+// Enumerate all cursor values
 for (const { clientId, value } of cursor.clientValues()) {
 	logClientValue({ clientId, value });
 }

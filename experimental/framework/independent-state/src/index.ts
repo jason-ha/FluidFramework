@@ -22,6 +22,7 @@ export { createIndependentMap, type IFluidEphemeralDataStoreRuntime } from "./in
 
 export { IndependentMapFactory } from "./independentMapFactory.js";
 
+export type { LatestValueControls } from "./latestValueControls.js";
 export {
 	LatestMap,
 	type LatestMapItemRemovedClientData,

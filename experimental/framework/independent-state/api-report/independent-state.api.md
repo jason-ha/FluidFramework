@@ -172,12 +172,12 @@ export type JsonTypeWith<T> = null | boolean | number | string | T | {
 } | JsonTypeWith<T>[];
 
 // @beta
-export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & JsonDeserialized<T> & object): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>>;
+export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & JsonDeserialized<T> & object, controls?: LatestValueControls): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>>;
 
 // @beta
 export function LatestMap<T extends object, RegistrationKey extends string, Keys extends string | number = string | number>(initialValues?: {
     [K in Keys]: JsonEncodable<T> & JsonDeserialized<T>;
-}): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>>;
+}, controls?: LatestValueControls): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>>;
 
 // @beta
 export interface LatestMapItemRemovedClientData<K extends string | number> {
@@ -207,6 +207,7 @@ export interface LatestMapValueManager<T, Keys extends string | number = string 
     clients(): ClientId[];
     clientValue<SpecificClientId extends ClientId>(clientId: SpecificClientId): LatestMapValueClientData<SpecificClientId, T, Keys>;
     clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>>;
+    readonly controls: LatestValueControls;
     readonly events: ISubscribable<LatestMapValueManagerEvents<T, Keys>>;
     readonly local: ValueMap<Keys, T>;
 }
@@ -228,6 +229,12 @@ export interface LatestValueClientData<T> extends LatestValueData<T> {
 }
 
 // @beta
+export interface LatestValueControls {
+    allowableUpdateLatency: number;
+    forcedRefreshInterval: number;
+}
+
+// @beta
 export interface LatestValueData<T> {
     // (undocumented)
     metadata: LatestValueMetadata;
@@ -240,6 +247,7 @@ export interface LatestValueManager<T> {
     clients(): ClientId[];
     clientValue(clientId: ClientId): LatestValueData<T>;
     clientValues(): IterableIterator<LatestValueClientData<T>>;
+    readonly controls: LatestValueControls;
     readonly events: ISubscribable<LatestValueManagerEvents<T>>;
     get local(): FullyReadonly<JsonDeserialized<T>>;
     set local(value: JsonEncodable<T> & JsonDeserialized<T>);

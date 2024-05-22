@@ -17,6 +17,8 @@ import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
 import type { JsonDeserialized } from "./jsonDeserialized.js";
 import type { JsonEncodable } from "./jsonEncodable.js";
+import type { LatestValueControls } from "./latestValueControls.js";
+import { LatestValueControl } from "./latestValueControls.js";
 import type { LatestValueClientData, LatestValueData } from "./latestValueTypes.js";
 
 /**
@@ -46,6 +48,11 @@ export interface LatestValueManager<T> {
 	readonly events: ISubscribable<LatestValueManagerEvents<T>>;
 
 	/**
+	 * Controls for management of sending updates.
+	 */
+	readonly controls: LatestValueControls;
+
+	/**
 	 * Current state for this client.
 	 * State for this client that will be transmitted to all other connected clients.
 	 * @remarks Manager assumes ownership of the value and its references. Make a deep clone before
@@ -53,6 +60,7 @@ export interface LatestValueManager<T> {
 	 */
 	get local(): FullyReadonly<JsonDeserialized<T>>;
 	set local(value: JsonEncodable<T> & JsonDeserialized<T>);
+
 	/**
 	 * Iterable access to remote clients' values.
 	 * @remarks This is not yet implemented.
@@ -72,12 +80,16 @@ class LatestValueManagerImpl<T, Key extends string>
 	implements LatestValueManager<T>, ValueManager<T, ValueRequiredState<T>>
 {
 	public readonly events = createEmitter<LatestValueManagerEvents<T>>();
+	public readonly controls: LatestValueControl;
 
 	public constructor(
 		private readonly key: Key,
 		private readonly datastore: IndependentDatastore<Key, ValueRequiredState<T>>,
 		public readonly value: ValueRequiredState<T>,
-	) {}
+		controlSettings: LatestValueControls,
+	) {
+		this.controls = new LatestValueControl(controlSettings);
+	}
 
 	public get local(): FullyReadonly<JsonDeserialized<T>> {
 		return this.value.value;
@@ -134,6 +146,7 @@ class LatestValueManagerImpl<T, Key extends string>
  */
 export function Latest<T extends object, Key extends string>(
 	initialValue: JsonEncodable<T> & JsonDeserialized<T> & object,
+	controls?: LatestValueControls,
 ): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>> {
 	// LatestValueManager takes ownership of initialValue but makes a shallow
 	// copy for basic protection.
@@ -142,10 +155,21 @@ export function Latest<T extends object, Key extends string>(
 		timestamp: Date.now(),
 		value: { ...initialValue },
 	};
+	const controlSettings = controls
+		? { ...controls }
+		: {
+				allowableUpdateLatency: 60,
+				forcedRefreshInterval: 0,
+		  };
 	return (key: Key, datastoreHandle: IndependentDatastoreHandle<Key, ValueRequiredState<T>>) => ({
 		value,
 		manager: brandIVM<LatestValueManagerImpl<T, Key>, T, ValueRequiredState<T>>(
-			new LatestValueManagerImpl(key, datastoreFromHandle(datastoreHandle), value),
+			new LatestValueManagerImpl(
+				key,
+				datastoreFromHandle(datastoreHandle),
+				value,
+				controlSettings,
+			),
 		),
 	});
 }
