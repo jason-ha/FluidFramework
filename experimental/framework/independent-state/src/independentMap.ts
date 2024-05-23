@@ -7,6 +7,7 @@ import { assert } from "@fluidframework/core-utils/internal";
 import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions/internal";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions";
 
+import type { ClientId } from "./baseTypes.js";
 import type {
 	ManagerFactory,
 	ValueDirectory,
@@ -18,12 +19,6 @@ import { handleFromDatastore, type IndependentDatastore } from "./independentDat
 import { unbrandIVM } from "./independentValue.js";
 import type { ClientRecord } from "./internalTypes.js";
 import type { IndependentMap, IndependentMapMethods, IndependentMapSchema } from "./types.js";
-
-interface IndependentMapValueUpdate<TValue extends ValueDirectoryOrState<unknown>> {
-	key: string;
-	content: TValue;
-	keepUnregistered?: true;
-}
 
 type MapSchemaElement<
 	TSchema extends IndependentMapSchema,
@@ -75,6 +70,50 @@ interface ValueElementMap<_TSchema extends IndependentMapSchema> {
 // 	// 	all: ClientRecord<ValueDirectoryOrState<TValue>>;
 // 	// };
 // }
+
+interface GeneralDatastoreMessageContent {
+	[IndependentMapKey: string]: {
+		[IndependentValueManagerKey: string]: {
+			[ClientId: ClientId]: ValueDirectoryOrState<unknown> & { keepUnregistered?: true };
+		};
+	};
+}
+
+interface SystemDatastore {
+	"system:map": {
+		priorClientIds: {
+			[ClientId: ClientId]: ValueRequiredState<ClientId[]>;
+		};
+	};
+}
+
+type DatastoreMessageContent = GeneralDatastoreMessageContent & SystemDatastore;
+
+interface DatastoreUpdateMessage extends IInboundSignalMessage {
+	type: "DIS:DatastoreUpdate";
+	content: {
+		sendTimestamp: number;
+		avgLatency: number;
+		isComplete?: true;
+		data: GeneralDatastoreMessageContent & Partial<SystemDatastore>;
+	};
+}
+
+interface ClientJoinMessage extends IInboundSignalMessage {
+	type: "DIS:ClientJoin";
+	content: {
+		updateProviders: ClientId[];
+		sendTimestamp: number;
+		avgLatency: number;
+		data: DatastoreMessageContent;
+	};
+}
+
+function isDISMessage(
+	message: IInboundSignalMessage,
+): message is DatastoreUpdateMessage | ClientJoinMessage {
+	return message.type.startsWith("DIS:");
+}
 
 /**
  * This interface is a subset of IFluidDataStoreRuntime that is needed by the IndependentMap.
@@ -138,6 +177,9 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 {
 	private readonly datastore: ValueElementMap<TSchema> = {};
 	public readonly nodes: MapEntries<TSchema>;
+	private averageLatency = 0;
+	private returnedMessages = 0;
+	private refreshBroadcastRequested = false;
 
 	public constructor(
 		private readonly runtime: IFluidEphemeralDataStoreRuntime,
@@ -212,11 +254,21 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		value: MapSchemaElement<TSchema, "value", Key>,
 		_forceBroadcast: boolean,
 	): void {
+		const clientId = this.runtime.clientId;
+		if (clientId === undefined) {
+			return;
+		}
 		const content = {
-			key,
-			content: value,
-		} satisfies IndependentMapValueUpdate<MapSchemaElement<TSchema, "value", Key>>;
-		this.runtime.submitSignal("IndependentMapValueUpdate", content);
+			sendTimestamp: Date.now(),
+			avgLatency: this.averageLatency,
+			// isComplete: false,
+			data: {
+				"<unused>": {
+					[key]: { [clientId]: value },
+				},
+			},
+		} satisfies DatastoreUpdateMessage["content"];
+		this.runtime.submitSignal("DIS:DatastoreUpdate", content);
 	}
 
 	public update<Key extends keyof TSchema & string>(
@@ -252,36 +304,75 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		}
 	}
 
-	private processSignal(message: IInboundSignalMessage, local: boolean): void {
+	private broadcastAllKnownState(): void {
+		this.runtime.submitSignal("DIS:DatastoreUpdate", {
+			sendTimestamp: Date.now(),
+			avgLatency: this.averageLatency,
+			isComplete: true,
+			data: { "<unused>": this.datastore },
+		} satisfies DatastoreUpdateMessage["content"]);
+		this.refreshBroadcastRequested = false;
+	}
+
+	private processSignal(
+		message: IInboundSignalMessage | DatastoreUpdateMessage | ClientJoinMessage,
+		local: boolean,
+	): void {
+		const received = Date.now();
+		assert(message.clientId !== null, "Map received signal without clientId");
+		if (!isDISMessage(message)) {
+			return;
+		}
 		if (local) {
+			const deliveryDelta = received - message.content.sendTimestamp;
+			this.returnedMessages = Math.min(this.returnedMessages + 1, 256);
+			this.averageLatency =
+				(this.averageLatency * (this.returnedMessages - 1) + deliveryDelta) /
+				this.returnedMessages;
 			return;
 		}
 
-		const received = Date.now();
-		assert(message.clientId !== null, "Map received signal without clientId");
-		const timeDelta = received - received;
+		const timeModifier =
+			received -
+			(this.averageLatency + message.content.avgLatency + message.content.sendTimestamp);
 
-		// TODO: Maybe most messages can just be general state update and merged.
-		if (message.type === "IndependentMapValueUpdate") {
-			const { key, keepUnregistered, content } = message.content as IndependentMapValueUpdate<
-				ValueDirectoryOrState<unknown>
-			>;
-			if (key in this.nodes) {
-				const node = unbrandIVM(this.nodes[key]);
-				node.update(message.clientId, received, content);
-			} else if (keepUnregistered) {
-				if (!(key in this.datastore)) {
-					this.datastore[key] = {};
+		if (message.type === "DIS:ClientJoin") {
+			const updateProviders = message.content.updateProviders;
+			this.refreshBroadcastRequested = true;
+			// We must be connected to receive this message, so clientId should be defined.
+			// If it isn't then, not really a problem; just won't be in provider list.
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			if (updateProviders.includes(this.runtime.clientId!)) {
+				// Send all current state to the new client
+				this.broadcastAllKnownState();
+			} else {
+				// Schedule a broadcast to the new client after a delay only to send if
+				// another broadcast hasn't been seen in the meantime. The delay is based
+				// on the position in the audience list. It doesn't have to be a stable
+				// list across all clients. We need something to provide suggested order
+				// to prevent a flood of broadcasts.
+				let indexOfSelf = 0;
+				for (const clientId of this.runtime.getAudience().getMembers().keys()) {
+					if (clientId === this.runtime.clientId) {
+						break;
+					}
+					indexOfSelf += 1;
 				}
-				const allKnownState = this.datastore[key];
-				allKnownState[message.clientId] = mergeValueDirectory(
-					allKnownState[message.clientId],
-					content,
-					timeDelta,
-				);
+				const waitTime = indexOfSelf * 20 + 200;
+				setTimeout(() => {
+					if (this.refreshBroadcastRequested) {
+						this.broadcastAllKnownState();
+					}
+				}, waitTime);
 			}
-		} else if (message.type === "CompleteIndependentMap") {
-			const remoteDatastore = message.content as ValueElementMap<TSchema>;
+		} else {
+			assert(message.type === "DIS:DatastoreUpdate", "Unexpected message type");
+			if (message.content.isComplete) {
+				this.refreshBroadcastRequested = false;
+			}
+		}
+		for (const mapData of Object.values(message.content.data)) {
+			const remoteDatastore = mapData as ValueElementMap<TSchema>;
 			for (const [key, remoteAllKnownState] of Object.entries(remoteDatastore)) {
 				if (key in this.nodes) {
 					const node = unbrandIVM(this.nodes[key]);
@@ -298,7 +389,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 						localAllKnownState[clientId] = mergeValueDirectory(
 							localAllKnownState[clientId],
 							value,
-							timeDelta,
+							timeModifier,
 						);
 					}
 				}
