@@ -4,7 +4,7 @@
  */
 
 import { assert } from "@fluidframework/core-utils/internal";
-import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions";
+import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions/internal";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions";
 
 import type {

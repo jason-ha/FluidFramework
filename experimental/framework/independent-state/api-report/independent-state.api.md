@@ -8,7 +8,7 @@ import type { AliasResult } from '@fluidframework/runtime-definitions/internal';
 import { FluidDataStoreRuntime } from '@fluidframework/datastore/internal';
 import type { IContainerRuntime } from '@fluidframework/container-runtime-definitions/internal';
 import type { IContainerRuntimeBase } from '@fluidframework/runtime-definitions/internal';
-import type { IFluidDataStoreRuntime } from '@fluidframework/datastore-definitions';
+import type { IFluidDataStoreRuntime } from '@fluidframework/datastore-definitions/internal';
 import type { NamedFluidDataStoreRegistryEntry } from '@fluidframework/runtime-definitions/internal';
 
 // @beta
