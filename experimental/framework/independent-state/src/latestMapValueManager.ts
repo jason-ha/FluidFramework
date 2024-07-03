@@ -3,6 +3,8 @@
  * Licensed under the MIT License.
  */
 
+import type { JsonDeserialized , JsonSerializable } from "@fluidframework/core-interfaces/internal";
+
 import type { ClientId } from "./baseTypes.js";
 import type { ISubscribable } from "./events.js";
 import { createEmitter } from "./events.js";
@@ -15,8 +17,6 @@ import type { FullyReadonly } from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
 import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
-import type { JsonDeserialized } from "./jsonDeserialized.js";
-import type { JsonEncodable } from "./jsonEncodable.js";
 import type { LatestValueControls } from "./latestValueControls.js";
 import { LatestValueControl } from "./latestValueControls.js";
 import type {
@@ -153,7 +153,7 @@ export interface ValueMap<K extends string | number, V> {
 	 * Make a deep clone before setting, if needed. No comparison is done to detect changes; all
 	 * sets are transmitted.
 	 */
-	set(key: K, value: JsonEncodable<V> & JsonDeserialized<V>): this;
+	set(key: K, value: JsonSerializable<V> & JsonDeserialized<V>): this;
 
 	/**
 	 * @returns the number of elements in the ValueMap.
@@ -248,7 +248,7 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 	public has(key: K): boolean {
 		return this.value.items[key]?.value !== undefined;
 	}
-	public set(key: K, value: JsonEncodable<T> & JsonDeserialized<T>): this {
+	public set(key: K, value: JsonSerializable<T> & JsonDeserialized<T>): this {
 		if (!(key in this.value.items)) {
 			this.countDefined += 1;
 			this.value.items[key] = { rev: 0, timestamp: 0, value };
@@ -313,11 +313,10 @@ export interface LatestMapValueManager<T, Keys extends string | number = string 
 }
 
 class LatestMapValueManagerImpl<
-		T,
-		RegistrationKey extends string,
-		Keys extends string | number = string | number,
-	>
-	implements LatestMapValueManager<T, Keys>, ValueManager<T, MapValueState<T>>
+	T,
+	RegistrationKey extends string,
+	Keys extends string | number = string | number,
+> implements LatestMapValueManager<T, Keys>, ValueManager<T, MapValueState<T>>
 {
 	public readonly events = createEmitter<LatestMapValueManagerEvents<T, Keys>>();
 	public readonly controls: LatestValueControl;
@@ -440,7 +439,7 @@ export function LatestMap<
 	Keys extends string | number = string | number,
 >(
 	initialValues?: {
-		[K in Keys]: JsonEncodable<T> & JsonDeserialized<T>;
+		[K in Keys]: JsonSerializable<T> & JsonDeserialized<T>;
 	},
 	controls?: LatestValueControls,
 ): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>> {
@@ -457,13 +456,17 @@ export function LatestMap<
 		: {
 				allowableUpdateLatency: 60,
 				forcedRefreshInterval: 0,
-		  };
+			};
 	return (
 		key: RegistrationKey,
 		datastoreHandle: IndependentDatastoreHandle<RegistrationKey, MapValueState<T>>,
 	) => ({
 		value,
-		manager: brandIVM<LatestMapValueManagerImpl<T, RegistrationKey, Keys>, T, MapValueState<T>>(
+		manager: brandIVM<
+			LatestMapValueManagerImpl<T, RegistrationKey, Keys>,
+			T,
+			MapValueState<T>
+		>(
 			new LatestMapValueManagerImpl(
 				key,
 				datastoreFromHandle(datastoreHandle),

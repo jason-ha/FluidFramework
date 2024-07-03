@@ -3,18 +3,21 @@
  * Licensed under the MIT License.
  */
 
+import type {
+	JsonDeserialized,
+	JsonSerializable,
+} from "@fluidframework/core-interfaces/internal";
+
 import {
 	// Most clients should use IndependentMapFactory from @fluid-experimental/independent-state/alpha
 	// until the interface is stabilized.
 	createIndependentMap,
 	type IFluidEphemeralDataStoreRuntime,
 	type InternalTypes,
-	type JsonDeserialized,
-	type JsonEncodable,
 } from "../index.js";
 
 declare function createValueManager<T, Key extends string>(
-	initial: JsonEncodable<T> & JsonDeserialized<T>,
+	initial: JsonSerializable<T> & JsonDeserialized<T>,
 ): (
 	key: Key,
 	datastoreHandle: InternalTypes.IndependentDatastoreHandle<

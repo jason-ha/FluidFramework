@@ -14,7 +14,7 @@ import type {
 } from "./exposedInternalTypes.js";
 import type {
 	JsonDeserializedParameters,
-	JsonEncodableParameters,
+	JsonSerializableParameters,
 	NotificationEvents,
 } from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
@@ -61,7 +61,7 @@ export interface NotificationSubscribable<E extends NotificationEvents<E>> {
 export type NotificationSubscriptions<E extends NotificationEvents<E>> = {
 	[K in string & keyof NotificationEvents<E>]: (
 		sender: ClientId,
-		...args: JsonEncodableParameters<E[K]>
+		...args: JsonSerializableParameters<E[K]>
 	) => void;
 };
 
@@ -152,7 +152,10 @@ class NotificationsManagerImpl<T extends NotificationEvents<T>, Key extends stri
 
 	public constructor(
 		private readonly key: Key,
-		private readonly datastore: IndependentDatastore<Key, ValueRequiredState<NotificationType>>,
+		private readonly datastore: IndependentDatastore<
+			Key,
+			ValueRequiredState<NotificationType>
+		>,
 		_initialSubscriptions: NotificationSubscriptions<T>,
 		public readonly value: ValueRequiredState<NotificationType>,
 	) {}
@@ -166,7 +169,6 @@ class NotificationsManagerImpl<T extends NotificationEvents<T>, Key extends stri
 			"unattendedNotification",
 			value.value.name,
 			clientId,
-			// @ts-expect-error ISubscribable recursion defect? or Json* defect?
 			...value.value.args,
 		);
 	}

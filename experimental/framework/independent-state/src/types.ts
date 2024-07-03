@@ -28,7 +28,7 @@ export type IndependentMapEntry<
  * @beta
  */
 export interface IndependentMapSchema {
-	// [key: string]: <T, M>(initialValue: JsonEncodable<M>) => IndependentMapEntry<IndependentValue<T>>;
+	// [key: string]: <T, M>(initialValue: JsonSerializable<M>) => IndependentMapEntry<IndependentValue<T>>;
 	// inference gobbledegook with no basis to work
 	// [key: string]: <P1 extends string, P2,R>(a: P1, b: P2) => R extends ManagerFactory<typeof Key, infer TValue, infer TManager> ? ManagerFactory<typeof Key, TValue, TManager> : never;
 	// Comes super close to working, but the instantiation is not viable as factory can be invoked with arbitrary TValue and TManager.
@@ -94,5 +94,5 @@ export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
  *
  * @beta
  */
-export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> &
-	IndependentMapMethods<TSchema>;
+export type IndependentMap<TSchema extends IndependentMapSchema> =
+	IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;

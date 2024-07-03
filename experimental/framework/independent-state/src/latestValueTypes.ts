@@ -3,9 +3,10 @@
  * Licensed under the MIT License.
  */
 
+import type { JsonDeserialized } from "@fluidframework/core-interfaces/internal";
+
 import type { ClientId } from "./baseTypes.js";
 import type { FullyReadonly } from "./exposedUtilityTypes.js";
-import type { JsonDeserialized } from "./jsonDeserialized.js";
 
 /**
  * Metadata for the value state.

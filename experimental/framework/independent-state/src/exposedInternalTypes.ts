@@ -3,8 +3,10 @@
  * Licensed under the MIT License.
  */
 
-import type { JsonDeserialized } from "./jsonDeserialized.js";
-import type { JsonEncodable } from "./jsonEncodable.js";
+import type {
+	JsonDeserialized,
+	JsonSerializable,
+} from "@fluidframework/core-interfaces/internal";
 
 /**
  * @beta
@@ -49,7 +51,10 @@ export type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>
 /**
  * @beta
  */
-export declare class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
+export declare class IndependentDatastoreHandle<
+	TKey,
+	TValue extends ValueDirectoryOrState<any>,
+> {
 	private readonly IndependentDatastoreHandle: IndependentDatastoreHandle<TKey, TValue>;
 }
 
@@ -97,5 +102,5 @@ export type ManagerFactory<
  */
 export interface NotificationType {
 	name: string;
-	args: (JsonEncodable<unknown> & JsonDeserialized<unknown>)[];
+	args: (JsonSerializable<unknown> & JsonDeserialized<unknown>)[];
 }

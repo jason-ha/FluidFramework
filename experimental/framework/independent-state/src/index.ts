@@ -14,11 +14,11 @@ export type {
 } from "./types.js";
 
 export type { Events, IsEvent, ISubscribable } from "./events.js";
-export type { JsonDeserialized } from "./jsonDeserialized.js";
-export type { JsonEncodable } from "./jsonEncodable.js";
-export type { JsonTypeWith } from "./jsonType.js";
 
-export { createIndependentMap, type IFluidEphemeralDataStoreRuntime } from "./independentMap.js";
+export {
+	createIndependentMap,
+	type IFluidEphemeralDataStoreRuntime,
+} from "./independentMap.js";
 
 export { IndependentMapFactory } from "./independentMapFactory.js";
 

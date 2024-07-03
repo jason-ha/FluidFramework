@@ -13,11 +13,6 @@ export type Events<E> = {
 };
 
 // @beta
-type FlattenIntersection<T> = T extends Record<string | number | symbol, unknown> ? {
-    [K in keyof T]: T[K];
-} : T;
-
-// @beta
 type FullyReadonly<T> = {
     readonly [K in keyof T]: FullyReadonly<T[K]>;
 };
@@ -76,39 +71,20 @@ export { InternalTypes }
 
 declare namespace InternalUtilityTypes {
     export {
-        NonSymbolWithOptionalPropertyOf,
-        NonSymbolWithRequiredPropertyOf,
-        NonSymbolWithDefinedNonFunctionPropertyOf,
-        NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf,
-        JsonForArrayItem,
-        IsEnumLike,
-        IsExactlyObject,
-        FlattenIntersection,
         FullyReadonly,
         IsNotificationEvent,
         NotificationEvents,
         JsonDeserializedParameters,
-        JsonEncodableParameters
+        JsonSerializableParameters
     }
 }
 export { InternalUtilityTypes }
 
 // @beta
-type IsEnumLike<T extends object> = T extends readonly (infer _)[] ? false : T extends {
-    readonly [i: number]: string;
-    readonly [p: string]: number | string;
-} ? true extends {
-    [K in keyof T]: T[K] extends never ? true : never;
-}[keyof T] ? false : true : false;
-
-// @beta
 export type IsEvent<Event> = Event extends (...args: any[]) => any ? true : false;
 
 // @beta
-type IsExactlyObject<T extends object> = object extends Required<T> ? false extends T ? false : true : false;
-
-// @beta
-type IsNotificationEvent<Event> = Event extends (...args: infer P) => void ? P extends JsonDeserialized<P> & JsonEncodable<P> ? JsonDeserialized<P> & JsonEncodable<P> extends P ? true : false : false : false;
+type IsNotificationEvent<Event> = Event extends (...args: infer P) => void ? InternalUtilityTypes_2.IfSameType<P, JsonSerializable<P> & JsonDeserialized<P>, true, false> : false;
 
 // @beta
 export interface ISubscribable<E extends Events<E>> {
@@ -116,45 +92,17 @@ export interface ISubscribable<E extends Events<E>> {
 }
 
 // @beta
-export type JsonDeserialized<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonTypeWith<TReplaced> : unknown extends T ? JsonTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends readonly (infer _)[] ? {
-    [K in keyof T]: JsonForArrayItem<T[K], TReplaced, JsonDeserialized<T[K], TReplaced>>;
-} : IsExactlyObject<T> extends true ? JsonTypeWith<TReplaced> : IsEnumLike<T> extends true ? T : FlattenIntersection<{
-    [K in NonSymbolWithDefinedNonFunctionPropertyOf<T>]: JsonDeserialized<T[K], TReplaced>;
-} & {
-    [K in NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf<T>]?: JsonDeserialized<T[K], TReplaced>;
-}> : never : never;
-
-// @beta
 type JsonDeserializedParameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? JsonDeserialized<P> : never;
 
 // @beta
-export type JsonEncodable<T, TReplaced = never> = boolean extends (T extends never ? true : false) ? JsonTypeWith<TReplaced> : unknown extends T ? JsonTypeWith<TReplaced> : T extends null | boolean | number | string | TReplaced ? T : Extract<T, Function> extends never ? T extends object ? T extends readonly (infer _)[] ? {
-    [K in keyof T]: JsonForArrayItem<T[K], TReplaced, JsonEncodable<T[K], TReplaced>>;
-} : IsExactlyObject<T> extends true ? JsonTypeWith<TReplaced> : IsEnumLike<T> extends true ? T : FlattenIntersection<{
-    [K in NonSymbolWithRequiredPropertyOf<T>]-?: undefined extends T[K] ? "error-required-property-may-not-allow-undefined-value" : JsonEncodable<T[K], TReplaced>;
-} & {
-    [K in NonSymbolWithOptionalPropertyOf<T>]?: JsonEncodable<T[K], TReplaced | undefined>;
-} & {
-    [K in keyof T & symbol]: never;
-}> : never : never;
+type JsonSerializableParameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? JsonSerializable<P> : never;
 
 // @beta
-type JsonEncodableParameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? JsonEncodable<P> : never;
-
-// @beta
-type JsonForArrayItem<T, TReplaced, TBlessed> = boolean extends (T extends never ? true : false) ? TBlessed : unknown extends T ? TBlessed : T extends null | boolean | number | string | TReplaced ? T : undefined extends T ? "error-array-or-tuple-may-not-allow-undefined-value-consider-null" : TBlessed;
-
-// @beta
-export type JsonTypeWith<T> = null | boolean | number | string | T | {
-    [key: string | number]: JsonTypeWith<T>;
-} | JsonTypeWith<T>[];
-
-// @beta
-export function Latest<T extends object, Key extends string>(initialValue: JsonEncodable<T> & JsonDeserialized<T> & object, controls?: LatestValueControls): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>>;
+export function Latest<T extends object, Key extends string>(initialValue: JsonSerializable<T> & JsonDeserialized<T> & object, controls?: LatestValueControls): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>>;
 
 // @beta
 export function LatestMap<T extends object, RegistrationKey extends string, Keys extends string | number = string | number>(initialValues?: {
-    [K in Keys]: JsonEncodable<T> & JsonDeserialized<T>;
+    [K in Keys]: JsonSerializable<T> & JsonDeserialized<T>;
 }, controls?: LatestValueControls): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>>;
 
 // @beta
@@ -228,7 +176,7 @@ export interface LatestValueManager<T> {
     readonly controls: LatestValueControls;
     readonly events: ISubscribable<LatestValueManagerEvents<T>>;
     get local(): FullyReadonly<JsonDeserialized<T>>;
-    set local(value: JsonEncodable<T> & JsonDeserialized<T>);
+    set local(value: JsonSerializable<T> & JsonDeserialized<T>);
 }
 
 // @beta (undocumented)
@@ -258,26 +206,6 @@ export interface MapValueState<T> {
     // (undocumented)
     rev: number;
 }
-
-// @beta
-type NonSymbolWithDefinedNonFunctionPropertyOf<T extends object> = Exclude<{
-    [K in keyof T]: undefined extends T[K] ? never : T[K] extends Function ? never : K;
-}[keyof T], undefined | symbol>;
-
-// @beta
-type NonSymbolWithOptionalPropertyOf<T extends object> = Exclude<{
-    [K in keyof T]: T extends Record<K, T[K]> ? never : K;
-}[keyof T], undefined | symbol>;
-
-// @beta
-type NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf<T extends object> = Exclude<{
-    [K in keyof T]: undefined extends T[K] ? T[K] extends Function ? never : Exclude<T[K], undefined> extends never ? never : K : never;
-}[keyof T], undefined | symbol>;
-
-// @beta
-type NonSymbolWithRequiredPropertyOf<T extends object> = Exclude<{
-    [K in keyof T]: T extends Record<K, T[K]> ? K : never;
-}[keyof T], undefined | symbol>;
 
 // @beta
 export interface NotificationEmitter<E extends NotificationEvents<E>> {
@@ -313,13 +241,13 @@ export interface NotificationSubscribable<E extends NotificationEvents<E>> {
 
 // @beta
 export type NotificationSubscriptions<E extends NotificationEvents<E>> = {
-    [K in string & keyof NotificationEvents<E>]: (sender: ClientId, ...args: JsonEncodableParameters<E[K]>) => void;
+    [K in string & keyof NotificationEvents<E>]: (sender: ClientId, ...args: JsonSerializableParameters<E[K]>) => void;
 };
 
 // @beta (undocumented)
 interface NotificationType {
     // (undocumented)
-    args: (JsonEncodable<unknown> & JsonDeserialized<unknown>)[];
+    args: (JsonSerializable<unknown> & JsonDeserialized<unknown>)[];
     // (undocumented)
     name: string;
 }
@@ -347,7 +275,7 @@ export interface ValueMap<K extends string | number, V> {
     // (undocumented)
     has(key: K): boolean;
     keys(): IterableIterator<K>;
-    set(key: K, value: JsonEncodable<V> & JsonDeserialized<V>): this;
+    set(key: K, value: JsonSerializable<V> & JsonDeserialized<V>): this;
     // (undocumented)
     readonly size: number;
 }

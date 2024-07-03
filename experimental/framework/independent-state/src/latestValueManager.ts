@@ -3,6 +3,8 @@
  * Licensed under the MIT License.
  */
 
+import type { JsonDeserialized , JsonSerializable } from "@fluidframework/core-interfaces/internal";
+
 import type { ClientId } from "./baseTypes.js";
 import type { ISubscribable } from "./events.js";
 import { createEmitter } from "./events.js";
@@ -15,8 +17,6 @@ import type { FullyReadonly } from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
 import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
-import type { JsonDeserialized } from "./jsonDeserialized.js";
-import type { JsonEncodable } from "./jsonEncodable.js";
 import type { LatestValueControls } from "./latestValueControls.js";
 import { LatestValueControl } from "./latestValueControls.js";
 import type { LatestValueClientData, LatestValueData } from "./latestValueTypes.js";
@@ -59,7 +59,7 @@ export interface LatestValueManager<T> {
 	 * setting, if needed. No comparison is done to detect changes; all sets are transmitted.
 	 */
 	get local(): FullyReadonly<JsonDeserialized<T>>;
-	set local(value: JsonEncodable<T> & JsonDeserialized<T>);
+	set local(value: JsonSerializable<T> & JsonDeserialized<T>);
 
 	/**
 	 * Iterable access to remote clients' values.
@@ -95,7 +95,7 @@ class LatestValueManagerImpl<T, Key extends string>
 		return this.value.value;
 	}
 
-	public set local(value: JsonEncodable<T> & JsonDeserialized<T>) {
+	public set local(value: JsonSerializable<T> & JsonDeserialized<T>) {
 		this.value.rev += 1;
 		this.value.timestamp = Date.now();
 		this.value.value = value;
@@ -145,7 +145,7 @@ class LatestValueManagerImpl<T, Key extends string>
  * @beta
  */
 export function Latest<T extends object, Key extends string>(
-	initialValue: JsonEncodable<T> & JsonDeserialized<T> & object,
+	initialValue: JsonSerializable<T> & JsonDeserialized<T> & object,
 	controls?: LatestValueControls,
 ): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>> {
 	// LatestValueManager takes ownership of initialValue but makes a shallow
@@ -160,8 +160,11 @@ export function Latest<T extends object, Key extends string>(
 		: {
 				allowableUpdateLatency: 60,
 				forcedRefreshInterval: 0,
-		  };
-	return (key: Key, datastoreHandle: IndependentDatastoreHandle<Key, ValueRequiredState<T>>) => ({
+			};
+	return (
+		key: Key,
+		datastoreHandle: IndependentDatastoreHandle<Key, ValueRequiredState<T>>,
+	) => ({
 		value,
 		manager: brandIVM<LatestValueManagerImpl<T, Key>, T, ValueRequiredState<T>>(
 			new LatestValueManagerImpl(

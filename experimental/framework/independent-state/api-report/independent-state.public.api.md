@@ -22,19 +22,11 @@ export { InternalTypes }
 
 declare namespace InternalUtilityTypes {
     export {
-        NonSymbolWithOptionalPropertyOf,
-        NonSymbolWithRequiredPropertyOf,
-        NonSymbolWithDefinedNonFunctionPropertyOf,
-        NonSymbolWithPossiblyUndefinedNonFunctionPropertyOf,
-        JsonForArrayItem,
-        IsEnumLike,
-        IsExactlyObject,
-        FlattenIntersection,
         FullyReadonly,
         IsNotificationEvent,
         NotificationEvents,
         JsonDeserializedParameters,
-        JsonEncodableParameters
+        JsonSerializableParameters
     }
 }
 export { InternalUtilityTypes }
