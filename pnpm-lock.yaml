@@ -7768,6 +7768,9 @@ importers:
       '@microsoft/api-extractor':
         specifier: ^7.45.1
         version: 7.45.1(patch_hash=tos6v6doskwck2kr7bbxweswri)(@types/node@18.19.1)
+      concurrently:
+        specifier: ^8.2.1
+        version: 8.2.2
       copyfiles:
         specifier: ^2.4.1
         version: 2.4.1
@@ -42082,7 +42085,6 @@ packages:
 
   /path-dirname@1.0.2:
     resolution: {integrity: sha512-ALzNPpyNq9AqXMBjeymIjFDAkAFH06mHJH/cSBHAgU0s4vfpBn6b2nf8tiRLvagKD8RbTpq2FKTBg7cl9l3c7Q==}
-    requiresBuild: false
     dev: true
 
   /path-exists@2.1.0:

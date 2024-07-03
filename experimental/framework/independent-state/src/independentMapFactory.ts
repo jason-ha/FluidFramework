@@ -15,9 +15,8 @@ import type {
 	NamedFluidDataStoreRegistryEntry,
 } from "@fluidframework/runtime-definitions/internal";
 
-import type { IndependentMap, IndependentMapSchema } from "./types.js";
-
 import { createIndependentMap } from "./independentMap.js";
+import type { IndependentMap, IndependentMapSchema } from "./types.js";
 
 class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 	implements IFluidDataStoreFactory
@@ -40,7 +39,8 @@ class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 	): Promise<FluidDataStoreRuntime> {
 		// Create a new runtime for our data store, as if via new FluidDataStoreRuntime,
 		// The runtime is what Fluid uses to route to our data store.
-		const runtime: FluidDataStoreRuntime = new this.runtimeClass( // calls new FluidDataStoreRuntime(...)
+		const runtime: FluidDataStoreRuntime = new this.runtimeClass(
+			// calls new FluidDataStoreRuntime(...)
 			context,
 			/* ISharedObjectRegistry */ new Map(),
 			existing,

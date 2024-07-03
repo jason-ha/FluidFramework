@@ -5,7 +5,7 @@
 
 import { assert } from "@fluidframework/core-utils/internal";
 import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions/internal";
-import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions";
+import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions/internal";
 
 import type { ClientId } from "./baseTypes.js";
 import type {
