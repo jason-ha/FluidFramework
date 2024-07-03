@@ -4,22 +4,6 @@
 
 ```ts
 
-declare namespace InternalTypes {
-    export {
-        ValueStateMetadata,
-        ValueOptionalState,
-        ValueRequiredState,
-        ValueDirectory,
-        ValueDirectoryOrState,
-        IndependentDatastoreHandle,
-        IndependentValueBrand,
-        IndependentValue,
-        ManagerFactory,
-        NotificationType
-    }
-}
-export { InternalTypes }
-
 // (No @packageDocumentation comment for this package)
 
 ```

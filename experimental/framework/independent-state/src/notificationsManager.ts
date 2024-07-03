@@ -6,12 +6,7 @@
 import type { ClientId } from "./baseTypes.js";
 import type { ISubscribable } from "./events.js";
 import { createEmitter } from "./events.js";
-import type {
-	IndependentDatastoreHandle,
-	ManagerFactory,
-	NotificationType,
-	ValueRequiredState,
-} from "./exposedInternalTypes.js";
+import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
 import { brandIVM } from "./independentValue.js";
@@ -125,7 +120,10 @@ class NotificationsManagerImpl<
 	Key extends string,
 > implements
 		NotificationsManager<T>,
-		ValueManager<NotificationType, ValueRequiredState<NotificationType>>
+		ValueManager<
+			InternalTypes.NotificationType,
+			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
+		>
 {
 	public readonly events = createEmitter<NotificationsManagerEvents>();
 
@@ -157,16 +155,16 @@ class NotificationsManagerImpl<
 		private readonly key: Key,
 		private readonly datastore: IndependentDatastore<
 			Key,
-			ValueRequiredState<NotificationType>
+			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
 		>,
 		_initialSubscriptions: NotificationSubscriptions<T>,
-		public readonly value: ValueRequiredState<NotificationType>,
+		public readonly value: InternalTypes.ValueRequiredState<InternalTypes.NotificationType>,
 	) {}
 
 	public update(
 		clientId: string,
 		_received: number,
-		value: ValueRequiredState<NotificationType>,
+		value: InternalTypes.ValueRequiredState<InternalTypes.NotificationType>,
 	): void {
 		this.events.emit(
 			"unattendedNotification",
@@ -187,21 +185,28 @@ export function Notifications<
 	Key extends string,
 >(
 	initialSubscriptions: NotificationSubscriptions<T>,
-): ManagerFactory<Key, ValueRequiredState<NotificationType>, NotificationsManager<T>> {
-	const value: ValueRequiredState<NotificationType> = {
+): InternalTypes.ManagerFactory<
+	Key,
+	InternalTypes.ValueRequiredState<InternalTypes.NotificationType>,
+	NotificationsManager<T>
+> {
+	const value: InternalTypes.ValueRequiredState<InternalTypes.NotificationType> = {
 		rev: 0,
 		timestamp: Date.now(),
 		value: { name: "", args: [] },
 	};
 	return (
 		key: Key,
-		datastoreHandle: IndependentDatastoreHandle<Key, ValueRequiredState<NotificationType>>,
+		datastoreHandle: InternalTypes.IndependentDatastoreHandle<
+			Key,
+			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
+		>,
 	) => ({
 		value,
 		manager: brandIVM<
 			NotificationsManagerImpl<T, Key>,
-			NotificationType,
-			ValueRequiredState<NotificationType>
+			InternalTypes.NotificationType,
+			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
 		>(
 			new NotificationsManagerImpl(
 				key,

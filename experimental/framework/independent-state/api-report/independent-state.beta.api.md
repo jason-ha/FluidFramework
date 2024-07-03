@@ -12,10 +12,6 @@ export type Events<E> = {
     [P in (string | symbol) & keyof E as IsEvent<E[P]> extends true ? P : never]: E[P];
 };
 
-// @beta (undocumented)
-class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
-}
-
 // @beta
 export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;
 
@@ -24,45 +20,71 @@ export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
     /**
     * Registered `Value Manager`s
     */
-    readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<TSchema[Key]>["manager"] extends IndependentValue<infer TManager> ? TManager : never;
+    readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<TSchema[Key]>["manager"] extends InternalTypes.IndependentValue<infer TManager> ? TManager : never;
 };
 
 // @beta
-export type IndependentMapEntry<TKey extends string, TValue extends ValueDirectoryOrState<unknown>, TManager = unknown> = ManagerFactory<TKey, TValue, TManager>;
+export type IndependentMapEntry<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<unknown>, TManager = unknown> = InternalTypes.ManagerFactory<TKey, TValue, TManager>;
 
 // @beta
 export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
-    add<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager>(key: TKey, manager: ManagerFactory<TKey, TValue, TManager>): asserts this is IndependentMap<TSchema & Record<TKey, ManagerFactory<TKey, TValue, TManager>>>;
+    add<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<any>, TManager>(key: TKey, manager: InternalTypes.ManagerFactory<TKey, TValue, TManager>): asserts this is IndependentMap<TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>>;
 }
 
 // @beta
 export interface IndependentMapSchema {
     // (undocumented)
-    [key: string]: IndependentMapEntry<typeof key, ValueDirectoryOrState<any>>;
+    [key: string]: IndependentMapEntry<typeof key, InternalTypes.ValueDirectoryOrState<any>>;
 }
 
 // @beta
-type IndependentValue<T> = T & IndependentValueBrand<T>;
-
-// @beta
-class IndependentValueBrand<T> {
-}
-
-declare namespace InternalTypes {
-    export {
-        ValueStateMetadata,
-        ValueOptionalState,
-        ValueRequiredState,
-        ValueDirectory,
-        ValueDirectoryOrState,
-        IndependentDatastoreHandle,
-        IndependentValueBrand,
-        IndependentValue,
-        ManagerFactory,
-        NotificationType
+export namespace InternalTypes {
+    // (undocumented)
+    export class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
+    }
+    export type IndependentValue<T> = T & IndependentValueBrand<T>;
+    export class IndependentValueBrand<T> {
+    }
+    export type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager> = (key: TKey, datastoreHandle: IndependentDatastoreHandle<TKey, TValue>) => {
+        value: TValue;
+        manager: IndependentValue<TManager>;
+    };
+    // (undocumented)
+    export interface NotificationType {
+        // (undocumented)
+        args: (JsonSerializable<unknown> & JsonDeserialized<unknown>)[];
+        // (undocumented)
+        name: string;
+    }
+    // (undocumented)
+    export interface ValueDirectory<T> {
+        // (undocumented)
+        items: {
+            [name: string | number]: ValueOptionalState<T> | ValueDirectory<T>;
+        };
+        // (undocumented)
+        rev: number;
+    }
+    // (undocumented)
+    export type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
+    // (undocumented)
+    export interface ValueOptionalState<TValue> extends ValueStateMetadata {
+        // (undocumented)
+        value?: JsonDeserialized<TValue>;
+    }
+    // (undocumented)
+    export interface ValueRequiredState<TValue> extends ValueStateMetadata {
+        // (undocumented)
+        value: JsonDeserialized<TValue>;
+    }
+    // (undocumented)
+    export interface ValueStateMetadata {
+        // (undocumented)
+        rev: number;
+        // (undocumented)
+        timestamp: number;
     }
 }
-export { InternalTypes }
 
 // @beta
 export namespace InternalUtilityTypes {
@@ -86,12 +108,12 @@ export interface ISubscribable<E extends Events<E>> {
 }
 
 // @beta
-export function Latest<T extends object, Key extends string>(initialValue: JsonSerializable<T> & JsonDeserialized<T> & object, controls?: LatestValueControls): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>>;
+export function Latest<T extends object, Key extends string>(initialValue: JsonSerializable<T> & JsonDeserialized<T> & object, controls?: LatestValueControls): InternalTypes.ManagerFactory<Key, InternalTypes.ValueRequiredState<T>, LatestValueManager<T>>;
 
 // @beta
 export function LatestMap<T extends object, RegistrationKey extends string, Keys extends string | number = string | number>(initialValues?: {
     [K in Keys]: JsonSerializable<T> & JsonDeserialized<T>;
-}, controls?: LatestValueControls): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>>;
+}, controls?: LatestValueControls): InternalTypes.ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>>;
 
 // @beta
 export interface LatestMapItemRemovedClientData<K extends string | number> {
@@ -179,17 +201,11 @@ export interface LatestValueMetadata {
     timestamp: number;
 }
 
-// @beta
-type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager> = (key: TKey, datastoreHandle: IndependentDatastoreHandle<TKey, TValue>) => {
-    value: TValue;
-    manager: IndependentValue<TManager>;
-};
-
 // @beta (undocumented)
 export interface MapValueState<T> {
     // (undocumented)
     items: {
-        [name: string | number]: ValueOptionalState<T>;
+        [name: string | number]: InternalTypes.ValueOptionalState<T>;
     };
     // (undocumented)
     rev: number;
@@ -202,7 +218,7 @@ export interface NotificationEmitter<E extends InternalUtilityTypes.Notification
 }
 
 // @beta
-export function Notifications<T extends InternalUtilityTypes.NotificationEvents<T>, Key extends string>(initialSubscriptions: NotificationSubscriptions<T>): ManagerFactory<Key, ValueRequiredState<NotificationType>, NotificationsManager<T>>;
+export function Notifications<T extends InternalUtilityTypes.NotificationEvents<T>, Key extends string>(initialSubscriptions: NotificationSubscriptions<T>): InternalTypes.ManagerFactory<Key, InternalTypes.ValueRequiredState<InternalTypes.NotificationType>, NotificationsManager<T>>;
 
 // @beta
 export interface NotificationsManager<T extends InternalUtilityTypes.NotificationEvents<T>> {
@@ -227,27 +243,6 @@ export type NotificationSubscriptions<E extends InternalUtilityTypes.Notificatio
     [K in string & keyof InternalUtilityTypes.NotificationEvents<E>]: (sender: ClientId, ...args: InternalUtilityTypes.JsonSerializableParameters<E[K]>) => void;
 };
 
-// @beta (undocumented)
-interface NotificationType {
-    // (undocumented)
-    args: (JsonSerializable<unknown> & JsonDeserialized<unknown>)[];
-    // (undocumented)
-    name: string;
-}
-
-// @beta (undocumented)
-interface ValueDirectory<T> {
-    // (undocumented)
-    items: {
-        [name: string | number]: ValueOptionalState<T> | ValueDirectory<T>;
-    };
-    // (undocumented)
-    rev: number;
-}
-
-// @beta (undocumented)
-type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
-
 // @beta
 export interface ValueMap<K extends string | number, V> {
     clear(): void;
@@ -261,26 +256,6 @@ export interface ValueMap<K extends string | number, V> {
     set(key: K, value: JsonSerializable<V> & JsonDeserialized<V>): this;
     // (undocumented)
     readonly size: number;
-}
-
-// @beta (undocumented)
-interface ValueOptionalState<TValue> extends ValueStateMetadata {
-    // (undocumented)
-    value?: JsonDeserialized<TValue>;
-}
-
-// @beta (undocumented)
-interface ValueRequiredState<TValue> extends ValueStateMetadata {
-    // (undocumented)
-    value: JsonDeserialized<TValue>;
-}
-
-// @beta (undocumented)
-interface ValueStateMetadata {
-    // (undocumented)
-    rev: number;
-    // (undocumented)
-    timestamp: number;
 }
 
 // (No @packageDocumentation comment for this package)

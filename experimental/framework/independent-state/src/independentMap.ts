@@ -8,13 +8,7 @@ import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitio
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions/internal";
 
 import type { ClientId } from "./baseTypes.js";
-import type {
-	ManagerFactory,
-	ValueDirectory,
-	ValueDirectoryOrState,
-	ValueOptionalState,
-	ValueRequiredState,
-} from "./exposedInternalTypes.js";
+import type { InternalTypes } from "./exposedInternalTypes.js";
 import { handleFromDatastore, type IndependentDatastore } from "./independentDatastore.js";
 import { unbrandIVM } from "./independentValue.js";
 import type { ClientRecord } from "./internalTypes.js";
@@ -48,7 +42,7 @@ type MapEntries<TSchema extends IndependentMapSchema> = IndependentSubSchemaFrom
  * consumers that are expected to maintain their schema over multiple versions of clients.
  */
 interface ValueElementMap<_TSchema extends IndependentMapSchema> {
-	[key: string]: ClientRecord<ValueDirectoryOrState<unknown>>;
+	[key: string]: ClientRecord<InternalTypes.ValueDirectoryOrState<unknown>>;
 }
 // An attempt to make the type more precise, but it is not working.
 // If the casting in support code is too much we could keep two references to the same
@@ -56,25 +50,27 @@ interface ValueElementMap<_TSchema extends IndependentMapSchema> {
 // type ValueElementMap<TSchema extends IndependentMapNodeSchema> =
 // 	| {
 // 			[Key in keyof TSchema & string]?: {
-// 				[ClientId: ClientId]: ValueDirectoryOrState<MapSchemaElement<TSchema,"value",Key>>;
+// 				[ClientId: ClientId]: InternalTypes.ValueDirectoryOrState<MapSchemaElement<TSchema,"value",Key>>;
 // 			};
 // 	  }
 // 	| {
-// 			[key: string]: ClientRecord<ValueDirectoryOrState<unknown>>;
+// 			[key: string]: ClientRecord<InternalTypes.ValueDirectoryOrState<unknown>>;
 // 	  };
 // interface ValueElementMap<TValue> {
-// 	[Id: string]: ClientRecord<ValueDirectoryOrState<TValue>>;
+// 	[Id: string]: ClientRecord<InternalTypes.ValueDirectoryOrState<TValue>>;
 // 	// Version with local packed in is convenient for map, but not for join broadcast to serialize simply.
 // 	// [Id: string]: {
-// 	// 	local: ValueDirectoryOrState<TValue>;
-// 	// 	all: ClientRecord<ValueDirectoryOrState<TValue>>;
+// 	// 	local: InternalTypes.ValueDirectoryOrState<TValue>;
+// 	// 	all: ClientRecord<InternalTypes.ValueDirectoryOrState<TValue>>;
 // 	// };
 // }
 
 interface GeneralDatastoreMessageContent {
 	[IndependentMapKey: string]: {
 		[IndependentValueManagerKey: string]: {
-			[ClientId: ClientId]: ValueDirectoryOrState<unknown> & { keepUnregistered?: true };
+			[ClientId: ClientId]: InternalTypes.ValueDirectoryOrState<unknown> & {
+				keepUnregistered?: true;
+			};
 		};
 	};
 }
@@ -82,7 +78,7 @@ interface GeneralDatastoreMessageContent {
 interface SystemDatastore {
 	"system:map": {
 		priorClientIds: {
-			[ClientId: ClientId]: ValueRequiredState<ClientId[]>;
+			[ClientId: ClientId]: InternalTypes.ValueRequiredState<ClientId[]>;
 		};
 	};
 }
@@ -125,17 +121,27 @@ export type IFluidEphemeralDataStoreRuntime = Pick<
 	"clientId" | "getAudience" | "off" | "on" | "submitSignal"
 >;
 
-function isValueDirectory<T, TValueState extends ValueRequiredState<T> | ValueOptionalState<T>>(
-	value: ValueDirectory<T> | TValueState,
-): value is ValueDirectory<T> {
+function isValueDirectory<
+	T,
+	TValueState extends
+		| InternalTypes.ValueRequiredState<T>
+		| InternalTypes.ValueOptionalState<T>,
+>(
+	value: InternalTypes.ValueDirectory<T> | TValueState,
+): value is InternalTypes.ValueDirectory<T> {
 	return "items" in value;
 }
 
-function mergeValueDirectory<T, TValueState extends ValueRequiredState<T> | ValueOptionalState<T>>(
-	base: TValueState | ValueDirectory<T> | undefined,
-	update: TValueState | ValueDirectory<T>,
+function mergeValueDirectory<
+	T,
+	TValueState extends
+		| InternalTypes.ValueRequiredState<T>
+		| InternalTypes.ValueOptionalState<T>,
+>(
+	base: TValueState | InternalTypes.ValueDirectory<T> | undefined,
+	update: TValueState | InternalTypes.ValueDirectory<T>,
 	timeDelta: number,
-): TValueState | ValueDirectory<T> {
+): TValueState | InternalTypes.ValueDirectory<T> {
 	if (!isValueDirectory(update)) {
 		if (base === undefined || update.rev > base.rev) {
 			return { ...update, timestamp: update.timestamp + timeDelta };
@@ -143,7 +149,7 @@ function mergeValueDirectory<T, TValueState extends ValueRequiredState<T> | Valu
 		return base;
 	}
 
-	let mergeBase: ValueDirectory<T>;
+	let mergeBase: InternalTypes.ValueDirectory<T>;
 	if (base === undefined) {
 		mergeBase = { rev: update.rev, items: {} };
 	} else {
@@ -280,11 +286,15 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		allKnownState[clientId] = mergeValueDirectory(allKnownState[clientId], value, 0);
 	}
 
-	public add<TKey extends string, TValue extends ValueDirectoryOrState<unknown>, TValueManager>(
+	public add<
+		TKey extends string,
+		TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
+		TValueManager,
+	>(
 		key: TKey,
-		nodeFactory: ManagerFactory<TKey, TValue, TValueManager>,
+		nodeFactory: InternalTypes.ManagerFactory<TKey, TValue, TValueManager>,
 	): asserts this is IndependentMap<
-		TSchema & Record<TKey, ManagerFactory<TKey, TValue, TValueManager>>
+		TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TValueManager>>
 	> {
 		assert(!(key in this.nodes), "Already have entry for key in map");
 		const node = nodeFactory(key, handleFromDatastore(this)).manager;

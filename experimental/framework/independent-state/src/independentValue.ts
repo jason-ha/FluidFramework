@@ -3,33 +3,35 @@
  * Licensed under the MIT License.
  */
 
-import type { IndependentValue, ValueDirectoryOrState } from "./exposedInternalTypes.js";
+import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { ValueManager } from "./internalTypes.js";
 
 /**
- * Given a value manager, return opaque IndependentValue.
+ * Given a value manager, return opaque InternalTypes.IndependentValue.
  *
  * @internal
  */
 export function brandIVM<
 	TManagerInterface,
 	TValue,
-	TValueState extends ValueDirectoryOrState<TValue>,
+	TValueState extends InternalTypes.ValueDirectoryOrState<TValue>,
 >(
 	manager: TManagerInterface & ValueManager<TValue, TValueState>,
-): IndependentValue<TManagerInterface> {
-	return manager as TManagerInterface as IndependentValue<TManagerInterface>;
+): InternalTypes.IndependentValue<TManagerInterface> {
+	return manager as TManagerInterface as InternalTypes.IndependentValue<TManagerInterface>;
 }
 
 /**
- * Extract the value manager from an opaque IndependentValue.
+ * Extract the value manager from an opaque InternalTypes.IndependentValue.
  *
  * @internal
  */
 export function unbrandIVM<
 	TManagerInterface,
 	TValue,
-	TValueState extends ValueDirectoryOrState<TValue>,
->(branded: IndependentValue<TManagerInterface>): ValueManager<TValue, TValueState> {
+	TValueState extends InternalTypes.ValueDirectoryOrState<TValue>,
+>(
+	branded: InternalTypes.IndependentValue<TManagerInterface>,
+): ValueManager<TValue, TValueState> {
 	return branded as unknown as ValueManager<TValue, TValueState>;
 }

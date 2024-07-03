@@ -11,11 +11,7 @@ import type {
 import type { ClientId } from "./baseTypes.js";
 import type { ISubscribable } from "./events.js";
 import { createEmitter } from "./events.js";
-import type {
-	IndependentDatastoreHandle,
-	ManagerFactory,
-	ValueOptionalState,
-} from "./exposedInternalTypes.js";
+import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
 import { brandIVM } from "./independentValue.js";
@@ -193,7 +189,7 @@ export interface MapValueState<T> {
 		// Caution: any particular item may or may not exist
 		// Typescript does not support absent keys without forcing type to also be undefined.
 		// See https://github.com/microsoft/TypeScript/issues/42810.
-		[name: string | number]: ValueOptionalState<T>;
+		[name: string | number]: InternalTypes.ValueOptionalState<T>;
 	};
 }
 
@@ -208,7 +204,7 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 		this.countDefined = Object.keys(value.items).length;
 	}
 
-	private updateItem(key: K, value: ValueOptionalState<T>["value"]): void {
+	private updateItem(key: K, value: InternalTypes.ValueOptionalState<T>["value"]): void {
 		this.value.rev += 1;
 		const item = this.value.items[key];
 		item.rev += 1;
@@ -445,7 +441,11 @@ export function LatestMap<
 		[K in Keys]: JsonSerializable<T> & JsonDeserialized<T>;
 	},
 	controls?: LatestValueControls,
-): ManagerFactory<RegistrationKey, MapValueState<T>, LatestMapValueManager<T, Keys>> {
+): InternalTypes.ManagerFactory<
+	RegistrationKey,
+	MapValueState<T>,
+	LatestMapValueManager<T, Keys>
+> {
 	const timestamp = Date.now();
 	const value: MapValueState<T> = { rev: 0, items: {} };
 	// LatestMapValueManager takes ownership of values within initialValues.
@@ -462,7 +462,10 @@ export function LatestMap<
 			};
 	return (
 		key: RegistrationKey,
-		datastoreHandle: IndependentDatastoreHandle<RegistrationKey, MapValueState<T>>,
+		datastoreHandle: InternalTypes.IndependentDatastoreHandle<
+			RegistrationKey,
+			MapValueState<T>
+		>,
 	) => ({
 		value,
 		manager: brandIVM<

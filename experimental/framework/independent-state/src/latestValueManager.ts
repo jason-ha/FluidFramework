@@ -11,11 +11,7 @@ import type {
 import type { ClientId } from "./baseTypes.js";
 import type { ISubscribable } from "./events.js";
 import { createEmitter } from "./events.js";
-import type {
-	IndependentDatastoreHandle,
-	ManagerFactory,
-	ValueRequiredState,
-} from "./exposedInternalTypes.js";
+import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
 import { brandIVM } from "./independentValue.js";
@@ -80,15 +76,15 @@ export interface LatestValueManager<T> {
 }
 
 class LatestValueManagerImpl<T, Key extends string>
-	implements LatestValueManager<T>, ValueManager<T, ValueRequiredState<T>>
+	implements LatestValueManager<T>, ValueManager<T, InternalTypes.ValueRequiredState<T>>
 {
 	public readonly events = createEmitter<LatestValueManagerEvents<T>>();
 	public readonly controls: LatestValueControl;
 
 	public constructor(
 		private readonly key: Key,
-		private readonly datastore: IndependentDatastore<Key, ValueRequiredState<T>>,
-		public readonly value: ValueRequiredState<T>,
+		private readonly datastore: IndependentDatastore<Key, InternalTypes.ValueRequiredState<T>>,
+		public readonly value: InternalTypes.ValueRequiredState<T>,
 		controlSettings: LatestValueControls,
 	) {
 		this.controls = new LatestValueControl(controlSettings);
@@ -125,7 +121,11 @@ class LatestValueManagerImpl<T, Key extends string>
 		throw new Error("No entry for clientId");
 	}
 
-	public update(clientId: string, _received: number, value: ValueRequiredState<T>): void {
+	public update(
+		clientId: string,
+		_received: number,
+		value: InternalTypes.ValueRequiredState<T>,
+	): void {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		if (clientId in allKnownStates.states) {
 			const currentState = allKnownStates.states[clientId];
@@ -150,10 +150,14 @@ class LatestValueManagerImpl<T, Key extends string>
 export function Latest<T extends object, Key extends string>(
 	initialValue: JsonSerializable<T> & JsonDeserialized<T> & object,
 	controls?: LatestValueControls,
-): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>> {
+): InternalTypes.ManagerFactory<
+	Key,
+	InternalTypes.ValueRequiredState<T>,
+	LatestValueManager<T>
+> {
 	// LatestValueManager takes ownership of initialValue but makes a shallow
 	// copy for basic protection.
-	const value: ValueRequiredState<T> = {
+	const value: InternalTypes.ValueRequiredState<T> = {
 		rev: 0,
 		timestamp: Date.now(),
 		value: { ...initialValue },
@@ -166,10 +170,13 @@ export function Latest<T extends object, Key extends string>(
 			};
 	return (
 		key: Key,
-		datastoreHandle: IndependentDatastoreHandle<Key, ValueRequiredState<T>>,
+		datastoreHandle: InternalTypes.IndependentDatastoreHandle<
+			Key,
+			InternalTypes.ValueRequiredState<T>
+		>,
 	) => ({
 		value,
-		manager: brandIVM<LatestValueManagerImpl<T, Key>, T, ValueRequiredState<T>>(
+		manager: brandIVM<LatestValueManagerImpl<T, Key>, T, InternalTypes.ValueRequiredState<T>>(
 			new LatestValueManagerImpl(
 				key,
 				datastoreFromHandle(datastoreHandle),

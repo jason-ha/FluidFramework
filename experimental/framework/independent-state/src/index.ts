@@ -54,11 +54,7 @@ export {
 } from "./notificationsManager.js";
 
 // Below here are things that are used by the above, but not part of the desired API surface.
-import type * as InternalTypes from "./exposedInternalTypes.js";
-/**
- * @beta
- */
-// eslint-disable-next-line unicorn/prefer-export-from
-export { InternalTypes };
+// eslint-disable-next-line no-restricted-syntax
+export type * from "./exposedInternalTypes.js";
 // eslint-disable-next-line no-restricted-syntax
 export type * from "./exposedUtilityTypes.js";

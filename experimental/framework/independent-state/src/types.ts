@@ -3,11 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import type {
-	IndependentValue,
-	ManagerFactory,
-	ValueDirectoryOrState,
-} from "./exposedInternalTypes.js";
+import type { InternalTypes } from "./exposedInternalTypes.js";
 
 /**
  * Single entry in {@link IndependentMapSchema}.
@@ -16,9 +12,9 @@ import type {
  */
 export type IndependentMapEntry<
 	TKey extends string,
-	TValue extends ValueDirectoryOrState<unknown>,
+	TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
 	TManager = unknown,
-> = ManagerFactory<TKey, TValue, TManager>;
+> = InternalTypes.ManagerFactory<TKey, TValue, TManager>;
 
 /**
  * Schema for an {@link IndependentMap}.
@@ -28,26 +24,26 @@ export type IndependentMapEntry<
  * @beta
  */
 export interface IndependentMapSchema {
-	// [key: string]: <T, M>(initialValue: JsonSerializable<M>) => IndependentMapEntry<IndependentValue<T>>;
+	// [key: string]: <T, M>(initialValue: JsonSerializable<M>) => IndependentMapEntry<InternalTypes.IndependentValue<T>>;
 	// inference gobbledegook with no basis to work
-	// [key: string]: <P1 extends string, P2,R>(a: P1, b: P2) => R extends ManagerFactory<typeof Key, infer TValue, infer TManager> ? ManagerFactory<typeof Key, TValue, TManager> : never;
+	// [key: string]: <P1 extends string, P2,R>(a: P1, b: P2) => R extends InternalTypes.ManagerFactory<typeof Key, infer TValue, infer TManager> ? InternalTypes.ManagerFactory<typeof Key, TValue, TManager> : never;
 	// Comes super close to working, but the instantiation is not viable as factory can be invoked with arbitrary TValue and TManager.
-	// [key: string]: <TKey extends typeof Key & string, TValue extends ValueDirectoryOrState<any>, TManager>(
+	// [key: string]: <TKey extends typeof Key & string, TValue extends InternalTypes.ValueDirectoryOrState<any>, TManager>(
 	// 	key: TKey,
-	// 	datastoreHandle: IndependentDatastoreHandle<TKey, TValue>,
+	// 	datastoreHandle: InternalTypes.IndependentDatastoreHandle<TKey, TValue>,
 	// ) => {
 	// 	value: TValue;
-	// 	manager: IndependentValue<TManager>;
+	// 	manager: InternalTypes.IndependentValue<TManager>;
 	// };
 	// Defaults don't help
-	// [key: string]: <TValue extends ValueDirectoryOrState<any> = ValueDirectoryOrState<unknown>, TManager = unknown>(
+	// [key: string]: <TValue extends InternalTypes.ValueDirectoryOrState<any> = InternalTypes.ValueDirectoryOrState<unknown>, TManager = unknown>(
 	// 	key: typeof Key,
-	// 	datastoreHandle: IndependentDatastoreHandle<typeof Key, TValue>,
+	// 	datastoreHandle: InternalTypes.IndependentDatastoreHandle<typeof Key, TValue>,
 	// ) => {
 	// 	value: TValue;
-	// 	manager: IndependentValue<TManager>;
+	// 	manager: InternalTypes.IndependentValue<TManager>;
 	// };
-	[key: string]: IndependentMapEntry<typeof key, ValueDirectoryOrState<any>>;
+	[key: string]: IndependentMapEntry<typeof key, InternalTypes.ValueDirectoryOrState<any>>;
 }
 
 /**
@@ -61,7 +57,7 @@ export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
 	 */
 	readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<
 		TSchema[Key]
-	>["manager"] extends IndependentValue<infer TManager>
+	>["manager"] extends InternalTypes.IndependentValue<infer TManager>
 		? TManager
 		: never;
 };
@@ -77,11 +73,11 @@ export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
 	 * @param key - new unique key for the `Value Manager`
 	 * @param manager - factory for creating a `Value Manager`
 	 */
-	add<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager>(
+	add<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<any>, TManager>(
 		key: TKey,
-		manager: ManagerFactory<TKey, TValue, TManager>,
+		manager: InternalTypes.ManagerFactory<TKey, TValue, TManager>,
 	): asserts this is IndependentMap<
-		TSchema & Record<TKey, ManagerFactory<TKey, TValue, TManager>>
+		TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>
 	>;
 }
 
