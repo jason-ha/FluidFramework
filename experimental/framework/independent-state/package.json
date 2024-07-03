@@ -1,7 +1,7 @@
 {
 	"name": "@fluid-experimental/independent-state",
 	"version": "2.1.0",
-	"description": "A session only data object for lightweight data sharing",
+	"description": "A component for lightweight data sharing within a single session",
 	"homepage": "https://fluidframework.com",
 	"repository": {
 		"type": "git",
