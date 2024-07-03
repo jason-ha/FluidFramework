@@ -3,7 +3,10 @@
  * Licensed under the MIT License.
  */
 
-import type { JsonDeserialized , JsonSerializable } from "@fluidframework/core-interfaces/internal";
+import type {
+	JsonDeserialized,
+	JsonSerializable,
+} from "@fluidframework/core-interfaces/internal";
 
 import type { ClientId } from "./baseTypes.js";
 import type { ISubscribable } from "./events.js";
@@ -13,7 +16,7 @@ import type {
 	ManagerFactory,
 	ValueOptionalState,
 } from "./exposedInternalTypes.js";
-import type { FullyReadonly } from "./exposedUtilityTypes.js";
+import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
 import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
@@ -127,7 +130,7 @@ export interface ValueMap<K extends string | number, V> {
 	 */
 	forEach(
 		callbackfn: (
-			value: FullyReadonly<JsonDeserialized<V>>,
+			value: InternalUtilityTypes.FullyReadonly<JsonDeserialized<V>>,
 			key: K,
 			map: ValueMap<K, V>,
 		) => void,
@@ -138,7 +141,7 @@ export interface ValueMap<K extends string | number, V> {
 	 * Returns a specified element from the ValueMap object.
 	 * @returns Returns the element associated with the specified key. If no element is associated with the specified key, undefined is returned.
 	 */
-	get(key: K): FullyReadonly<JsonDeserialized<V>> | undefined;
+	get(key: K): InternalUtilityTypes.FullyReadonly<JsonDeserialized<V>> | undefined;
 
 	/**
 	 * @returns boolean indicating whether an element with the specified key exists or not.
@@ -163,12 +166,12 @@ export interface ValueMap<K extends string | number, V> {
 	/**
 	 * Returns an iterable of entries in the map.
 	 */
-	// [Symbol.iterator](): IterableIterator<[K, FullyReadonly<JsonDeserialized<V>>]>;
+	// [Symbol.iterator](): IterableIterator<[K, InternalUtilityTypes.FullyReadonly<JsonDeserialized<V>>]>;
 
 	/**
 	 * Returns an iterable of key, value pairs for every entry in the map.
 	 */
-	// entries(): IterableIterator<[K, FullyReadonly<JsonDeserialized<V>>]>;
+	// entries(): IterableIterator<[K, InternalUtilityTypes.FullyReadonly<JsonDeserialized<V>>]>;
 
 	/**
 	 * Returns an iterable of keys in the map.
@@ -178,7 +181,7 @@ export interface ValueMap<K extends string | number, V> {
 	/**
 	 * Returns an iterable of values in the map.
 	 */
-	// values(): IterableIterator<FullyReadonly<JsonDeserialized<V>>>;
+	// values(): IterableIterator<InternalUtilityTypes.FullyReadonly<JsonDeserialized<V>>>;
 }
 
 /**
@@ -229,7 +232,7 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 	}
 	public forEach(
 		callbackfn: (
-			value: FullyReadonly<JsonDeserialized<T>>,
+			value: InternalUtilityTypes.FullyReadonly<JsonDeserialized<T>>,
 			key: K,
 			map: ValueMap<K, T>,
 		) => void,
@@ -242,7 +245,7 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
 			}
 		}
 	}
-	public get(key: K): FullyReadonly<JsonDeserialized<T>> | undefined {
+	public get(key: K): InternalUtilityTypes.FullyReadonly<JsonDeserialized<T>> | undefined {
 		return this.value.items[key]?.value;
 	}
 	public has(key: K): boolean {

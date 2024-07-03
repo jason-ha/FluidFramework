@@ -6,7 +6,7 @@
 import type { JsonDeserialized } from "@fluidframework/core-interfaces/internal";
 
 import type { ClientId } from "./baseTypes.js";
-import type { FullyReadonly } from "./exposedUtilityTypes.js";
+import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
 
 /**
  * Metadata for the value state.
@@ -31,7 +31,7 @@ export interface LatestValueMetadata {
  * @beta
  */
 export interface LatestValueData<T> {
-	value: FullyReadonly<JsonDeserialized<T>>;
+	value: InternalUtilityTypes.FullyReadonly<JsonDeserialized<T>>;
 	metadata: LatestValueMetadata;
 }
 

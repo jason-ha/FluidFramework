@@ -3,7 +3,10 @@
  * Licensed under the MIT License.
  */
 
-import type { JsonDeserialized , JsonSerializable } from "@fluidframework/core-interfaces/internal";
+import type {
+	JsonDeserialized,
+	JsonSerializable,
+} from "@fluidframework/core-interfaces/internal";
 
 import type { ClientId } from "./baseTypes.js";
 import type { ISubscribable } from "./events.js";
@@ -13,7 +16,7 @@ import type {
 	ManagerFactory,
 	ValueRequiredState,
 } from "./exposedInternalTypes.js";
-import type { FullyReadonly } from "./exposedUtilityTypes.js";
+import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
 import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
@@ -58,7 +61,7 @@ export interface LatestValueManager<T> {
 	 * @remarks Manager assumes ownership of the value and its references. Make a deep clone before
 	 * setting, if needed. No comparison is done to detect changes; all sets are transmitted.
 	 */
-	get local(): FullyReadonly<JsonDeserialized<T>>;
+	get local(): InternalUtilityTypes.FullyReadonly<JsonDeserialized<T>>;
 	set local(value: JsonSerializable<T> & JsonDeserialized<T>);
 
 	/**
@@ -91,7 +94,7 @@ class LatestValueManagerImpl<T, Key extends string>
 		this.controls = new LatestValueControl(controlSettings);
 	}
 
-	public get local(): FullyReadonly<JsonDeserialized<T>> {
+	public get local(): InternalUtilityTypes.FullyReadonly<JsonDeserialized<T>> {
 		return this.value.value;
 	}
 

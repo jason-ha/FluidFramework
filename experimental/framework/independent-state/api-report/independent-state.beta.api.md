@@ -12,11 +12,6 @@ export type Events<E> = {
     [P in (string | symbol) & keyof E as IsEvent<E[P]> extends true ? P : never]: E[P];
 };
 
-// @beta
-type FullyReadonly<T> = {
-    readonly [K in keyof T]: FullyReadonly<T[K]>;
-};
-
 // @beta (undocumented)
 class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
 }
@@ -69,33 +64,26 @@ declare namespace InternalTypes {
 }
 export { InternalTypes }
 
-declare namespace InternalUtilityTypes {
-    export {
-        FullyReadonly,
-        IsNotificationEvent,
-        NotificationEvents,
-        JsonDeserializedParameters,
-        JsonSerializableParameters
-    }
+// @beta
+export namespace InternalUtilityTypes {
+    export type FullyReadonly<T> = {
+        readonly [K in keyof T]: FullyReadonly<T[K]>;
+    };
+    export type IsNotificationEvent<Event> = Event extends (...args: infer P) => void ? InternalUtilityTypes_2.IfSameType<P, JsonSerializable<P> & JsonDeserialized<P>, true, false> : false;
+    export type JsonDeserializedParameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? JsonDeserialized<P> : never;
+    export type JsonSerializableParameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? JsonSerializable<P> : never;
+    export type NotificationEvents<E> = {
+        [P in string & keyof E as IsNotificationEvent<E[P]> extends true ? P : never]: E[P];
+    };
 }
-export { InternalUtilityTypes }
 
 // @beta
 export type IsEvent<Event> = Event extends (...args: any[]) => any ? true : false;
 
 // @beta
-type IsNotificationEvent<Event> = Event extends (...args: infer P) => void ? InternalUtilityTypes_2.IfSameType<P, JsonSerializable<P> & JsonDeserialized<P>, true, false> : false;
-
-// @beta
 export interface ISubscribable<E extends Events<E>> {
     on<K extends keyof Events<E>>(eventName: K, listener: E[K]): () => void;
 }
-
-// @beta
-type JsonDeserializedParameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? JsonDeserialized<P> : never;
-
-// @beta
-type JsonSerializableParameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? JsonSerializable<P> : never;
 
 // @beta
 export function Latest<T extends object, Key extends string>(initialValue: JsonSerializable<T> & JsonDeserialized<T> & object, controls?: LatestValueControls): ManagerFactory<Key, ValueRequiredState<T>, LatestValueManager<T>>;
@@ -165,7 +153,7 @@ export interface LatestValueData<T> {
     // (undocumented)
     metadata: LatestValueMetadata;
     // (undocumented)
-    value: FullyReadonly<JsonDeserialized<T>>;
+    value: InternalUtilityTypes.FullyReadonly<JsonDeserialized<T>>;
 }
 
 // @beta
@@ -175,7 +163,7 @@ export interface LatestValueManager<T> {
     clientValues(): IterableIterator<LatestValueClientData<T>>;
     readonly controls: LatestValueControls;
     readonly events: ISubscribable<LatestValueManagerEvents<T>>;
-    get local(): FullyReadonly<JsonDeserialized<T>>;
+    get local(): InternalUtilityTypes.FullyReadonly<JsonDeserialized<T>>;
     set local(value: JsonSerializable<T> & JsonDeserialized<T>);
 }
 
@@ -208,21 +196,16 @@ export interface MapValueState<T> {
 }
 
 // @beta
-export interface NotificationEmitter<E extends NotificationEvents<E>> {
-    broadcast<K extends string & keyof NotificationEvents<E>>(notificationName: K, ...args: Parameters<E[K]>): void;
-    unicast<K extends string & keyof NotificationEvents<E>>(notificationName: K, targetClientId: ClientId, ...args: Parameters<E[K]>): void;
+export interface NotificationEmitter<E extends InternalUtilityTypes.NotificationEvents<E>> {
+    broadcast<K extends string & keyof InternalUtilityTypes.NotificationEvents<E>>(notificationName: K, ...args: Parameters<E[K]>): void;
+    unicast<K extends string & keyof InternalUtilityTypes.NotificationEvents<E>>(notificationName: K, targetClientId: ClientId, ...args: Parameters<E[K]>): void;
 }
 
 // @beta
-type NotificationEvents<E> = {
-    [P in string & keyof E as IsNotificationEvent<E[P]> extends true ? P : never]: E[P];
-};
+export function Notifications<T extends InternalUtilityTypes.NotificationEvents<T>, Key extends string>(initialSubscriptions: NotificationSubscriptions<T>): ManagerFactory<Key, ValueRequiredState<NotificationType>, NotificationsManager<T>>;
 
 // @beta
-export function Notifications<T extends NotificationEvents<T>, Key extends string>(initialSubscriptions: NotificationSubscriptions<T>): ManagerFactory<Key, ValueRequiredState<NotificationType>, NotificationsManager<T>>;
-
-// @beta
-export interface NotificationsManager<T extends NotificationEvents<T>> {
+export interface NotificationsManager<T extends InternalUtilityTypes.NotificationEvents<T>> {
     readonly emit: NotificationEmitter<T>;
     readonly events: ISubscribable<NotificationsManagerEvents>;
     readonly notifications: NotificationSubscribable<T>;
@@ -235,13 +218,13 @@ export interface NotificationsManagerEvents {
 }
 
 // @beta
-export interface NotificationSubscribable<E extends NotificationEvents<E>> {
-    on<K extends keyof NotificationEvents<E>>(notificationName: K, listener: (sender: ClientId, ...args: JsonDeserializedParameters<E[K]>) => void): () => void;
+export interface NotificationSubscribable<E extends InternalUtilityTypes.NotificationEvents<E>> {
+    on<K extends keyof InternalUtilityTypes.NotificationEvents<E>>(notificationName: K, listener: (sender: ClientId, ...args: InternalUtilityTypes.JsonDeserializedParameters<E[K]>) => void): () => void;
 }
 
 // @beta
-export type NotificationSubscriptions<E extends NotificationEvents<E>> = {
-    [K in string & keyof NotificationEvents<E>]: (sender: ClientId, ...args: JsonSerializableParameters<E[K]>) => void;
+export type NotificationSubscriptions<E extends InternalUtilityTypes.NotificationEvents<E>> = {
+    [K in string & keyof InternalUtilityTypes.NotificationEvents<E>]: (sender: ClientId, ...args: InternalUtilityTypes.JsonSerializableParameters<E[K]>) => void;
 };
 
 // @beta (undocumented)
@@ -270,8 +253,8 @@ export interface ValueMap<K extends string | number, V> {
     clear(): void;
     // (undocumented)
     delete(key: K): boolean;
-    forEach(callbackfn: (value: FullyReadonly<JsonDeserialized<V>>, key: K, map: ValueMap<K, V>) => void, thisArg?: unknown): void;
-    get(key: K): FullyReadonly<JsonDeserialized<V>> | undefined;
+    forEach(callbackfn: (value: InternalUtilityTypes.FullyReadonly<JsonDeserialized<V>>, key: K, map: ValueMap<K, V>) => void, thisArg?: unknown): void;
+    get(key: K): InternalUtilityTypes.FullyReadonly<JsonDeserialized<V>> | undefined;
     // (undocumented)
     has(key: K): boolean;
     keys(): IterableIterator<K>;

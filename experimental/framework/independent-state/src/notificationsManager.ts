@@ -12,11 +12,7 @@ import type {
 	NotificationType,
 	ValueRequiredState,
 } from "./exposedInternalTypes.js";
-import type {
-	JsonDeserializedParameters,
-	JsonSerializableParameters,
-	NotificationEvents,
-} from "./exposedUtilityTypes.js";
+import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
 import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
 import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
@@ -39,7 +35,9 @@ export interface NotificationsManagerEvents {
  *
  * @beta
  */
-export interface NotificationSubscribable<E extends NotificationEvents<E>> {
+export interface NotificationSubscribable<
+	E extends InternalUtilityTypes.NotificationEvents<E>,
+> {
 	/**
 	 * Register a notification listener.
 	 * @param notificationName - the name of the notification
@@ -47,9 +45,12 @@ export interface NotificationSubscribable<E extends NotificationEvents<E>> {
 	 * @returns a function which will deregister the listener when run. This function
 	 * has undefined behavior if called more than once.
 	 */
-	on<K extends keyof NotificationEvents<E>>(
+	on<K extends keyof InternalUtilityTypes.NotificationEvents<E>>(
 		notificationName: K,
-		listener: (sender: ClientId, ...args: JsonDeserializedParameters<E[K]>) => void,
+		listener: (
+			sender: ClientId,
+			...args: InternalUtilityTypes.JsonDeserializedParameters<E[K]>
+		) => void,
 	): () => void;
 }
 
@@ -58,10 +59,10 @@ export interface NotificationSubscribable<E extends NotificationEvents<E>> {
  *
  * @beta
  */
-export type NotificationSubscriptions<E extends NotificationEvents<E>> = {
-	[K in string & keyof NotificationEvents<E>]: (
+export type NotificationSubscriptions<E extends InternalUtilityTypes.NotificationEvents<E>> = {
+	[K in string & keyof InternalUtilityTypes.NotificationEvents<E>]: (
 		sender: ClientId,
-		...args: JsonSerializableParameters<E[K]>
+		...args: InternalUtilityTypes.JsonSerializableParameters<E[K]>
 	) => void;
 };
 
@@ -70,13 +71,13 @@ export type NotificationSubscriptions<E extends NotificationEvents<E>> = {
  *
  * @beta
  */
-export interface NotificationEmitter<E extends NotificationEvents<E>> {
+export interface NotificationEmitter<E extends InternalUtilityTypes.NotificationEvents<E>> {
 	/**
 	 * Emits a notification with the specified name and arguments, notifying all clients.
 	 * @param notificationName - the name of the notification to fire
 	 * @param args - the arguments sent with the notification
 	 */
-	broadcast<K extends string & keyof NotificationEvents<E>>(
+	broadcast<K extends string & keyof InternalUtilityTypes.NotificationEvents<E>>(
 		notificationName: K,
 		...args: Parameters<E[K]>
 	): void;
@@ -87,7 +88,7 @@ export interface NotificationEmitter<E extends NotificationEvents<E>> {
 	 * @param targetClientId - the single client to notify
 	 * @param args - the arguments sent with the notification
 	 */
-	unicast<K extends string & keyof NotificationEvents<E>>(
+	unicast<K extends string & keyof InternalUtilityTypes.NotificationEvents<E>>(
 		notificationName: K,
 		targetClientId: ClientId,
 		...args: Parameters<E[K]>
@@ -102,7 +103,7 @@ export interface NotificationEmitter<E extends NotificationEvents<E>> {
  *
  * @beta
  */
-export interface NotificationsManager<T extends NotificationEvents<T>> {
+export interface NotificationsManager<T extends InternalUtilityTypes.NotificationEvents<T>> {
 	/**
 	 * Events for Notifications manager.
 	 */
@@ -119,8 +120,10 @@ export interface NotificationsManager<T extends NotificationEvents<T>> {
 	readonly notifications: NotificationSubscribable<T>;
 }
 
-class NotificationsManagerImpl<T extends NotificationEvents<T>, Key extends string>
-	implements
+class NotificationsManagerImpl<
+	T extends InternalUtilityTypes.NotificationEvents<T>,
+	Key extends string,
+> implements
 		NotificationsManager<T>,
 		ValueManager<NotificationType, ValueRequiredState<NotificationType>>
 {
@@ -179,7 +182,10 @@ class NotificationsManagerImpl<T extends NotificationEvents<T>, Key extends stri
  *
  * @beta
  */
-export function Notifications<T extends NotificationEvents<T>, Key extends string>(
+export function Notifications<
+	T extends InternalUtilityTypes.NotificationEvents<T>,
+	Key extends string,
+>(
 	initialSubscriptions: NotificationSubscriptions<T>,
 ): ManagerFactory<Key, ValueRequiredState<NotificationType>, NotificationsManager<T>> {
 	const value: ValueRequiredState<NotificationType> = {

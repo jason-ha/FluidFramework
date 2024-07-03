@@ -20,17 +20,6 @@ declare namespace InternalTypes {
 }
 export { InternalTypes }
 
-declare namespace InternalUtilityTypes {
-    export {
-        FullyReadonly,
-        IsNotificationEvent,
-        NotificationEvents,
-        JsonDeserializedParameters,
-        JsonSerializableParameters
-    }
-}
-export { InternalUtilityTypes }
-
 // (No @packageDocumentation comment for this package)
 
 ```
