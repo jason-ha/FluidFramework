@@ -227,9 +227,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 					acc.nodes[key as keyof TSchema] = newNodeData.manager;
 					acc.datastore[key] = {};
 					if (clientId !== undefined && clientId) {
-						// Should be able to use newNodeData.value, but Jsonable allowance for undefined appears
-						// to cause a problem. Or it could be that datastore is not precisely typed
-						acc.datastore[key][clientId] = unbrandIVM(newNodeData.manager).value;
+						acc.datastore[key][clientId] = newNodeData.value;
 					}
 					return acc;
 				},
@@ -297,8 +295,8 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TValueManager>>
 	> {
 		assert(!(key in this.nodes), "Already have entry for key in map");
-		const node = nodeFactory(key, handleFromDatastore(this)).manager;
-		this.nodes[key] = node;
+		const nodeData = nodeFactory(key, handleFromDatastore(this));
+		this.nodes[key] = nodeData.manager;
 		if (key in this.datastore) {
 			// Already have received state from other clients. Kept in `all`.
 			// TODO: Send current `all` state to state manager.
@@ -308,9 +306,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		// If we have a clientId, then add the local state entry to the all state.
 		const { clientId } = this.runtime;
 		if (clientId !== undefined && clientId) {
-			// Should be able to use .value from factory, but Jsonable allowance for undefined appears
-			// to cause a problem. Or it could be that datastore is not precisely typed.
-			this.datastore[key][clientId] = unbrandIVM(node).value;
+			this.datastore[key][clientId] = nodeData.value;
 		}
 	}
 
