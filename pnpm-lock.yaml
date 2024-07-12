@@ -7753,6 +7753,9 @@ importers:
       '@arethetypeswrong/cli':
         specifier: ^0.15.2
         version: 0.15.2
+      '@biomejs/biome':
+        specifier: ~1.8.3
+        version: 1.8.3
       '@fluid-tools/build-cli':
         specifier: ^0.40.0
         version: 0.40.0(@types/node@18.19.1)

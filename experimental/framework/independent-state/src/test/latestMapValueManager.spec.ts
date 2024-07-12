@@ -58,7 +58,10 @@ function logClientValue<T>({
 	clientId,
 	key,
 	value,
-}: Pick<LatestMapItemValueClientData<T, string | number>, "clientId" | "key" | "value">): void {
+}: Pick<
+	LatestMapItemValueClientData<T, string | number>,
+	"clientId" | "key" | "value"
+>): void {
 	console.log(clientId, key, value);
 }
 
