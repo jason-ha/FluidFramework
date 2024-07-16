@@ -457,6 +457,9 @@ importers:
       '@fluidframework/odsp-client':
         specifier: workspace:~
         version: link:../../../packages/service-clients/odsp-client
+      '@fluidframework/protocol-definitions':
+        specifier: ^3.2.0
+        version: 3.2.0
       '@fluidframework/telemetry-utils':
         specifier: workspace:~
         version: link:../../../packages/utils/telemetry-utils
@@ -50842,7 +50845,7 @@ packages:
       webpack: 5.89.0(webpack-cli@4.10.0)
       webpack-cli: 4.10.0(webpack-bundle-analyzer@4.10.1)(webpack-dev-server@4.15.2)(webpack@5.89.0)
       webpack-dev-middleware: 5.3.4(webpack@5.89.0)
-      ws: 8.17.1
+      ws: 8.16.0
     transitivePeerDependencies:
       - bufferutil
       - debug
@@ -50945,7 +50948,7 @@ packages:
       webpack: 5.89.0(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack-dev-server@4.15.2)(webpack@5.89.0)
       webpack-dev-middleware: 5.3.4(webpack@5.89.0)
-      ws: 8.17.1
+      ws: 8.16.0
     transitivePeerDependencies:
       - bufferutil
       - debug

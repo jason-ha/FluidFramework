@@ -10,6 +10,10 @@
 		"jsx": "react",
 		"moduleResolution": "Node16",
 		"allowSyntheticDefaultImports": true,
-		"esModuleInterop": true
-	}
+		"esModuleInterop": true,
+		// skipLibCheck is needed for @azure/msal-browser, @microsoft/microsoft-graph-client, @types/react, and react-dnd.
+		// If module+moduleResolution are switched to ESNext+Bundler, it is still required for @types/react.
+		"skipLibCheck": true,
+	},
+	"include": ["src/**/*", "test/**/*"],
 }

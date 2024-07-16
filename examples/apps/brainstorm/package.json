@@ -27,6 +27,7 @@
 		"@fluentui/react-icons": "^2.0.233",
 		"@fluidframework/azure-client": "workspace:~",
 		"@fluidframework/odsp-client": "workspace:~",
+		"@fluidframework/protocol-definitions": "^3.2.0",
 		"@fluidframework/telemetry-utils": "workspace:~",
 		"@fluidframework/test-runtime-utils": "workspace:~",
 		"@headlessui/react": "^1.7.18",
