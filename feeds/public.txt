@@ -69,12 +69,12 @@ fluid-framework
 @fluid-internal/client-utils
 @fluid-experimental/tree-react-api
 @fluid-experimental/last-edited
+@fluid-experimental/independent-state
 @fluid-experimental/data-objects
 @fluid-experimental/tree
 @fluid-experimental/sequence-deprecated
 @fluid-experimental/sharejs-json1
 @fluid-experimental/ot
-@fluid-experimental/independent-state
 @fluid-experimental/attributable-map
 @fluid-experimental/property-shared-tree-interop
 @fluid-experimental/property-query
