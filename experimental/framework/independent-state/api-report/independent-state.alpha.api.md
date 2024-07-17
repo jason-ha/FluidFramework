@@ -4,6 +4,9 @@
 
 ```ts
 
+// @alpha
+export function acquireIndependentMap<TSchema extends IndependentMapSchema>(fluidContainer: IFluidContainer, id: IndependentMapAddress, requestedContent: TSchema): IndependentMap<TSchema>;
+
 // @beta
 export type ClientId = string;
 
@@ -25,15 +28,6 @@ export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
 
 // @beta
 export type IndependentMapEntry<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<unknown>, TManager = unknown> = InternalTypes.ManagerFactory<TKey, TValue, TManager>;
-
-// @alpha
-export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
-    constructor(initialContent: TSchema, alias?: string, runtimeClass?: typeof FluidDataStoreRuntime);
-    getMap(containerRuntime: IContainerRuntime): Promise<IndependentMap<TSchema>>;
-    initializingFirstTime(containerRuntime: IContainerRuntimeBase): Promise<AliasResult>;
-    // (undocumented)
-    get registryEntry(): NamedFluidDataStoreRegistryEntry;
-}
 
 // @beta
 export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {

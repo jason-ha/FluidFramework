@@ -15,12 +15,10 @@ export type {
 
 export type { Events, IsEvent, ISubscribable } from "./events.js";
 
-export {
-	createIndependentMap,
-	type IFluidEphemeralDataStoreRuntime,
-} from "./independentMap.js";
+export { type IEphemeralRuntime } from "./independentMap.js";
 
-export { IndependentMapFactory } from "./independentMapFactory.js";
+export { acquireIndependentMap } from "./experimentalAccess.js";
+export { IndependentMapFactory } from "./datastoreIndependentMapFactory.js";
 
 export type { LatestValueControls } from "./latestValueControls.js";
 export {

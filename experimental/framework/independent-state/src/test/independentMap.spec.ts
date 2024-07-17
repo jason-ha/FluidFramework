@@ -9,12 +9,11 @@ import type {
 } from "@fluidframework/core-interfaces/internal";
 
 import {
-	// Most clients should use IndependentMapFactory from @fluid-experimental/independent-state/alpha
+	// Most clients should use acquireIndependentMap from @fluid-experimental/independent-state
 	// until the interface is stabilized.
 	createIndependentMap,
-	type IFluidEphemeralDataStoreRuntime,
-	type InternalTypes,
-} from "../index.js";
+} from "../independentMap.js";
+import { type IEphemeralRuntime, type InternalTypes } from "../index.js";
 
 declare function createValueManager<T, Key extends string>(
 	initial: JsonSerializable<T> & JsonDeserialized<T>,
@@ -31,9 +30,10 @@ declare function createValueManager<T, Key extends string>(
 
 // ---- test (example) code ----
 
-const mapImplX = createIndependentMap(
+const { externalMap } = createIndependentMap(
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-	{} as IFluidEphemeralDataStoreRuntime,
+	{} as IEphemeralRuntime,
+	"name:test",
 	{
 		cursor: createValueManager({ x: 0, y: 0 }),
 		camera: () => ({
@@ -44,7 +44,7 @@ const mapImplX = createIndependentMap(
 	},
 );
 // Workaround ts(2775): Assertions require every name in the call target to be declared with an explicit type annotation.
-const mapImpl: typeof mapImplX = mapImplX;
+const mapImpl: typeof externalMap = externalMap;
 
 const initialCaret = { id: "", pos: 0 };
 mapImpl.add("caret", createValueManager(initialCaret));

@@ -4,25 +4,28 @@
  */
 
 import {
-	// Most clients should use IndependentMapFactory from @fluid-experimental/independent-state/alpha
+	// Most clients should use acquireIndependentMap from @fluid-experimental/independent-state
 	// until the interface is stabilized.
 	createIndependentMap,
-	type IFluidEphemeralDataStoreRuntime,
+} from "../independentMap.js";
+import {
+	type IEphemeralRuntime,
 	LatestMap,
 	type LatestMapItemValueClientData,
 } from "../index.js";
 
 // ---- test (example) code ----
 
-const mapInferred = createIndependentMap(
+const { externalMap } = createIndependentMap(
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-	{} as IFluidEphemeralDataStoreRuntime,
+	{} as IEphemeralRuntime,
+	"name:test",
 	{
 		fixedMap: LatestMap({ key1: { x: 0, y: 0 }, key2: { ref: "default", someId: 0 } }),
 	},
 );
 // Workaround ts(2775): Assertions require every name in the call target to be declared with an explicit type annotation.
-const map: typeof mapInferred = mapInferred;
+const map: typeof externalMap = externalMap;
 
 map.fixedMap.local.get("key1");
 // @ts-expect-error with inferred keys only those named it init are accessible

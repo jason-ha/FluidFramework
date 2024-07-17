@@ -3,8 +3,9 @@
  * Licensed under the MIT License.
  */
 
+import type { IRuntimeInternal } from "@fluidframework/container-definitions/internal";
+import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
 import { assert } from "@fluidframework/core-utils/internal";
-import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions/internal";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions/internal";
 
 import type { ClientId } from "./baseTypes.js";
@@ -114,12 +115,25 @@ function isDISMessage(
 /**
  * This interface is a subset of IFluidDataStoreRuntime that is needed by the IndependentMap.
  *
+ * @privateRemarks
+ * Replace with non-DataStore based interface.
+ *
  * @internal
  */
-export type IFluidEphemeralDataStoreRuntime = Pick<
-	IFluidDataStoreRuntime,
-	"clientId" | "getAudience" | "off" | "on" | "submitSignal"
+export type IEphemeralRuntime = Pick<
+	IContainerRuntime & IRuntimeInternal,
+	"clientId" | "getAudience" | "off" | "on" | "submitAddressedSignal"
 >;
+
+/**
+ * @internal
+ */
+export interface IndependentMapInternal {
+	ensureContent<TSchemaAdditional extends IndependentMapSchema>(
+		content: TSchemaAdditional,
+	): void;
+	processSignal(message: IInboundSignalMessage, local: boolean): void;
+}
 
 function isValueDirectory<
 	T,
@@ -175,6 +189,7 @@ function mergeValueDirectory<
 
 class IndependentMapImpl<TSchema extends IndependentMapSchema>
 	implements
+		IndependentMapInternal,
 		IndependentMapMethods<TSchema>,
 		IndependentDatastore<
 			keyof TSchema & string,
@@ -188,7 +203,8 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 	private refreshBroadcastRequested = false;
 
 	public constructor(
-		private readonly runtime: IFluidEphemeralDataStoreRuntime,
+		private readonly runtime: IEphemeralRuntime,
+		private readonly signalAddress: string,
 		initialContent: TSchema,
 	) {
 		this.runtime.getAudience().on("addMember", (clientId) => {
@@ -272,7 +288,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 				},
 			},
 		} satisfies DatastoreUpdateMessage["content"];
-		this.runtime.submitSignal("DIS:DatastoreUpdate", content);
+		this.runtime.submitAddressedSignal(this.signalAddress, "DIS:DatastoreUpdate", content);
 	}
 
 	public update<Key extends keyof TSchema & string>(
@@ -310,8 +326,16 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		}
 	}
 
+	public ensureContent<TSchemaAdditional extends IndependentMapSchema>(
+		content: TSchemaAdditional,
+	): void {
+		for (const [key, nodeFactory] of Object.entries(content)) {
+			this.add(key, nodeFactory);
+		}
+	}
+
 	private broadcastAllKnownState(): void {
-		this.runtime.submitSignal("DIS:DatastoreUpdate", {
+		this.runtime.submitAddressedSignal(this.signalAddress, "DIS:DatastoreUpdate", {
 			sendTimestamp: Date.now(),
 			avgLatency: this.averageLatency,
 			isComplete: true,
@@ -320,7 +344,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		this.refreshBroadcastRequested = false;
 	}
 
-	private processSignal(
+	public processSignal(
 		message: IInboundSignalMessage | DatastoreUpdateMessage | ClientJoinMessage,
 		local: boolean,
 	): void {
@@ -410,14 +434,13 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
  * are very unstable and will change. Recommendation is to use IndependentMapFactory from
  * `alpha` entrypoint for now.
  * @param initialContent - The initial value managers to register.
- *
- * @internal
  */
 export function createIndependentMap<TSchema extends IndependentMapSchema>(
-	runtime: IFluidEphemeralDataStoreRuntime,
+	runtime: IEphemeralRuntime,
+	signalAddress: string,
 	initialContent: TSchema,
-): IndependentMap<TSchema> {
-	const map = new IndependentMapImpl(runtime, initialContent);
+): { externalMap: IndependentMap<TSchema>; internalMap: IndependentMapInternal } {
+	const map = new IndependentMapImpl(runtime, signalAddress, initialContent);
 
 	// Capture the top level "public" map. Both the map implementation and
 	// the wrapper object reference this object.
@@ -428,15 +451,18 @@ export function createIndependentMap<TSchema extends IndependentMapSchema>(
 		add: map.add.bind(map),
 	};
 
-	return new Proxy(wrapper as IndependentMap<TSchema>, {
-		get(target, p, receiver): unknown {
-			if (typeof p === "string") {
-				return target[p] ?? nodes[p];
-			}
-			return Reflect.get(target, p, receiver);
-		},
-		set(_target, _p, _newValue, _receiver): false {
-			return false;
-		},
-	});
+	return {
+		externalMap: new Proxy(wrapper as IndependentMap<TSchema>, {
+			get(target, p, receiver): unknown {
+				if (typeof p === "string") {
+					return target[p] ?? nodes[p];
+				}
+				return Reflect.get(target, p, receiver);
+			},
+			set(_target, _p, _newValue, _receiver): false {
+				return false;
+			},
+		}),
+		internalMap: map,
+	};
 }

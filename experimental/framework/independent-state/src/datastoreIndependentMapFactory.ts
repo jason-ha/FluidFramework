@@ -3,6 +3,11 @@
  * Licensed under the MIT License.
  */
 
+/**
+ * Hacky support for internal datastore based usages.
+ */
+
+// imports
 import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
 import type { IFluidHandle } from "@fluidframework/core-interfaces";
 import { assert } from "@fluidframework/core-utils/internal";
@@ -15,13 +20,15 @@ import type {
 	NamedFluidDataStoreRegistryEntry,
 } from "@fluidframework/runtime-definitions/internal";
 
-import { createIndependentMap } from "./independentMap.js";
+import { acquireIndependentMapInternal } from "./experimentalAccess.js";
+// import { createIndependentMap } from "./independentMap.js";
 import type { IndependentMap, IndependentMapSchema } from "./types.js";
 
 class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 	implements IFluidDataStoreFactory
 {
 	public readonly type = "@fluidframework/independent-state-map-data-store";
+	public containerRuntime: IContainerRuntimeBase | undefined;
 
 	public constructor(
 		private readonly initialContent: TSchema,
@@ -37,6 +44,7 @@ class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 		context: IFluidDataStoreContext,
 		existing: boolean,
 	): Promise<FluidDataStoreRuntime> {
+		assert(this.containerRuntime !== undefined, "container runtime not set");
 		// Create a new runtime for our data store, as if via new FluidDataStoreRuntime,
 		// The runtime is what Fluid uses to route to our data store.
 		const runtime: FluidDataStoreRuntime = new this.runtimeClass(
@@ -50,7 +58,11 @@ class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 			} /* provideEntryPoint */,
 		);
 
-		const instance = createIndependentMap<TSchema>(runtime, this.initialContent);
+		const instance = acquireIndependentMapInternal<TSchema>(
+			this.containerRuntime,
+			`datastore:${context.IFluidHandleContext.absolutePath}`,
+			this.initialContent,
+		);
 
 		return runtime;
 	}
@@ -63,7 +75,7 @@ class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 /**
  * Convenience helper class to create ${@link IndependentMap} in own data store.
  *
- * @alpha
+ * @internal
  */
 export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
 	private readonly dataStoreFactory: IndependentMapDataStoreFactory<TSchema>;
@@ -86,6 +98,7 @@ export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
 	public async initializingFirstTime(
 		containerRuntime: IContainerRuntimeBase,
 	): Promise<AliasResult> {
+		this.dataStoreFactory.containerRuntime = containerRuntime;
 		return containerRuntime
 			.createDataStore(this.dataStoreFactory.type)
 			.then(async (datastore) => datastore.trySetAlias(this.alias));
