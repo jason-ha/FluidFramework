@@ -3,6 +3,7 @@
  * Licensed under the MIT License.
  */
 
+import { acquireIndependentMap, Latest } from "@fluid-experimental/independent-state";
 import {
 	AzureClient,
 	AzureContainerServices,
@@ -176,9 +177,31 @@ async function start(): Promise<void> {
 		],
 	});
 
+	// Biome insist on no semicolon - https://dev.azure.com/fluidframework/internal/_workitems/edit/9083
+	// eslint-disable-next-line @typescript-eslint/member-delimiter-style
+	const lastRoll: { die1?: 1 | 2 | 3 | 4 | 5 | 6; die2?: 1 | 2 | 3 | 4 | 5 | 6 } = {};
+	const independentMap = acquireIndependentMap(container, `name:dis`, {
+		lastRoll: Latest(lastRoll),
+	});
+	independentMap.lastRoll.events.on("updated", (update) => {
+		console.log(`updated ${update.clientId}'s lastRoll to ${JSON.stringify(update.value)}`);
+	});
+
 	// Here we are guaranteed that the maps have already been initialized for use with a DiceRollerController
-	const diceRollerController1 = new DiceRollerController(diceRollerController1Props);
-	const diceRollerController2 = new DiceRollerController(diceRollerController2Props);
+	const diceRollerController1 = new DiceRollerController(
+		diceRollerController1Props,
+		(value) => {
+			lastRoll.die1 = value;
+			independentMap.lastRoll.local = lastRoll;
+		},
+	);
+	const diceRollerController2 = new DiceRollerController(
+		diceRollerController2Props,
+		(value) => {
+			lastRoll.die2 = value;
+			independentMap.lastRoll.local = lastRoll;
+		},
+	);
 
 	const contentDiv = document.querySelector("#content") as HTMLDivElement;
 	contentDiv.append(

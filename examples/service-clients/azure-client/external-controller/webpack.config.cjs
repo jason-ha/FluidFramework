@@ -32,6 +32,10 @@ module.exports = (env) => {
 						test: /\.tsx?$/,
 						loader: "ts-loader",
 					},
+					{
+						test: /\.[cm]?js$/,
+						use: ["source-map-loader"],
+					},
 				],
 			},
 			output: {
