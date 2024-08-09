@@ -732,13 +732,18 @@ export abstract class FluidDataStoreContext
 		return runtime.request(request);
 	}
 
-	public submitMessage(type: string, content: any, localOpMetadata: unknown): void {
+	public submitMessage(
+		revisit: "revisit here",
+		type: string,
+		content: any,
+		localOpMetadata: unknown,
+	): void {
 		this.verifyNotClosed("submitMessage");
 		assert(!!this.channel, 0x146 /* "Channel must exist when submitting message" */);
 		// Summarizer clients should not submit messages.
 		this.identifyLocalChangeInSummarizer("DataStoreMessageSubmittedInSummarizer", type);
 
-		this.parentContext.submitMessage(type, content, localOpMetadata);
+		this.parentContext.submitMessage(revisit, type, content, localOpMetadata);
 	}
 
 	/**
@@ -765,14 +770,16 @@ export abstract class FluidDataStoreContext
 		}
 	}
 
-	/**
-	 * {@inheritDoc @fluidframework/runtime-definitions#IFluidDataStoreContext.submitSignal}
-	 */
-	public submitSignal(type: string, content: unknown, targetClientId?: string) {
+	public submitSignal(
+		revisit: "revisit here",
+		type: string,
+		content: unknown,
+		targetClientId?: string,
+	) {
 		this.verifyNotClosed("submitSignal");
 
 		assert(!!this.channel, 0x147 /* "Channel must exist on submitting signal" */);
-		return this.parentContext.submitSignal(type, content, targetClientId);
+		return this.parentContext.submitSignal(revisit, type, content, targetClientId);
 	}
 
 	/**
