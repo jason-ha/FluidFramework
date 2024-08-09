@@ -471,12 +471,6 @@ export interface IFluidParentContext
 	 * the server. This will be sent back when this message is received back from the server. This is also sent if
 	 * we are asked to resubmit the message.
 	 */
-	readonly submitMessage: (
-		revisit: "revisit here",
-		type: string,
-		content: unknown,
-		localOpMetadata: unknown,
-	) => void;
 	submitMessage(type: string, content: any, localOpMetadata: unknown): void;
 
 	/**
@@ -486,12 +480,6 @@ export interface IFluidParentContext
 	 * serializable object or primitive.
 	 * @param targetClientId - When specified, the signal is only sent to the provided client id.
 	 */
-	readonly submitSignal: (
-		revisit: "revisit here",
-		type: string,
-		content: unknown,
-		targetClientId?: string,
-	) => void;
 	submitSignal: (type: string, content: unknown, targetClientId?: string) => void;
 
 	/**

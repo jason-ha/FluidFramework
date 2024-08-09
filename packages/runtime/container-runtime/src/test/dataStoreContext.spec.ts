@@ -420,7 +420,6 @@ describe("Data Store Context Tests", () => {
 				await localDataStoreContext.realize();
 
 				localDataStoreContext.submitMessage(
-					"revisit here",
 					DataStoreMessageType.ChannelOp,
 					"summarizer message",
 					{},
@@ -462,7 +461,6 @@ describe("Data Store Context Tests", () => {
 				let eventCount = 0;
 				for (let i = 0; i < 15; i++) {
 					localDataStoreContext.submitMessage(
-						"revisit here",
 						DataStoreMessageType.ChannelOp,
 						`summarizer message ${i}`,
 						{},

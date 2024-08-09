@@ -213,12 +213,7 @@ export function wrapContextForInnerChannel(
 	parentContext: IFluidParentContext,
 ): IFluidParentContext {
 	return wrapAndOverrideContext(parentContext, {
-		submitMessage: (
-			revisit: "revisit here",
-			type: string,
-			content: any,
-			localOpMetadata: unknown,
-		): void => {
+		submitMessage: (type: string, content: any, localOpMetadata: unknown): void => {
 			const fluidDataStoreContent: FluidDataStoreMessage = {
 				content,
 				type,
@@ -228,24 +223,18 @@ export function wrapContextForInnerChannel(
 				contents: fluidDataStoreContent,
 			};
 			parentContext.submitMessage(
-				revisit,
 				ContainerMessageType.FluidDataStoreOp,
 				envelope,
 				localOpMetadata,
 			);
 		},
 
-		submitSignal: (
-			revisit: "revisit here",
-			type: string,
-			contents: unknown,
-			targetClientId?: string,
-		): void => {
+		submitSignal: (type: string, contents: unknown, targetClientId?: string): void => {
 			const envelope: IEnvelope = {
 				address: id,
 				contents,
 			};
-			parentContext.submitSignal(revisit, type, envelope, targetClientId);
+			parentContext.submitSignal(type, envelope, targetClientId);
 		},
 	});
 }
@@ -599,7 +588,6 @@ export class ChannelCollection implements IFluidDataStoreChannel, IDisposable {
 		const message = this.generateAttachMessage(localContext);
 		this.pendingAttach.set(localContext.id, message);
 		this.parentContext.submitMessage(
-			"revisit here",
 			ContainerMessageType.Attach,
 			message,
 			undefined,
@@ -718,7 +706,7 @@ export class ChannelCollection implements IFluidDataStoreChannel, IDisposable {
 		switch (type) {
 			case ContainerMessageType.Attach:
 			case ContainerMessageType.Alias:
-				this.parentContext.submitMessage("revisit here", type, content, localOpMetadata);
+				this.parentContext.submitMessage(type, content, localOpMetadata);
 				return;
 			case ContainerMessageType.FluidDataStoreOp:
 				return this.reSubmitChannelOp(type, content, localOpMetadata);
