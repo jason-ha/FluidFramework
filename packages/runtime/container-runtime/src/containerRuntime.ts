@@ -74,6 +74,7 @@ import type {
 	SerializedIdCompressorWithOngoingSession,
 } from "@fluidframework/id-compressor/internal";
 import type {
+	IAttachMessage,
 	ISummaryTreeWithStats,
 	ITelemetryContext,
 	IGarbageCollectionData,
@@ -144,13 +145,15 @@ import {
 	loadBlobManagerLoadInfo,
 	type IBlobManagerLoadInfo,
 } from "./blobManager/index.js";
+import type { IFluidRootParentContext } from "./channelCollection.js";
 import {
 	ChannelCollection,
 	getSummaryForDatastores,
-	wrapContext,
+	formParentContext,
 } from "./channelCollection.js";
 import { ReportOpPerfTelemetry } from "./connectionTelemetry.js";
 import { ContainerFluidHandleContext } from "./containerHandleContext.js";
+import type { IDataStoreAliasMessage } from "./dataStore.js";
 import { channelToDataStore } from "./dataStore.js";
 import { FluidDataStoreRegistry } from "./dataStoreRegistry.js";
 import {
@@ -789,6 +792,7 @@ export class ContainerRuntime
 	extends TypedEventEmitter<IContainerRuntimeEvents>
 	implements
 		IContainerRuntime,
+		Omit<IFluidRootParentContext, "submitSignal">,
 		IRuntime,
 		ISummarizerRuntime,
 		ISummarizerInternalsProvider,
@@ -1750,29 +1754,31 @@ export class ContainerRuntime
 			async () => this.garbageCollector.getBaseGCDetails(),
 		);
 
-		const parentContext = wrapContext(this);
+		const parentContext = formParentContext<IFluidRootParentContext>(this, {
+			submitMessage: this.submitMessage.bind(this),
+
+			// Due to a mismatch between different layers in terms of
+			// what is the interface of passing signals, we need the
+			// downstream stores to wrap the signal.
+			submitSignal: (type: string, content: unknown, targetClientId?: string): void => {
+				// Future: Can the `content` argument type be IEnvelope?
+				// verifyNotClosed is called in FluidDataStoreContext, which is *the* expected caller.
+				const envelope1 = content as IEnvelope;
+				assert(
+					!envelope1.address.startsWith("/"),
+					"Addresses beginning with '/' are reserved for container use",
+				);
+				const envelope2 = createNewSignalEnvelope(envelope1.address, type, envelope1.contents);
+				if (targetClientId === undefined) {
+					this.signalTelemetryManager.applyTrackingToBroadcastSignalEnvelope(envelope2);
+				}
+				this.submitSignalFn(envelope2, targetClientId);
+			},
+		});
 
 		if (snapshotWithContents !== undefined) {
 			this.isSnapshotInstanceOfISnapshot = true;
 		}
-
-		// Due to a mismatch between different layers in terms of
-		// what is the interface of passing signals, we need the
-		// downstream stores to wrap the signal.
-		parentContext.submitSignal = (type: string, content: unknown, targetClientId?: string) => {
-			// Future: Can the `content` argument type be IEnvelope?
-			// verifyNotClosed is called in FluidDataStoreContext, which is *the* expected caller.
-			const envelope1 = content as IEnvelope;
-			assert(
-				!envelope1.address.startsWith("/"),
-				"Addresses beginning with '/' are reserved for container use",
-			);
-			const envelope2 = createNewSignalEnvelope(envelope1.address, type, envelope1.contents);
-			if (targetClientId === undefined) {
-				this.signalTelemetryManager.applyTrackingToBroadcastSignalEnvelope(envelope2);
-			}
-			this.submitSignalFn(envelope2, targetClientId);
-		};
 
 		let snapshot: ISnapshot | ISnapshotTree | undefined = getSummaryForDatastores(
 			baseSnapshot,
@@ -4282,12 +4288,9 @@ export class ContainerRuntime
 			| ContainerMessageType.FluidDataStoreOp
 			| ContainerMessageType.Alias
 			| ContainerMessageType.Attach,
-		// TODO: better typing
-		// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-explicit-any
-		contents: any,
+		contents: IEnvelope | IAttachMessage | IDataStoreAliasMessage,
 		localOpMetadata: unknown = undefined,
 	): void {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 		this.submit({ type, contents }, localOpMetadata);
 	}
 

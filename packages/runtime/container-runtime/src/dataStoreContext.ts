@@ -35,6 +35,11 @@ import {
 	readAndParse,
 } from "@fluidframework/driver-utils/internal";
 import type { IIdCompressor } from "@fluidframework/id-compressor";
+import type {
+	DataStoreMessageType,
+	IAttachMessage,
+	IEnvelope,
+} from "@fluidframework/runtime-definitions/internal";
 import {
 	ISummaryTreeWithStats,
 	ITelemetryContext,
@@ -805,13 +810,30 @@ export abstract class FluidDataStoreContext
 		return runtime.request(request);
 	}
 
-	public submitMessage(type: string, content: unknown, localOpMetadata: unknown): void {
+	public submitMessage(
+		type: DataStoreMessageType["ChannelOp"],
+		content: IEnvelope,
+		localOpMetadata: unknown,
+	): void;
+	public submitMessage(
+		type: DataStoreMessageType["Attach"],
+		content: IAttachMessage,
+		localOpMetadata: unknown,
+	): void;
+	public submitMessage(
+		type: DataStoreMessageType["ChannelOp"] | DataStoreMessageType["Attach"],
+		content: IEnvelope | IAttachMessage,
+		localOpMetadata: unknown,
+	): void {
 		this.verifyNotClosed("submitMessage");
 		assert(!!this.channel, 0x146 /* "Channel must exist when submitting message" */);
 		// Summarizer clients should not submit messages.
 		this.identifyLocalChangeInSummarizer("DataStoreMessageSubmittedInSummarizer", type);
 
-		this.parentContext.submitMessage(type, content, localOpMetadata);
+		// The `content` cast to `any` is needed because override pattern cannot handle paired union types.
+		// If IFluidParentContext.submitMessage is changed to normal override set, then `type` would need
+		// be cast to any as well.
+		this.parentContext.submitMessage(type, content as any, localOpMetadata);
 	}
 
 	/**
