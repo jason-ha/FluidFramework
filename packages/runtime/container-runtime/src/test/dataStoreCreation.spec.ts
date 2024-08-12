@@ -14,13 +14,13 @@ import {
 	IFluidDataStoreContext,
 	IFluidDataStoreFactory,
 	IFluidDataStoreRegistry,
-	IFluidParentContext,
 	NamedFluidDataStoreRegistryEntries,
 	SummarizeInternalFn,
 } from "@fluidframework/runtime-definitions/internal";
 import { createChildLogger } from "@fluidframework/telemetry-utils/internal";
 import { MockFluidDataStoreRuntime } from "@fluidframework/test-runtime-utils/internal";
 
+import type { IFluidRootParentContext } from "../channelCollection.js";
 import { wrapContextForInnerChannel } from "../channelCollection.js";
 import { LocalFluidDataStoreContext } from "../dataStoreContext.js";
 import { createRootSummarizerNodeWithGC } from "../summary/index.js";
@@ -45,7 +45,7 @@ describe("Data Store Creation Tests", () => {
 		let storage: IDocumentStorageService;
 		let scope: FluidObject;
 		const makeLocallyVisibleFn = () => {};
-		let parentContext: IFluidParentContext;
+		let parentContext: IFluidRootParentContext;
 		const defaultName = "default";
 		const dataStoreAName = "dataStoreA";
 		const dataStoreBName = "dataStoreB";
@@ -111,8 +111,8 @@ describe("Data Store Creation Tests", () => {
 			parentContext = {
 				IFluidDataStoreRegistry: globalRegistry,
 				baseLogger: createChildLogger(),
-				clientDetails: {} as unknown as IFluidParentContext["clientDetails"],
-			} satisfies Partial<IFluidParentContext> as unknown as IFluidParentContext;
+				clientDetails: {} as unknown as IFluidRootParentContext["clientDetails"],
+			} satisfies Partial<IFluidRootParentContext> as unknown as IFluidRootParentContext;
 			const summarizerNode = createRootSummarizerNodeWithGC(
 				createChildLogger(),
 				(() => {}) as unknown as SummarizeInternalFn,

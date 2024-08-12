@@ -357,6 +357,12 @@ export interface ICreateContainerMetadata {
 }
 
 // @alpha
+export interface IDataStoreAliasMessage {
+    readonly alias: string;
+    readonly internalId: string;
+}
+
+// @alpha
 export type IdCompressorMode = "on" | "delayed" | undefined;
 
 // @alpha
@@ -425,6 +431,16 @@ export interface IFluidDataStoreAttributes2 extends OmitAttributesVersions<IFlui
     readonly snapshotFormatVersion?: undefined;
     // (undocumented)
     readonly summaryFormatVersion: 2;
+}
+
+// @alpha (undocumented)
+export interface IFluidRootParentContext extends Omit<IFluidParentContext, "submitMessage"> {
+    // (undocumented)
+    submitMessage(type: ContainerMessageType.FluidDataStoreOp, contents: IEnvelope, localOpMetadata: unknown): any;
+    // (undocumented)
+    submitMessage(type: ContainerMessageType.Attach, contents: IAttachMessage, localOpMetadata: unknown): any;
+    // (undocumented)
+    submitMessage(type: ContainerMessageType.Alias, contents: IDataStoreAliasMessage, localOpMetadata: unknown): any;
 }
 
 // @alpha

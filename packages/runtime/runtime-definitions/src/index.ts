@@ -43,6 +43,7 @@ export {
 	gcTreeKey,
 } from "./garbageCollectionDefinitions.js";
 export type {
+	DataStoreMessageType,
 	IAttachMessage,
 	IEnvelope,
 	IInboundSignalMessage,

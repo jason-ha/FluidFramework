@@ -31,7 +31,6 @@ import {
 	IFluidDataStoreContext,
 	IFluidDataStoreFactory,
 	IFluidDataStoreRegistry,
-	IFluidParentContext,
 	IGarbageCollectionDetailsBase,
 	SummarizeInternalFn,
 	channelsTreeName,
@@ -55,6 +54,7 @@ import {
 	ChannelCollection,
 	getLocalDataStoreType,
 	wrapContextForInnerChannel,
+	type IFluidRootParentContext,
 } from "../channelCollection.js";
 import { channelToDataStore } from "../dataStore.js";
 import {
@@ -82,14 +82,14 @@ describe("Data Store Context Tests", () => {
 		let storage: IDocumentStorageService;
 		let scope: FluidObject;
 		const makeLocallyVisibleFn = () => {};
-		let parentContext: IFluidParentContext;
+		let parentContext: IFluidRootParentContext;
 		let summarizerNode: IRootSummarizerNodeWithGC;
 
 		function createParentContext(
 			logger: ITelemetryBaseLogger = createChildLogger(),
-			clientDetails = {} as unknown as IFluidParentContext["clientDetails"],
-			submitMessage: IFluidParentContext["submitMessage"] = () => {},
-		): IFluidParentContext {
+			clientDetails = {} as unknown as IFluidRootParentContext["clientDetails"],
+			submitMessage: IFluidRootParentContext["submitMessage"] = () => {},
+		): IFluidRootParentContext {
 			const factory: IFluidDataStoreFactory = {
 				type: "store-type",
 				get IFluidDataStoreFactory() {
@@ -109,7 +109,7 @@ describe("Data Store Context Tests", () => {
 				baseLogger: logger,
 				clientDetails,
 				submitMessage,
-			} satisfies Partial<IFluidParentContext> as unknown as IFluidParentContext;
+			} satisfies Partial<IFluidRootParentContext> as unknown as IFluidRootParentContext;
 		}
 
 		beforeEach(async () => {
@@ -287,8 +287,8 @@ describe("Data Store Context Tests", () => {
 
 				parentContext = {
 					IFluidDataStoreRegistry: registryWithSubRegistries,
-					clientDetails: {} as unknown as IFluidParentContext["clientDetails"],
-				} satisfies Partial<IFluidParentContext> as unknown as IFluidParentContext;
+					clientDetails: {} as unknown as IFluidRootParentContext["clientDetails"],
+				} satisfies Partial<IFluidRootParentContext> as unknown as IFluidRootParentContext;
 				localDataStoreContext = new LocalFluidDataStoreContext({
 					id: dataStoreId,
 					pkg: ["TestComp", "SubComp"],
@@ -421,7 +421,10 @@ describe("Data Store Context Tests", () => {
 
 				localDataStoreContext.submitMessage(
 					DataStoreMessageType.ChannelOp,
-					"summarizer message",
+					{
+						address: "address",
+						contents: "summarizer message",
+					},
 					{},
 				);
 
@@ -462,7 +465,10 @@ describe("Data Store Context Tests", () => {
 				for (let i = 0; i < 15; i++) {
 					localDataStoreContext.submitMessage(
 						DataStoreMessageType.ChannelOp,
-						`summarizer message ${i}`,
+						{
+							address: "address",
+							contents: `summarizer message ${i}`,
+						},
 						{},
 					);
 				}
@@ -562,7 +568,7 @@ describe("Data Store Context Tests", () => {
 		const storage: Partial<IDocumentStorageService> = {};
 		let scope: FluidObject;
 		let summarizerNode: IRootSummarizerNodeWithGC;
-		let parentContext: IFluidParentContext;
+		let parentContext: IFluidRootParentContext;
 
 		beforeEach(async () => {
 			const factory: IFluidDataStoreFactory = {
@@ -582,9 +588,9 @@ describe("Data Store Context Tests", () => {
 
 			parentContext = {
 				IFluidDataStoreRegistry: registry,
-				clientDetails: {} as unknown as IFluidParentContext["clientDetails"],
+				clientDetails: {} as unknown as IFluidRootParentContext["clientDetails"],
 				containerRuntime: parentContext as any,
-			} satisfies Partial<IFluidParentContext> as unknown as IFluidParentContext;
+			} satisfies Partial<IFluidRootParentContext> as unknown as IFluidRootParentContext;
 		});
 
 		describe("Initialization - can correctly initialize and generate attributes", () => {
@@ -1027,7 +1033,7 @@ describe("Data Store Context Tests", () => {
 				channelCollection,
 				createChildLogger({ logger: parentContext.baseLogger }),
 			);
-		let parentContext: IFluidParentContext;
+		let parentContext: IFluidRootParentContext;
 		let channelCollection: ChannelCollection;
 		let provideDsRuntimeWithFailingEntrypoint = false;
 
@@ -1079,8 +1085,8 @@ describe("Data Store Context Tests", () => {
 			parentContext = {
 				IFluidDataStoreRegistry: registry,
 				baseLogger: createChildLogger(),
-				clientDetails: {} as unknown as IFluidParentContext["clientDetails"],
-			} satisfies Partial<IFluidParentContext> as unknown as IFluidParentContext;
+				clientDetails: {} as unknown as IFluidRootParentContext["clientDetails"],
+			} satisfies Partial<IFluidRootParentContext> as unknown as IFluidRootParentContext;
 
 			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 			channelCollection = {

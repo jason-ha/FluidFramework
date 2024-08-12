@@ -34,7 +34,12 @@ import type {
 	IGarbageCollectionData,
 	IGarbageCollectionDetailsBase,
 } from "./garbageCollectionDefinitions.js";
-import type { IInboundSignalMessage } from "./protocol.js";
+import type {
+	DataStoreMessageType,
+	IAttachMessage,
+	IEnvelope,
+	IInboundSignalMessage,
+} from "./protocol.js";
 import type {
 	CreateChildSummarizerNodeParam,
 	ISummarizerNodeWithGC,
@@ -471,7 +476,16 @@ export interface IFluidParentContext
 	 * the server. This will be sent back when this message is received back from the server. This is also sent if
 	 * we are asked to resubmit the message.
 	 */
-	submitMessage(type: string, content: any, localOpMetadata: unknown): void;
+	submitMessage(
+		type: DataStoreMessageType["ChannelOp"],
+		content: IEnvelope,
+		localOpMetadata: unknown,
+	): void;
+	submitMessage(
+		type: DataStoreMessageType["Attach"],
+		content: IAttachMessage,
+		localOpMetadata: unknown,
+	): void;
 
 	/**
 	 * Submits the signal to be sent to other clients.

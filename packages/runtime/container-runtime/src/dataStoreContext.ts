@@ -38,13 +38,16 @@ import {
 	CreateChildSummarizerNodeFn,
 	CreateChildSummarizerNodeParam,
 	FluidDataStoreRegistryEntry,
+	type IAttachMessage,
 	IContainerRuntimeBase,
 	IDataStore,
+	type IEnvelope,
 	IFluidDataStoreChannel,
 	IFluidDataStoreContext,
 	IFluidDataStoreContextDetached,
 	IFluidDataStoreRegistry,
 	IFluidParentContext,
+	type DataStoreMessageType,
 	IGarbageCollectionDetailsBase,
 	IProvideFluidDataStoreFactory,
 	ISummarizeInternalResult,
@@ -732,13 +735,27 @@ export abstract class FluidDataStoreContext
 		return runtime.request(request);
 	}
 
-	public submitMessage(type: string, content: any, localOpMetadata: unknown): void {
+	public submitMessage(
+		type: DataStoreMessageType["ChannelOp"],
+		content: IEnvelope,
+		localOpMetadata: unknown,
+	): void;
+	public submitMessage(
+		type: DataStoreMessageType["Attach"],
+		content: IAttachMessage,
+		localOpMetadata: unknown,
+	): void;
+	public submitMessage(
+		type: DataStoreMessageType["ChannelOp"] | DataStoreMessageType["Attach"],
+		content: IEnvelope | IAttachMessage,
+		localOpMetadata: unknown,
+	): void {
 		this.verifyNotClosed("submitMessage");
 		assert(!!this.channel, 0x146 /* "Channel must exist when submitting message" */);
 		// Summarizer clients should not submit messages.
 		this.identifyLocalChangeInSummarizer("DataStoreMessageSubmittedInSummarizer", type);
 
-		this.parentContext.submitMessage(type, content, localOpMetadata);
+		this.parentContext.submitMessage(type as any, content as any, localOpMetadata);
 	}
 
 	/**

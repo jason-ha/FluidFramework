@@ -41,6 +41,14 @@ export enum CreateSummarizerNodeSource {
     Local = 2
 }
 
+// @alpha (undocumented)
+export interface DataStoreMessageType {
+    // (undocumented)
+    Attach: "attach";
+    // (undocumented)
+    ChannelOp: "op";
+}
+
 // @alpha
 export interface DetachedAttributionKey {
     id: 0;
@@ -224,7 +232,9 @@ export interface IFluidParentContext extends IProvideFluidHandleContext, Partial
     setChannelDirty(address: string): void;
     // (undocumented)
     readonly storage: IDocumentStorageService;
-    submitMessage(type: string, content: any, localOpMetadata: unknown): void;
+    submitMessage(type: DataStoreMessageType["ChannelOp"], content: IEnvelope, localOpMetadata: unknown): void;
+    // (undocumented)
+    submitMessage(type: DataStoreMessageType["Attach"], content: IAttachMessage, localOpMetadata: unknown): void;
     submitSignal: (type: string, content: unknown, targetClientId?: string) => void;
     // (undocumented)
     uploadBlob(blob: ArrayBufferLike, signal?: AbortSignal): Promise<IFluidHandleInternal<ArrayBufferLike>>;

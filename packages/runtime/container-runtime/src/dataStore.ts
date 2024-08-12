@@ -24,6 +24,8 @@ import { ContainerMessageType } from "./messageTypes.js";
 /**
  * Interface for an op to be used for assigning an
  * alias to a datastore
+ * @legacy
+ * @alpha
  */
 export interface IDataStoreAliasMessage {
 	/** The internal id of the datastore */

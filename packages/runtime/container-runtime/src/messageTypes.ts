@@ -59,6 +59,25 @@ export enum ContainerMessageType {
 }
 
 /**
+ * @internal
+ */
+export const ContainerDataStoreMessageType = {
+	// An op to be delivered to store
+	FluidDataStoreOp: ContainerMessageType.FluidDataStoreOp,
+
+	// Creates a new store
+	Attach: ContainerMessageType.Attach,
+
+	// Sets the alias of a root data store
+	Alias: ContainerMessageType.Alias,
+} as const;
+/**
+ * @internal
+ */
+export type ContainerDataStoreMessageType =
+	(typeof ContainerDataStoreMessageType)[keyof typeof ContainerDataStoreMessageType];
+
+/**
  * How should an older client handle an unrecognized remote op type?
  *
  * @deprecated The utility of a mechanism to handle unknown messages is outweighed by the nuance required to get it right.

@@ -138,11 +138,12 @@ import {
 import {
 	ChannelCollection,
 	getSummaryForDatastores,
-	wrapContext,
+	type IFluidRootParentContext,
+	formParentContext,
 } from "./channelCollection.js";
 import { IPerfSignalReport, ReportOpPerfTelemetry } from "./connectionTelemetry.js";
 import { ContainerFluidHandleContext } from "./containerHandleContext.js";
-import { channelToDataStore } from "./dataStore.js";
+import { channelToDataStore /* type IDataStoreAliasMessage */ } from "./dataStore.js";
 import { FluidDataStoreRegistry } from "./dataStoreRegistry.js";
 import {
 	DeltaManagerPendingOpsProxy,
@@ -157,6 +158,7 @@ import {
 	gcGenerationOptionName,
 } from "./gc/index.js";
 import {
+	// type ContainerDataStoreMessageType,
 	ContainerMessageType,
 	type ContainerRuntimeDocumentSchemaMessage,
 	ContainerRuntimeGCMessage,
@@ -1693,24 +1695,26 @@ export class ContainerRuntime
 			this.summarizerNode.updateBaseSummaryState(baseSnapshot);
 		}
 
-		const parentContext = wrapContext(this);
+		const parentContext = formParentContext<IFluidRootParentContext>(this, {
+			submitMessage: this.submitMessage.bind(this),
+
+			// Due to a mismatch between different layers in terms of
+			// what is the interface of passing signals, we need the
+			// downstream stores to wrap the signal.
+			submitSignal: (type: string, content: unknown, targetClientId?: string) => {
+				const envelope1 = content as IEnvelope;
+				const envelope2 = this.createNewSignalEnvelope(
+					envelope1.address,
+					type,
+					envelope1.contents,
+				);
+				return this.submitSignalFn(envelope2, targetClientId);
+			},
+		});
 
 		if (snapshotWithContents !== undefined) {
 			this.isSnapshotInstanceOfISnapshot = true;
 		}
-
-		// Due to a mismatch between different layers in terms of
-		// what is the interface of passing signals, we need the
-		// downstream stores to wrap the signal.
-		parentContext.submitSignal = (type: string, content: unknown, targetClientId?: string) => {
-			const envelope1 = content as IEnvelope;
-			const envelope2 = this.createNewSignalEnvelope(
-				envelope1.address,
-				type,
-				envelope1.contents,
-			);
-			return this.submitSignalFn(envelope2, targetClientId);
-		};
 
 		let snapshot: ISnapshot | ISnapshotTree | undefined = getSummaryForDatastores(
 			baseSnapshot,
@@ -4037,7 +4041,7 @@ export class ContainerRuntime
 			| ContainerMessageType.FluidDataStoreOp
 			| ContainerMessageType.Alias
 			| ContainerMessageType.Attach,
-		contents: any,
+		contents: any /* IEnvelope | IAttachMessage | IDataStoreAliasMessage */,
 		localOpMetadata: unknown = undefined,
 	): void {
 		this.submit({ type, contents }, localOpMetadata);

@@ -31,9 +31,11 @@ export {
 	UnknownContainerRuntimeMessage,
 } from "./messageTypes.js";
 export { IBlobManagerLoadInfo } from "./blobManager/index.js";
+export type { IDataStoreAliasMessage } from "./dataStore.js";
 export { FluidDataStoreRegistry } from "./dataStoreRegistry.js";
 export {
 	detectOutboundReferences,
+	type IFluidRootParentContext,
 	RuntimeHeaders,
 	ChannelCollectionFactory,
 	AllowTombstoneRequestHeaderKey,
