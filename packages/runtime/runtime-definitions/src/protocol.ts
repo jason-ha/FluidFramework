@@ -10,6 +10,19 @@ import type {
 } from "@fluidframework/driver-definitions/internal";
 
 /**
+ * @legacy
+ * @alpha
+ *
+ * @privateRemarks
+ * This type and/or const structure is preferred replacement for {@link @fluidframework/datastore#DataStoreMessageType}.
+ */
+export interface DataStoreMessageType {
+	// Creates a new channel
+	Attach: "attach";
+	ChannelOp: "op";
+}
+
+/**
  * An envelope wraps the contents with the intended target
  * @legacy
  * @alpha

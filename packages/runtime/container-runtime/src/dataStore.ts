@@ -24,6 +24,8 @@ import { ContainerMessageType } from "./messageTypes.js";
 /**
  * Interface for an op to be used for assigning an
  * alias to a datastore
+ * @internal
+ * @privateRemarks Exposed per ChannelCollection testing and API extractor request
  */
 export interface IDataStoreAliasMessage {
 	/**

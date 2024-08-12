@@ -378,7 +378,10 @@ describe("Data Store Context Tests", () => {
 
 				localDataStoreContext.submitMessage(
 					DataStoreMessageType.ChannelOp,
-					"summarizer message",
+					{
+						address: "address",
+						contents: "summarizer message",
+					},
 					{},
 				);
 
@@ -419,7 +422,10 @@ describe("Data Store Context Tests", () => {
 				for (let i = 0; i < 15; i++) {
 					localDataStoreContext.submitMessage(
 						DataStoreMessageType.ChannelOp,
-						`summarizer message ${i}`,
+						{
+							address: "address",
+							contents: `summarizer message ${i}`,
+						},
 						{},
 					);
 				}
