@@ -141,7 +141,9 @@ export interface IFluidDataStoreChannel extends IDisposable {
     processSignal(message: IInboundSignalMessage, local: boolean): void;
     // (undocumented)
     request(request: IRequest): Promise<IResponse>;
-    reSubmit(type: string, content: any, localOpMetadata: unknown): any;
+    // @deprecated
+    reSubmit(type: string, contents: unknown, localOpMetadata: unknown): void;
+    reSubmit(message: OutboundFluidDataStoreMessage, localOpMetadata: unknown): void;
     rollback?(type: string, content: any, localOpMetadata: unknown): void;
     // (undocumented)
     setAttachState(attachState: AttachState.Attaching | AttachState.Attached): void;
@@ -230,7 +232,9 @@ export interface IFluidParentContext extends IProvideFluidHandleContext, Partial
     setChannelDirty(address: string): void;
     // (undocumented)
     readonly storage: IDocumentStorageService;
-    submitMessage(...[type, content, localOpMetadata]: [DataStoreMessageType["ChannelOp"], IEnvelope, unknown] | [DataStoreMessageType["Attach"], IAttachMessage, unknown]): void;
+    // @deprecated
+    submitMessage(type: string, content: any, localOpMetadata: unknown): void;
+    submitMessage(message: OutboundFluidDataStoreMessage, localOpMetadata: unknown): void;
     submitSignal: (type: string, content: unknown, targetClientId?: string) => void;
     // (undocumented)
     uploadBlob(blob: ArrayBufferLike, signal?: AbortSignal): Promise<IFluidHandleInternal<ArrayBufferLike>>;
@@ -399,6 +403,15 @@ export interface OpAttributionKey {
     seq: number;
     type: "op";
 }
+
+// @alpha (undocumented)
+export type OutboundFluidDataStoreMessage = {
+    type: DataStoreMessageType["ChannelOp"];
+    content: IEnvelope;
+} | {
+    type: DataStoreMessageType["Attach"];
+    content: IAttachMessage;
+};
 
 // @alpha (undocumented)
 export type SummarizeInternalFn = (fullTree: boolean, trackState: boolean, telemetryContext?: ITelemetryContext, incrementalSummaryContext?: IExperimentalIncrementalSummaryContext) => Promise<ISummarizeInternalResult>;

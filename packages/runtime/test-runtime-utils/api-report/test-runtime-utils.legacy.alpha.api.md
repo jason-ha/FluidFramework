@@ -360,7 +360,7 @@ export class MockFluidDataStoreContext implements IFluidDataStoreContext {
     // (undocumented)
     storage: IDocumentStorageService;
     // (undocumented)
-    submitMessage(type: string, content: any, localOpMetadata: unknown): void;
+    submitMessage(): void;
     // (undocumented)
     submitSignal(type: string, content: any): void;
     // (undocumented)

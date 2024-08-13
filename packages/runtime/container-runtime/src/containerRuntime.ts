@@ -74,7 +74,6 @@ import type {
 	SerializedIdCompressorWithOngoingSession,
 } from "@fluidframework/id-compressor/internal";
 import type {
-	IAttachMessage,
 	ISummaryTreeWithStats,
 	ITelemetryContext,
 	IGarbageCollectionData,
@@ -153,7 +152,6 @@ import {
 } from "./channelCollection.js";
 import { ReportOpPerfTelemetry } from "./connectionTelemetry.js";
 import { ContainerFluidHandleContext } from "./containerHandleContext.js";
-import type { IDataStoreAliasMessage } from "./dataStore.js";
 import { channelToDataStore } from "./dataStore.js";
 import { FluidDataStoreRegistry } from "./dataStoreRegistry.js";
 import {
@@ -173,11 +171,14 @@ import {
 import { InboundBatchAggregator } from "./inboundBatchAggregator.js";
 import {
 	ContainerMessageType,
+	type ContainerRuntimeAliasMessage,
+	type ContainerRuntimeDataStoreOpMessage,
 	type ContainerRuntimeDocumentSchemaMessage,
 	ContainerRuntimeGCMessage,
 	type ContainerRuntimeIdAllocationMessage,
 	type InboundSequencedContainerRuntimeMessage,
 	type LocalContainerRuntimeMessage,
+	type OutboundContainerRuntimeAttachMessage,
 	type OutboundContainerRuntimeMessage,
 	type UnknownContainerRuntimeMessage,
 } from "./messageTypes.js";
@@ -4284,14 +4285,13 @@ export class ContainerRuntime
 	}
 
 	public submitMessage(
-		type:
-			| ContainerMessageType.FluidDataStoreOp
-			| ContainerMessageType.Alias
-			| ContainerMessageType.Attach,
-		contents: IEnvelope | IAttachMessage | IDataStoreAliasMessage,
+		containerRuntimeMessage:
+			| ContainerRuntimeDataStoreOpMessage
+			| OutboundContainerRuntimeAttachMessage
+			| ContainerRuntimeAliasMessage,
 		localOpMetadata: unknown = undefined,
 	): void {
-		this.submit({ type, contents }, localOpMetadata);
+		this.submit(containerRuntimeMessage, localOpMetadata);
 	}
 
 	public async uploadBlob(

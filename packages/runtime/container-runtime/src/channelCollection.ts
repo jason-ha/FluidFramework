@@ -24,6 +24,7 @@ import {
 	getSnapshotTree,
 	isInstanceOfISnapshot,
 } from "@fluidframework/driver-utils/internal";
+import type { OutboundFluidDataStoreMessage } from "@fluidframework/runtime-definitions/internal";
 import {
 	ISummaryTreeWithStats,
 	ITelemetryContext,
@@ -97,6 +98,11 @@ import {
 import { DataStoreContexts } from "./dataStoreContexts.js";
 import { FluidDataStoreRegistry } from "./dataStoreRegistry.js";
 import { GCNodeType, IGCNodeUpdatedProps, urlToGCNodePath } from "./gc/index.js";
+import type {
+	ContainerRuntimeAliasMessage,
+	ContainerRuntimeDataStoreOpMessage,
+	OutboundContainerRuntimeAttachMessage,
+} from "./messageTypes.js";
 import { ContainerMessageType, LocalContainerRuntimeMessage } from "./messageTypes.js";
 import { StorageServiceWithAttachBlobs } from "./storageServiceWithAttachBlobs.js";
 import {
@@ -141,22 +147,16 @@ interface FluidDataStoreMessage {
  * @internal
  * @privateRemarks Exposed per ChannelCollection testing and API extractor request
  */
-export interface IFluidRootParentContext extends Omit<IFluidParentContext, "submitMessage"> {
+export interface IFluidRootParentContext
+	extends Omit<IFluidParentContext, "submitMessage" | "submitSignal"> {
 	submitMessage(
-		type: ContainerMessageType.FluidDataStoreOp,
-		contents: IEnvelope,
+		containerRuntimeMessage:
+			| ContainerRuntimeDataStoreOpMessage
+			| OutboundContainerRuntimeAttachMessage
+			| ContainerRuntimeAliasMessage,
 		localOpMetadata: unknown,
 	);
-	submitMessage(
-		type: ContainerMessageType.Attach,
-		contents: IAttachMessage,
-		localOpMetadata: unknown,
-	);
-	submitMessage(
-		type: ContainerMessageType.Alias,
-		contents: IDataStoreAliasMessage,
-		localOpMetadata: unknown,
-	);
+	readonly submitSignal: (type: string, contents: IEnvelope, targetClientId?: string) => void;
 }
 
 type SubmitKeys = "submitMessage" | "submitSignal";
@@ -244,18 +244,28 @@ function wrapContextForInnerChannel(
 	parentContext: IFluidRootParentContext,
 ): IFluidParentContext {
 	const context = formParentContext<IFluidParentContext>(parentContext, {
-		submitMessage: (type: string, content: unknown, localOpMetadata: unknown) => {
-			const fluidDataStoreContent: FluidDataStoreMessage = {
-				content,
-				type,
-			};
+		submitMessage: (
+			messageOrType: OutboundFluidDataStoreMessage | string,
+			localOpMetadataOrContent: unknown,
+			undefinedOrLocalOpMetadata?: unknown,
+		) => {
+			const preferredForm = typeof messageOrType === "object";
+			const message = preferredForm
+				? messageOrType
+				: // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+					({
+						type: messageOrType,
+						content: localOpMetadataOrContent,
+					} as OutboundFluidDataStoreMessage);
+			const localOpMetadata = preferredForm
+				? localOpMetadataOrContent
+				: undefinedOrLocalOpMetadata;
 			const envelope: IEnvelope = {
 				address: id,
-				contents: fluidDataStoreContent,
+				contents: message,
 			};
 			parentContext.submitMessage(
-				ContainerMessageType.FluidDataStoreOp,
-				envelope,
+				{ type: ContainerMessageType.FluidDataStoreOp, contents: envelope },
 				localOpMetadata,
 			);
 		},
@@ -626,7 +636,10 @@ export class ChannelCollection implements IFluidDataStoreChannel, IDisposable {
 	protected submitAttachChannelOp(localContext: LocalFluidDataStoreContext): void {
 		const message = this.generateAttachMessage(localContext);
 		this.pendingAttach.set(localContext.id, message);
-		this.parentContext.submitMessage(ContainerMessageType.Attach, message, undefined);
+		this.parentContext.submitMessage(
+			{ type: ContainerMessageType.Attach, contents: message },
+			undefined,
+		);
 		this.attachOpFiredForDataStore.add(localContext.id);
 	}
 
@@ -732,20 +745,39 @@ export class ChannelCollection implements IFluidDataStoreChannel, IDisposable {
 	}
 	public readonly dispose = (): void => this.disposeOnce.value;
 
-	public reSubmit(type: string, content: unknown, localOpMetadata: unknown): void {
-		switch (type) {
-			case ContainerMessageType.Attach: {
-				// Could be fallthrough to Alias, but submitMessage override pattern
-				// doesn't handle `ContainerMessageType.Alias | ContainerMessageType.Attach`.
-				this.parentContext.submitMessage(type, content as any, localOpMetadata);
-				return;
-			}
+	public reSubmit(
+		messageOrType:
+			| ContainerRuntimeDataStoreOpMessage
+			| OutboundContainerRuntimeAttachMessage
+			| ContainerRuntimeAliasMessage
+			| OutboundFluidDataStoreMessage
+			| string,
+		localOpMetadataOrContent: unknown,
+		undefinedOrLocalOpMetadata?: unknown,
+	): void {
+		const preferredForm = typeof messageOrType === "object";
+		const message = (
+			preferredForm
+				? messageOrType
+				: {
+						type: messageOrType,
+						contents: localOpMetadataOrContent,
+					}
+		) as
+			| ContainerRuntimeDataStoreOpMessage
+			| OutboundContainerRuntimeAttachMessage
+			| ContainerRuntimeAliasMessage;
+		const localOpMetadata = preferredForm
+			? localOpMetadataOrContent
+			: undefinedOrLocalOpMetadata;
+		switch (message.type) {
+			case ContainerMessageType.Attach:
 			case ContainerMessageType.Alias: {
-				this.parentContext.submitMessage(type, content as any, localOpMetadata);
+				this.parentContext.submitMessage(message, localOpMetadata);
 				return;
 			}
 			case ContainerMessageType.FluidDataStoreOp: {
-				return this.reSubmitChannelOp(type, content, localOpMetadata);
+				return this.reSubmitChannelOp(message, localOpMetadata);
 			}
 			default: {
 				assert(false, 0x907 /* unknown op type */);
@@ -753,8 +785,11 @@ export class ChannelCollection implements IFluidDataStoreChannel, IDisposable {
 		}
 	}
 
-	protected reSubmitChannelOp(type: string, content: unknown, localOpMetadata: unknown): void {
-		const envelope = content as IEnvelope;
+	protected reSubmitChannelOp(
+		containerRuntimeMessage: ContainerRuntimeDataStoreOpMessage,
+		localOpMetadata: unknown,
+	): void {
+		const envelope = containerRuntimeMessage.contents;
 		const context = this.contexts.get(envelope.address);
 		// If the data store has been deleted, log an error and throw an error. If there are local changes for a
 		// deleted data store, it can otherwise lead to inconsistent state when compared to other clients.
@@ -767,7 +802,7 @@ export class ChannelCollection implements IFluidDataStoreChannel, IDisposable {
 			});
 		}
 		assert(!!context, 0x160 /* "There should be a store context for the op" */);
-		const innerContents = envelope.contents as FluidDataStoreMessage;
+		const innerContents = envelope.contents as OutboundFluidDataStoreMessage;
 		context.reSubmit(innerContents.type, innerContents.content, localOpMetadata);
 	}
 
@@ -1665,8 +1700,7 @@ export class ChannelCollectionFactory<T extends ChannelCollection = ChannelColle
 	}
 
 	public async instantiateDataStore(
-		context: IFluidDataStoreContext &
-			IFluidRootParentContext /* Pick<IFluidDataStoreContext, "baseSnapshot" | "baseLogger"> & IFluidRootParentContext */,
+		context: IFluidDataStoreContext & IFluidRootParentContext,
 		_existing: boolean,
 	): Promise<IFluidDataStoreChannel> {
 		const runtime = this.ctor(

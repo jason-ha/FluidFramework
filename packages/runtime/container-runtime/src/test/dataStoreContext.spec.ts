@@ -377,10 +377,12 @@ describe("Data Store Context Tests", () => {
 				await localDataStoreContext.realize();
 
 				localDataStoreContext.submitMessage(
-					DataStoreMessageType.ChannelOp,
 					{
-						address: "address",
-						contents: "summarizer message",
+						type: DataStoreMessageType.ChannelOp,
+						content: {
+							address: "address",
+							contents: "summarizer message",
+						},
 					},
 					{},
 				);
@@ -421,10 +423,12 @@ describe("Data Store Context Tests", () => {
 				let eventCount = 0;
 				for (let i = 0; i < 15; i++) {
 					localDataStoreContext.submitMessage(
-						DataStoreMessageType.ChannelOp,
 						{
-							address: "address",
-							contents: `summarizer message ${i}`,
+							type: DataStoreMessageType.ChannelOp,
+							content: {
+								address: "address",
+								contents: `summarizer message ${i}`,
+							},
 						},
 						{},
 					);

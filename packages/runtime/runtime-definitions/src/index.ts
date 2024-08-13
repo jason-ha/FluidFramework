@@ -53,6 +53,7 @@ export type {
 	IRuntimeMessageCollection,
 	IRuntimeMessagesContent,
 	ISequencedMessageEnvelope,
+	OutboundFluidDataStoreMessage,
 } from "./protocol.js";
 export type {
 	CreateChildSummarizerNodeParam,

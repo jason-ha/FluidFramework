@@ -142,7 +142,10 @@ class DataStore implements IDataStore {
 		}
 
 		const aliased = await this.ackBasedPromise<boolean>((resolve) => {
-			this.parentContext.submitMessage(ContainerMessageType.Alias, message, resolve);
+			this.parentContext.submitMessage(
+				{ type: ContainerMessageType.Alias, contents: message },
+				resolve,
+			);
 		})
 			.catch((error) => {
 				this.logger.sendErrorEvent(

@@ -139,3 +139,13 @@ export interface IRuntimeMessageCollection {
 	 */
 	readonly messagesContent: readonly IRuntimeMessagesContent[];
 }
+
+/**
+ * @legacy
+ * @alpha
+ *
+ * @privateRemarks The types here are required to satisfy `FluidDataStoreMessage` interface.
+ */
+export type OutboundFluidDataStoreMessage =
+	| { type: DataStoreMessageType["ChannelOp"]; content: IEnvelope }
+	| { type: DataStoreMessageType["Attach"]; content: IAttachMessage };

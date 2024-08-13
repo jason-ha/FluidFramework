@@ -24,6 +24,10 @@ export {
 } from "./containerRuntime.js";
 export {
 	ContainerMessageType,
+	ContainerRuntimeAliasMessage,
+	ContainerRuntimeDataStoreOpMessage,
+	InternalUtilityTypes,
+	OutboundContainerRuntimeAttachMessage,
 	UnknownContainerRuntimeMessage,
 } from "./messageTypes.js";
 export { IBlobManagerLoadInfo } from "./blobManager/index.js";

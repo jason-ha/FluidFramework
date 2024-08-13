@@ -35,11 +35,7 @@ import {
 	readAndParse,
 } from "@fluidframework/driver-utils/internal";
 import type { IIdCompressor } from "@fluidframework/id-compressor";
-import type {
-	DataStoreMessageType,
-	IAttachMessage,
-	IEnvelope,
-} from "@fluidframework/runtime-definitions/internal";
+import type { OutboundFluidDataStoreMessage } from "@fluidframework/runtime-definitions/internal";
 import {
 	ISummaryTreeWithStats,
 	ITelemetryContext,
@@ -811,29 +807,30 @@ export abstract class FluidDataStoreContext
 	}
 
 	public submitMessage(
-		type: DataStoreMessageType["ChannelOp"],
-		content: IEnvelope,
-		localOpMetadata: unknown,
-	): void;
-	public submitMessage(
-		type: DataStoreMessageType["Attach"],
-		content: IAttachMessage,
-		localOpMetadata: unknown,
-	): void;
-	public submitMessage(
-		type: DataStoreMessageType["ChannelOp"] | DataStoreMessageType["Attach"],
-		content: IEnvelope | IAttachMessage,
-		localOpMetadata: unknown,
+		messageOrType: OutboundFluidDataStoreMessage | string,
+		localOpMetadataOrContent: unknown,
+		undefinedOrLocalOpMetadata?: unknown,
 	): void {
 		this.verifyNotClosed("submitMessage");
 		assert(!!this.channel, 0x146 /* "Channel must exist when submitting message" */);
+		const preferredForm = typeof messageOrType === "object";
+		const message = preferredForm
+			? messageOrType
+			: // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+				({
+					type: messageOrType,
+					content: localOpMetadataOrContent,
+				} as OutboundFluidDataStoreMessage);
+		const localOpMetadata = preferredForm
+			? localOpMetadataOrContent
+			: undefinedOrLocalOpMetadata;
 		// Summarizer clients should not submit messages.
-		this.identifyLocalChangeInSummarizer("DataStoreMessageSubmittedInSummarizer", type);
+		this.identifyLocalChangeInSummarizer(
+			"DataStoreMessageSubmittedInSummarizer",
+			message.type,
+		);
 
-		// The `content` cast to `any` is needed because override pattern cannot handle paired union types.
-		// If IFluidParentContext.submitMessage is changed to normal override set, then `type` would need
-		// be cast to any as well.
-		this.parentContext.submitMessage(type, content as any, localOpMetadata);
+		this.parentContext.submitMessage(message, localOpMetadata);
 	}
 
 	/**
@@ -989,7 +986,7 @@ export abstract class FluidDataStoreContext
 		return {};
 	}
 
-	public reSubmit(type: string, contents: unknown, localOpMetadata: unknown): void {
+	public reSubmit(type: "op" | "attach", contents: unknown, localOpMetadata: unknown): void {
 		assert(!!this.channel, 0x14b /* "Channel must exist when resubmitting ops" */);
 		this.channel.reSubmit(type, contents, localOpMetadata);
 	}
