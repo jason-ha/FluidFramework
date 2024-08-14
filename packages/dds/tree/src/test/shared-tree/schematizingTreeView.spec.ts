@@ -25,10 +25,11 @@ import {
 	type InsertableTreeFieldFromImplicitField,
 } from "../../simple-tree/index.js";
 // eslint-disable-next-line import/no-internal-modules
-import { cursorFromUnhydratedRoot, toFlexSchema } from "../../simple-tree/toFlexSchema.js";
+import { toFlexSchema } from "../../simple-tree/toFlexSchema.js";
 import {
 	checkoutWithContent,
 	createTestUndoRedoStacks,
+	cursorFromInsertableTreeField,
 	insert,
 	validateUsageError,
 } from "../utils.js";
@@ -48,7 +49,7 @@ function checkoutWithInitialTree(
 	unhydratedInitialTree: InsertableTreeFieldFromImplicitField,
 	nodeKeyManager = new MockNodeKeyManager(),
 ): TreeCheckout {
-	const initialTree = cursorFromUnhydratedRoot(
+	const initialTree = cursorFromInsertableTreeField(
 		viewConfig.schema,
 		unhydratedInitialTree,
 		nodeKeyManager,

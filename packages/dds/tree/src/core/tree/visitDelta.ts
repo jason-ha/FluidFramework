@@ -246,7 +246,6 @@ function transferRoots(
 /**
  * Visitor for changes in a delta.
  * Must be freed after use.
- * @internal
  */
 export interface DeltaVisitor {
 	/**
@@ -473,13 +472,13 @@ function buildTrees(
 	latestRevision: RevisionTag | undefined,
 	visitor: DeltaVisitor,
 ): void {
-	for (let i = 0; i < trees.length; i += 1) {
+	for (const [i, tree] of trees.entries()) {
 		const offsettedId = offsetDetachId(id, i);
 		let root = detachedFieldIndex.tryGetEntry(offsettedId);
 		assert(root === undefined, 0x929 /* Unable to build tree that already exists */);
 		root = detachedFieldIndex.createEntry(offsettedId, latestRevision);
 		const field = detachedFieldIndex.toFieldKey(root);
-		visitor.create([trees[i]], field);
+		visitor.create([tree], field);
 	}
 }
 

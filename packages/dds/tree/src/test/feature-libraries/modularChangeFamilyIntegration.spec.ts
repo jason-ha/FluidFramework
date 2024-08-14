@@ -3,8 +3,6 @@
  * Licensed under the MIT License.
  */
 
-import { strict as assert } from "assert";
-
 import {
 	type DeltaDetachedNodeId,
 	type DeltaFieldChanges,
@@ -49,6 +47,7 @@ import {
 	defaultRevisionMetadataFromChanges,
 	failCodecFamily,
 	mintRevisionTag,
+	moveWithin,
 	testChangeReceiver,
 } from "../utils.js";
 
@@ -59,7 +58,9 @@ import type {
 // eslint-disable-next-line import/no-internal-modules
 import { MarkMaker } from "./sequence-field/testEdits.js";
 // eslint-disable-next-line import/no-internal-modules
-import { Change, removeAliases } from "./modular-schema/modularChangesetUtil.js";
+import { assertEqual, Change, removeAliases } from "./modular-schema/modularChangesetUtil.js";
+// eslint-disable-next-line import/no-internal-modules
+import { newGenericChangeset } from "../../feature-libraries/modular-schema/genericFieldKindTypes.js";
 
 const fieldKinds: ReadonlyMap<FieldKindIdentifier, FieldKindWithEditor> = new Map([
 	[sequence.identifier, sequence],
@@ -109,14 +110,14 @@ describe("ModularChangeFamily integration", () => {
 				Change.field(
 					rootField,
 					genericFieldKind.identifier,
-					[],
+					newGenericChangeset(),
 					Change.nodeWithId(
 						0,
 						{ localId: brand(8) },
 						Change.field(
 							fieldB,
 							genericFieldKind.identifier,
-							[],
+							newGenericChangeset(),
 							Change.nodeWithId(
 								0,
 								{ revision: tag1, localId: brand(5) },
@@ -130,7 +131,7 @@ describe("ModularChangeFamily integration", () => {
 				),
 			);
 
-			assert.deepEqual(rebased, expected);
+			assertEqual(rebased, expected);
 		});
 
 		it("remove over cross-field move to edited field", () => {
@@ -164,7 +165,7 @@ describe("ModularChangeFamily integration", () => {
 				Change.field(
 					rootField,
 					genericFieldKind.identifier,
-					[],
+					newGenericChangeset(),
 					Change.nodeWithId(
 						0,
 						{ localId: brand(8) },
@@ -185,7 +186,7 @@ describe("ModularChangeFamily integration", () => {
 				),
 			);
 
-			assert.deepEqual(rebased, expected);
+			assertEqual(rebased, expected);
 		});
 
 		it("nested change over cross-field move", () => {
@@ -228,7 +229,7 @@ describe("ModularChangeFamily integration", () => {
 				),
 			);
 
-			assert.deepEqual(rebased, expected);
+			assertEqual(rebased, expected);
 		});
 
 		it("cross-field move over remove", () => {
@@ -257,7 +258,7 @@ describe("ModularChangeFamily integration", () => {
 			const expectedDelta = normalizeDelta(
 				intoDelta(makeAnonChange(expected), family.fieldKinds),
 			);
-			assert.deepEqual(rebasedDelta, expectedDelta);
+			assertEqual(rebasedDelta, expectedDelta);
 		});
 
 		it("move over cross-field move", () => {
@@ -271,7 +272,7 @@ describe("ModularChangeFamily integration", () => {
 				0,
 			);
 
-			editor.sequenceField({ parent: undefined, field: fieldA }).move(0, 2, 2);
+			moveWithin(editor, { parent: undefined, field: fieldA }, 0, 2, 2);
 			const [move1, move2] = getChanges();
 			const rebased = family.rebase(
 				makeAnonChange(move2),
@@ -289,7 +290,7 @@ describe("ModularChangeFamily integration", () => {
 				Change.field(fieldB, sequence.identifier, [MarkMaker.moveOut(1, brand(2))]),
 			);
 
-			assert.deepEqual(rebased, expected);
+			assertEqual(rebased, expected);
 		});
 
 		it("Nested moves both requiring a second pass", () => {
@@ -305,15 +306,10 @@ describe("ModularChangeFamily integration", () => {
 			editor.enterTransaction();
 
 			// Moves node2, which is a child of node1 to an earlier position in its field
-			editor
-				.sequenceField({
-					parent: node1Path,
-					field: fieldB,
-				})
-				.move(1, 1, 0);
+			moveWithin(editor, { parent: node1Path, field: fieldB }, 1, 1, 0);
 
 			// Moves node1 to an earlier position in the field
-			editor.sequenceField(fieldAPath).move(1, 1, 0);
+			moveWithin(editor, fieldAPath, 1, 1, 0);
 
 			// Modifies node2 so that both fieldA and fieldB have changes that need to be transferred
 			// from a move source to a destination during rebase.
@@ -379,7 +375,7 @@ describe("ModularChangeFamily integration", () => {
 				),
 			);
 
-			assert.deepEqual(rebased, expected);
+			assertEqual(rebased, expected);
 		});
 
 		it("over change which moves node upward", () => {
@@ -427,6 +423,66 @@ describe("ModularChangeFamily integration", () => {
 			assertDeltaEqual(rebasedDelta, expectedDelta);
 		});
 
+		// This test demonstrates that a field may need three rebasing passes.
+		it("over change which moves into moved subtree", () => {
+			const [changeReceiver, getChanges] = testChangeReceiver(family);
+			const editor = new DefaultEditBuilder(family, changeReceiver);
+			const nodePath1: UpPath = { parent: undefined, parentField: fieldA, parentIndex: 1 };
+
+			// The base changeset consists of the following two move edits.
+			// This edit moves node2 from field B into field C which is under node1 in field A.
+			editor.move(
+				{ parent: undefined, field: fieldB },
+				0,
+				1,
+				{ parent: nodePath1, field: fieldC },
+				0,
+			);
+
+			// This edit moves node1 in field A to the beginning of the field.
+			const fieldAPath = { parent: undefined, field: fieldA };
+			moveWithin(editor, fieldAPath, 1, 1, 0);
+
+			// The changeset to be rebased consists of the following two edits.
+			// This is an arbitrary edit to field A.
+			editor.sequenceField(fieldAPath).remove(2, 1);
+
+			// This is an edit which targets node2.
+			editor.sequenceField({ parent: undefined, field: fieldB }).remove(0, 1);
+
+			const [base1, base2, new1, new2] = getChanges();
+			const baseChangeset = tagChangeInline(
+				family.compose([makeAnonChange(base1), makeAnonChange(base2)]),
+				tag1,
+			);
+
+			const newChangeset = makeAnonChange(
+				family.compose([makeAnonChange(new1), makeAnonChange(new2)]),
+			);
+
+			const rebased = family.rebase(
+				newChangeset,
+				baseChangeset,
+				revisionMetadataSourceFromInfo([{ revision: tag1 }]),
+			);
+
+			const expected = Change.build(
+				{ family, maxId: 6 },
+				Change.field(
+					fieldA,
+					sequence.identifier,
+					[MarkMaker.skip(2), MarkMaker.tomb(tag1, brand(3)), MarkMaker.remove(1, brand(5))],
+					Change.nodeWithId(
+						0,
+						{ revision: tag1, localId: brand(2) },
+						Change.field(fieldC, sequence.identifier, [MarkMaker.remove(1, brand(6))]),
+					),
+				),
+			);
+
+			assertEqual(rebased, expected);
+		});
+
 		it("prunes its output", () => {
 			const [changeReceiver, getChanges] = testChangeReceiver(family);
 			const editor = new DefaultEditBuilder(family, changeReceiver);
@@ -444,7 +500,7 @@ describe("ModularChangeFamily integration", () => {
 				revisionMetadataSourceFromInfo([{ revision: baseTag }]),
 			);
 
-			assert.deepEqual(rebased, editB);
+			assertEqual(rebased, editB);
 		});
 	});
 
@@ -465,27 +521,16 @@ describe("ModularChangeFamily integration", () => {
 			const nodeAPath: UpPath = { parent: undefined, parentField: fieldA, parentIndex: 0 };
 
 			// Moves A to an adjacent cell to its right
-			editor.sequenceField({ parent: undefined, field: fieldA }).move(0, 1, 1);
+			const fieldAPath = { parent: undefined, field: fieldA };
+			moveWithin(editor, fieldAPath, 0, 1, 1);
 
 			// Moves B into A
-			editor.move(
-				{ parent: undefined, field: fieldA },
-				1,
-				1,
-				{ parent: nodeAPath, field: fieldB },
-				0,
-			);
+			editor.move(fieldAPath, 1, 1, { parent: nodeAPath, field: fieldB }, 0);
 
 			const nodeBPath: UpPath = { parent: nodeAPath, parentField: fieldB, parentIndex: 0 };
 
 			// Moves C into B
-			editor.move(
-				{ parent: undefined, field: fieldA },
-				1,
-				1,
-				{ parent: nodeBPath, field: fieldC },
-				0,
-			);
+			editor.move(fieldAPath, 1, 1, { parent: nodeBPath, field: fieldC }, 0);
 
 			const nodeCPath: UpPath = { parent: nodeBPath, parentField: fieldC, parentIndex: 0 };
 
@@ -690,36 +735,7 @@ describe("ModularChangeFamily integration", () => {
 			const expectedDelta = normalizeDelta(
 				intoDelta(makeAnonChange(expected), family.fieldKinds),
 			);
-			assert.deepEqual(actualDelta, expectedDelta);
-		});
-
-		it("prunes its output", () => {
-			const a = buildChangeset([
-				{
-					type: "field",
-					field: {
-						parent: undefined,
-						field: brand("foo"),
-					},
-					fieldKind: sequence.identifier,
-					change: brand([]),
-				},
-			]);
-
-			const b = buildChangeset([
-				{
-					type: "field",
-					field: {
-						parent: undefined,
-						field: brand("bar"),
-					},
-					fieldKind: sequence.identifier,
-					change: brand([]),
-				},
-			]);
-
-			const composed = family.compose([makeAnonChange(a), makeAnonChange(b)]);
-			assert.deepEqual(composed, ModularChangeFamily.emptyChange);
+			assertEqual(actualDelta, expectedDelta);
 		});
 	});
 
@@ -776,7 +792,7 @@ describe("ModularChangeFamily integration", () => {
 				),
 			);
 
-			assert.deepEqual(inverse, expected);
+			assertEqual(inverse, expected);
 		});
 
 		it("Nested moves both requiring a second pass", () => {
@@ -787,17 +803,21 @@ describe("ModularChangeFamily integration", () => {
 			editor.enterTransaction();
 
 			// Moves node1 to an earlier position in the field
-			editor.sequenceField(fieldAPath).move(1, 1, 0);
+			moveWithin(editor, fieldAPath, 1, 1, 0);
 			const node1Path = { parent: undefined, parentField: fieldA, parentIndex: 0 };
 			const node2Path = { parent: node1Path, parentField: fieldB, parentIndex: 0 };
 
 			// Moves node2, which is a child of node1 to an earlier position in its field
-			editor
-				.sequenceField({
+			moveWithin(
+				editor,
+				{
 					parent: node1Path,
 					field: fieldB,
-				})
-				.move(1, 1, 0);
+				},
+				1,
+				1,
+				0,
+			);
 
 			// Modifies node2 so that both fieldA and fieldB have changes that need to be transfered
 			// from a move source to a destination during invert.
@@ -859,7 +879,7 @@ describe("ModularChangeFamily integration", () => {
 				),
 			);
 
-			assert.deepEqual(inverse, expected);
+			assertEqual(inverse, expected);
 		});
 	});
 
@@ -915,7 +935,7 @@ describe("ModularChangeFamily integration", () => {
 				]),
 			};
 			const actual = intoDelta(makeAnonChange(change), family.fieldKinds);
-			assert.deepEqual(actual, expected);
+			assertEqual(actual, expected);
 		});
 	});
 });

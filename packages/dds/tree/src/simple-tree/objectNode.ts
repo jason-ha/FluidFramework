@@ -3,11 +3,11 @@
  * Licensed under the MIT License.
  */
 
+import { assert } from "@fluidframework/core-utils/internal";
 import { UsageError } from "@fluidframework/telemetry-utils/internal";
 
-import type { FieldKey, TreeNodeSchemaIdentifier } from "../core/index.js";
+import type { FieldKey } from "../core/index.js";
 import {
-	cursorForMapTreeNode,
 	FieldKinds,
 	type FlexAllowedTypes,
 	type FlexObjectNodeSchema,
@@ -22,36 +22,34 @@ import {
 } from "../feature-libraries/index.js";
 import {
 	type InsertableContent,
-	getProxyForField,
-	markContentType,
+	getTreeNodeForField,
 	prepareContentForHydration,
 } from "./proxies.js";
-import { getFlexNode } from "./proxyBinding.js";
+import { getOrCreateInnerNode } from "./proxyBinding.js";
 import {
-	NodeKind,
 	type ImplicitFieldSchema,
-	type TreeNodeSchemaClass,
-	type WithType,
-	type TreeNodeSchema,
 	getStoredKey,
 	getExplicitStoredKey,
 	type TreeFieldFromImplicitField,
 	type InsertableTreeFieldFromImplicitField,
 	type FieldSchema,
 	normalizeFieldSchema,
-	typeNameSymbol,
 	type ImplicitAllowedTypes,
 	FieldKind,
 } from "./schemaTypes.js";
-import { mapTreeFromNodeData } from "./toMapTree.js";
 import {
+	type TreeNodeSchema,
+	NodeKind,
+	type WithType,
+	typeNameSymbol,
 	type InternalTreeNode,
-	type MostDerivedData,
 	type TreeNode,
-	TreeNodeValid,
-} from "./types.js";
+} from "./core/index.js";
+import { mapTreeFromNodeData } from "./toMapTree.js";
 import { type RestrictiveReadonlyRecord, fail, type FlattenKeys } from "../util/index.js";
 import { getFlexSchema } from "./toFlexSchema.js";
+import type { ObjectNodeSchema, ObjectNodeSchemaInternalData } from "./objectNodeTypes.js";
+import { TreeNodeValid, type MostDerivedData } from "./treeNodeValid.js";
 
 /**
  * Helper used to produce types for object nodes.
@@ -128,7 +126,10 @@ export type InsertableObjectFromSchemaRecord<
  * Keys with symbols are currently never used, but allowed to make lookups on non-field things
  * (returning undefined) easier.
  */
-type SimpleKeyMap = ReadonlyMap<string | symbol, { storedKey: FieldKey; schema: FieldSchema }>;
+export type SimpleKeyMap = ReadonlyMap<
+	string | symbol,
+	{ storedKey: FieldKey; schema: FieldSchema }
+>;
 
 /**
  * Caches the mappings from view keys to stored keys for the provided object field schemas in {@link simpleKeyToFlexKeyCache}.
@@ -168,10 +169,10 @@ function createProxyHandler(
 			const fieldInfo = flexKeyMap.get(viewKey);
 
 			if (fieldInfo !== undefined) {
-				const flexNode = getFlexNode(proxy);
+				const flexNode = getOrCreateInnerNode(proxy);
 				const field = flexNode.tryGetField(fieldInfo.storedKey);
 				if (field !== undefined) {
-					return getProxyForField(field);
+					return getTreeNodeForField(field);
 				}
 
 				// Check if the user is trying to read an identifier field of an unhydrated node, but the identifier is not present.
@@ -196,14 +197,11 @@ function createProxyHandler(
 				return allowAdditionalProperties ? Reflect.set(target, viewKey, value, proxy) : false;
 			}
 
-			const flexNode = getFlexNode(proxy);
-			if (isMapTreeNode(flexNode)) {
-				throw new UsageError(
-					`An object cannot be mutated before being inserted into the tree`,
-				);
-			}
-
-			setField(flexNode.getBoxed(fieldInfo.storedKey), fieldInfo.schema, value);
+			setField(
+				getOrCreateInnerNode(proxy).getBoxed(fieldInfo.storedKey),
+				fieldInfo.schema,
+				value,
+			);
 			return true;
 		},
 		deleteProperty(target, viewKey): boolean {
@@ -237,10 +235,10 @@ function createProxyHandler(
 			// If a refactoring is done to associated flex tree data with the target not the proxy, this extra map could be removed,
 			// and the design would be more compatible with proxyless nodes.
 			const proxy = targetToProxy.get(target) ?? fail("missing proxy");
-			const field = getFlexNode(proxy).tryGetField(fieldInfo.storedKey);
+			const field = getOrCreateInnerNode(proxy).tryGetField(fieldInfo.storedKey);
 
 			const p: PropertyDescriptor = {
-				value: field === undefined ? undefined : getProxyForField(field),
+				value: field === undefined ? undefined : getTreeNodeForField(field),
 				writable: true,
 				// Report empty fields as own properties so they shadow inherited properties (even when empty) to match TypeScript typing.
 				// Make empty fields not enumerable so they get skipped when iterating over an object to better align with
@@ -260,22 +258,27 @@ export function setField(
 	simpleFieldSchema: FieldSchema,
 	value: InsertableContent | undefined,
 ): void {
+	const mapTree = mapTreeFromNodeData(
+		value,
+		simpleFieldSchema,
+		field.context?.nodeKeyManager,
+		getSchemaAndPolicy(field),
+	);
+
+	if (field.context !== undefined) {
+		prepareContentForHydration(mapTree, field.context.checkout.forest);
+	}
+
 	switch (field.schema.kind) {
-		case FieldKinds.required:
+		case FieldKinds.required: {
+			assert(mapTree !== undefined, "Cannot set a required field to undefined");
+			const typedField = field as FlexTreeRequiredField<FlexAllowedTypes>;
+			typedField.editor.set(mapTree);
+			break;
+		}
 		case FieldKinds.optional: {
-			const typedField = field as
-				| FlexTreeRequiredField<FlexAllowedTypes>
-				| FlexTreeOptionalField<FlexAllowedTypes>;
-
-			const mapTree = mapTreeFromNodeData(
-				value,
-				simpleFieldSchema.allowedTypes,
-				field.context.nodeKeyManager,
-				getSchemaAndPolicy(field),
-			);
-
-			prepareContentForHydration(mapTree, field.context.checkout.forest);
-			typedField.content = mapTree !== undefined ? cursorForMapTreeNode(mapTree) : undefined;
+			const typedField = field as FlexTreeOptionalField<FlexAllowedTypes>;
+			typedField.editor.set(mapTree, typedField.length === 0);
 			break;
 		}
 
@@ -304,7 +307,7 @@ export function objectSchema<
 	identifier: TName,
 	info: T,
 	implicitlyConstructable: ImplicitlyConstructable,
-): ObjectNodeSchema<TName, T, ImplicitlyConstructable> {
+): ObjectNodeSchema<TName, T, ImplicitlyConstructable> & ObjectNodeSchemaInternalData {
 	// Ensure no collisions between final set of view keys, and final set of stored keys (including those
 	// implicitly derived from view keys)
 	assertUniqueKeys(identifier, info);
@@ -320,6 +323,7 @@ export function objectSchema<
 		public static readonly fields: ReadonlyMap<string, FieldSchema> = new Map(
 			[...flexKeyMap].map(([key, value]) => [key as string, value.schema]),
 		);
+		public static readonly flexKeyMap: SimpleKeyMap = flexKeyMap;
 
 		public static override prepareInstance<T2>(
 			this: typeof TreeNodeValid<T2>,
@@ -358,10 +362,7 @@ export function objectSchema<
 		): MapTreeNode {
 			return getOrCreateMapTreeNode(
 				flexSchema,
-				mapTreeFromNodeData(
-					copyContent(flexSchema.name, input as object),
-					this as unknown as ImplicitAllowedTypes,
-				),
+				mapTreeFromNodeData(input as object, this as unknown as ImplicitAllowedTypes),
 			);
 		}
 
@@ -453,44 +454,4 @@ function assertUniqueKeys<
 		}
 		derivedStoredKeys.add(storedKey);
 	}
-}
-
-function copyContent<T extends object>(typeName: TreeNodeSchemaIdentifier, content: T): T {
-	const copy = { ...content };
-	markContentType(typeName, copy);
-	return copy;
-}
-
-/**
- * A schema for {@link TreeObjectNode}s.
- * @privateRemarks
- * This is a candidate for being promoted to the public package API.
- */
-export interface ObjectNodeSchema<
-	TName extends string = string,
-	T extends RestrictiveReadonlyRecord<string, ImplicitFieldSchema> = RestrictiveReadonlyRecord<
-		string,
-		ImplicitFieldSchema
-	>,
-	ImplicitlyConstructable extends boolean = boolean,
-> extends TreeNodeSchemaClass<
-		TName,
-		NodeKind.Object,
-		TreeObjectNode<T, TName>,
-		object & InsertableObjectFromSchemaRecord<T>,
-		ImplicitlyConstructable,
-		T
-	> {
-	readonly fields: ReadonlyMap<string, FieldSchema>;
-}
-
-export const ObjectNodeSchema = {
-	// instanceof-based narrowing support for Javascript and TypeScript 5.3 or newer.
-	[Symbol.hasInstance](value: TreeNodeSchema): value is ObjectNodeSchema {
-		return isObjectNodeSchema(value);
-	},
-} as const;
-
-export function isObjectNodeSchema(schema: TreeNodeSchema): schema is ObjectNodeSchema {
-	return schema.kind === NodeKind.Object;
 }
