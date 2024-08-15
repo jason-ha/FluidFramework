@@ -33,7 +33,6 @@ declare function createValueManager<T, Key extends string>(
 const { externalMap } = createIndependentMap(
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	{} as IEphemeralRuntime,
-	"name:test",
 	{
 		cursor: createValueManager({ x: 0, y: 0 }),
 		camera: () => ({

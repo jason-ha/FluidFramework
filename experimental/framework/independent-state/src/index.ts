@@ -7,6 +7,7 @@ export type { ClientId } from "./baseTypes.js";
 
 export type {
 	IndependentMap,
+	IndependentMapAddress,
 	IndependentMapEntries,
 	IndependentMapEntry,
 	IndependentMapMethods,

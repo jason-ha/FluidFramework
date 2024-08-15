@@ -15,7 +15,6 @@ import { type IEphemeralRuntime, Latest, type LatestValueClientData } from "../i
 const { externalMap } = createIndependentMap(
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	{} as IEphemeralRuntime,
-	"name:test",
 	{
 		cursor: Latest({ x: 0, y: 0 }),
 		camera: Latest({ x: 0, y: 0, z: 0 }),

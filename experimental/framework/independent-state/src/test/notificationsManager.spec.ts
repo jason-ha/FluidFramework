@@ -15,7 +15,6 @@ import { type ClientId, type IEphemeralRuntime, Notifications } from "../index.j
 const { externalMap } = createIndependentMap(
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	{} as IEphemeralRuntime,
-	"name:test",
 	{
 		notifications: Notifications<
 			{

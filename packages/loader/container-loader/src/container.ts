@@ -1204,17 +1204,15 @@ export class Container
 		return this.getPendingLocalStateCore({ notifyImminentClosure: false });
 	}
 
-	public acquireExtension<T, TContext extends unknown[]>(
+	/**
+	 * acquireExtension is defined or undefined to match loaded runtime.
+	 * So it starts as undefined.
+	 */
+	public acquireExtension?<T, TContext extends unknown[]>(
 		id: ContainerExtensionId,
 		factory: ContainerExtensionFactory<T, TContext>,
 		...context: TContext
-	): T {
-		const runtime = this.runtime as Partial<IRuntimeInternal>;
-		if (runtime.acquireExtension === undefined) {
-			throw new Error("Runtime does not support container extensions feature");
-		}
-		return runtime.acquireExtension(id, factory, ...context);
-	}
+	): T;
 
 	private async getPendingLocalStateCore(props: IGetPendingLocalStateProps): Promise<string> {
 		if (this.closed || this._disposed) {
@@ -2490,6 +2488,10 @@ export class Container
 			{ eventName: "InstantiateRuntime" },
 			async () => runtimeFactory.instantiateRuntime(context, existing),
 		);
+
+		const runtime = this._runtime as Partial<IRuntimeInternal>;
+		this.acquireExtension = runtime.acquireExtension?.bind(runtime);
+
 		this._lifecycleEvents.emit("runtimeInstantiated");
 
 		this._loadedCodeDetails = codeDetails;

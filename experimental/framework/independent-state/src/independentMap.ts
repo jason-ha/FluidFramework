@@ -122,7 +122,7 @@ function isDISMessage(
  */
 export type IEphemeralRuntime = Pick<
 	IContainerRuntime & IRuntimeInternal,
-	"clientId" | "getAudience" | "off" | "on" | "submitAddressedSignal"
+	"clientId" | "getAudience" | "off" | "on" | "submitSignal"
 >;
 
 /**
@@ -204,7 +204,6 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 
 	public constructor(
 		private readonly runtime: IEphemeralRuntime,
-		private readonly signalAddress: string,
 		initialContent: TSchema,
 	) {
 		this.runtime.getAudience().on("addMember", (clientId) => {
@@ -288,7 +287,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 				},
 			},
 		} satisfies DatastoreUpdateMessage["content"];
-		this.runtime.submitAddressedSignal(this.signalAddress, "DIS:DatastoreUpdate", content);
+		this.runtime.submitSignal("DIS:DatastoreUpdate", content);
 	}
 
 	public update<Key extends keyof TSchema & string>(
@@ -335,7 +334,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 	}
 
 	private broadcastAllKnownState(): void {
-		this.runtime.submitAddressedSignal(this.signalAddress, "DIS:DatastoreUpdate", {
+		this.runtime.submitSignal("DIS:DatastoreUpdate", {
 			sendTimestamp: Date.now(),
 			avgLatency: this.averageLatency,
 			isComplete: true,
@@ -437,10 +436,9 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
  */
 export function createIndependentMap<TSchema extends IndependentMapSchema>(
 	runtime: IEphemeralRuntime,
-	signalAddress: string,
 	initialContent: TSchema,
 ): { externalMap: IndependentMap<TSchema>; internalMap: IndependentMapInternal } {
-	const map = new IndependentMapImpl(runtime, signalAddress, initialContent);
+	const map = new IndependentMapImpl(runtime, initialContent);
 
 	// Capture the top level "public" map. Both the map implementation and
 	// the wrapper object reference this object.

@@ -19,7 +19,6 @@ import {
 const { externalMap } = createIndependentMap(
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	{} as IEphemeralRuntime,
-	"name:test",
 	{
 		fixedMap: LatestMap({ key1: { x: 0, y: 0 }, key2: { ref: "default", someId: 0 } }),
 	},

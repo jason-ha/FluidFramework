@@ -18,6 +18,9 @@ export type Events<E> = {
 // @beta
 export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;
 
+// @alpha
+export type IndependentMapAddress = `${string}:${string}`;
+
 // @beta
 export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
     /**

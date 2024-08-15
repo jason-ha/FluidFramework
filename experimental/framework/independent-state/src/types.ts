@@ -6,6 +6,24 @@
 import type { InternalTypes } from "./exposedInternalTypes.js";
 
 /**
+ * Unique address within a session.
+ *
+ * @remarks
+ * A string known to all clients working with a certain IndependentMap and unique
+ * among IndependentMaps. Recommend using specifying concatenation of: type of
+ * unique identifier, `:` (required), and unique identifier.
+ *
+ * @example Examples
+ * ```typescript
+ *   "guid:g0fl001d-1415-5000-c00l-g0fa54g0b1g1"
+ *   "address:object0/sub-object2:pointers"
+ * ```
+ *
+ * @alpha
+ */
+export type IndependentMapAddress = `${string}:${string}`;
+
+/**
  * Single entry in {@link IndependentMapSchema}.
  *
  * @beta
