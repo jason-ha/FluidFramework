@@ -12,15 +12,15 @@ import type {
 } from "@fluidframework/container-definitions";
 import { AttachState } from "@fluidframework/container-definitions";
 import type {
+	ContainerExtensionFactory,
+	ContainerExtensionId,
 	IBatchMessage,
 	IContainerContext,
+	IExtensionRuntime,
 	IGetPendingLocalStateProps,
 	ILoader,
 	IRuntime,
 	IRuntimeInternal,
-	IndependentMap,
-	IndependentMapAddress,
-	IndependentMapFactory,
 	IDeltaManager,
 } from "@fluidframework/container-definitions/internal";
 import { LoaderHeader } from "@fluidframework/container-definitions/internal";
@@ -40,7 +40,7 @@ import type {
 	IFluidHandleInternal,
 	IProvideFluidHandleContext,
 	ISignalEnvelope,
-	JsonSerializable,
+	JsonDeserialized,
 } from "@fluidframework/core-interfaces/internal";
 import {
 	assert,
@@ -161,7 +161,6 @@ import {
 	IGarbageCollector,
 	gcGenerationOptionName,
 } from "./gc/index.js";
-import { IndependentStateManager } from "./independentStateManager.js";
 import {
 	ContainerMessageType,
 	type ContainerRuntimeDocumentSchemaMessage,
@@ -511,6 +510,13 @@ export interface IContainerRuntimeOptions {
 	 * are engaged as they become available, without giving legacy clients any chance to fail predictably.
 	 */
 	readonly explicitSchemaControl?: boolean;
+
+	/**
+	 * When this property is enabled, runtime will use flexible address encoding
+	 * pattern to route messages to the correct channel or extensible location.
+	 * Minimum client runtime version is 2.2.
+	 */
+	readonly enablePathBasedAddressing?: boolean;
 }
 
 /**
@@ -785,6 +791,76 @@ let getSingleUseLegacyLogCallback = (logger: ITelemetryLoggerExt, type: string) 
 };
 
 /**
+ * Address parts extracted from an address using the pathed address format.
+ *
+ * @legacy
+ * @alpha
+ */
+export interface PathedAddressInfo {
+	/**
+	 * First address in path - extracted from {@link PathedAddressInfo.fullAddress}
+	 */
+	top: string;
+	/**
+	 * When true, it is considered and error if {@link PathedAddressInfo.top} is not found as a destination
+	 */
+	critical: boolean;
+	/**
+	 * Address after {@link PathedAddressInfo.top} - extracted from {@link PathedAddressInfo.fullAddress}
+	 */
+	subaddress: string;
+	/**
+	 * Full original address
+	 */
+	fullAddress: string;
+}
+
+/**
+ * Mostly undefined address parts extracted from an address not using pathed address format.
+ *
+ * @legacy
+ * @alpha
+ */
+export interface LegacyAddressInfo {
+	top: undefined;
+	critical: false;
+	subaddress: undefined;
+	fullAddress: string;
+}
+
+/**
+ * Union of the two address info types.
+ *
+ * @legacy
+ * @alpha
+ */
+export type NonContainerAddressInfo = PathedAddressInfo | LegacyAddressInfo;
+
+function enablePathBasedSignalAddressing(
+	submitSignalFn: (contents: ISignalEnvelope, targetClientId?: string) => void,
+): (contents: ISignalEnvelope, targetClientId?: string) => void {
+	return (envelope: ISignalEnvelope, targetClientId?: string) => {
+		if (envelope.address === undefined) {
+			envelope.address = "/runtime";
+		} else if (!envelope.address.startsWith("/")) {
+			envelope.address = `/channels/${envelope.address}`;
+		}
+		submitSignalFn(envelope, targetClientId);
+	};
+}
+
+function assertLegacySignalAddressing(
+	submitSignalFn: (contents: ISignalEnvelope, targetClientId?: string) => void,
+): (contents: ISignalEnvelope, targetClientId?: string) => void {
+	return (envelope: ISignalEnvelope, targetClientId?: string) => {
+		if (envelope.address?.startsWith("/")) {
+			throw new Error("Path based addressing is not enabled");
+		}
+		submitSignalFn(envelope, targetClientId);
+	};
+}
+
+/**
  * Represents the runtime of the container. Contains helper functions/state of the container.
  * It will define the store level mappings.
  * @legacy
@@ -833,7 +909,7 @@ export class ContainerRuntime
 			provideEntryPoint,
 			runtimeOptions = {} satisfies IContainerRuntimeOptions,
 			containerScope = {},
-			containerRuntimeCtor = ContainerRuntimeInternal,
+			containerRuntimeCtor = ContainerRuntime,
 		} = params;
 
 		// If taggedLogger exists, use it. Otherwise, wrap the vanilla logger:
@@ -865,6 +941,7 @@ export class ContainerRuntime
 			chunkSizeInBytes = defaultChunkSizeInBytes,
 			enableGroupedBatching = true,
 			explicitSchemaControl = false,
+			enablePathBasedAddressing = false,
 		} = runtimeOptions;
 
 		const registry = new FluidDataStoreRegistry(registryEntries);
@@ -1035,7 +1112,10 @@ export class ContainerRuntime
 
 		const featureGatesForTelemetry: Record<string, boolean | number | undefined> = {};
 
-		const runtime = new containerRuntimeCtor(
+		const runtimeClass = runtimeOptions.enablePathBasedAddressing
+			? mixinRuntimeInternal(containerRuntimeCtor)
+			: containerRuntimeCtor;
+		const runtime = new runtimeClass(
 			context,
 			registry,
 			metadata,
@@ -1054,6 +1134,7 @@ export class ContainerRuntime
 				enableRuntimeIdCompressor: enableRuntimeIdCompressor as "on" | "delayed",
 				enableGroupedBatching,
 				explicitSchemaControl,
+				enablePathBasedAddressing,
 			},
 			containerScope,
 			logger,
@@ -1479,7 +1560,11 @@ export class ContainerRuntime
 		this.submitFn = submitFn;
 		this.submitBatchFn = submitBatchFn;
 		this.submitSummaryFn = submitSummaryFn;
-		this.submitSignalFn = submitSignalFn;
+		this.submitSignalFn = (
+			runtimeOptions.enablePathBasedAddressing
+				? enablePathBasedSignalAddressing
+				: assertLegacySignalAddressing
+		)(submitSignalFn);
 
 		// TODO: After IContainerContext.options is removed, we'll just create a new blank object {} here.
 		// Values are generally expected to be set from the runtime side.
@@ -1709,8 +1794,12 @@ export class ContainerRuntime
 		// downstream stores to wrap the signal.
 		parentContext.submitSignal = (type: string, content: unknown, targetClientId?: string) => {
 			// Can the `content` argument type be IEnvelope?
-			// This does not call verifyNotClosed, but should it? Eventually use submitAddressedSignal?
+			// verifyNotClosed is called in FluidDataStoreContext, which is *the* expected caller.
 			const envelope1 = content as IEnvelope;
+			assert(
+				!envelope1.address.startsWith("/"),
+				"Addresses beginning with '/' are reserved for container use",
+			);
 			const envelope2 = this.createNewSignalEnvelope(
 				envelope1.address,
 				type,
@@ -2955,12 +3044,35 @@ export class ContainerRuntime
 		this._perfSignalData.signalTimestamp = 0;
 	}
 
-	protected handleSignal(
-		address: string,
+	protected routeNonContainerSignal(
+		address: NonContainerAddressInfo,
 		signalMessage: IInboundSignalMessage,
 		local: boolean,
-	): boolean {
-		return false;
+	): void {
+		// channelCollection signals are identified by no top address (use full address) or by the top address of "channels".
+		const isChannelAddress = address.top === undefined || address.top === "channels";
+		if (!isChannelAddress) {
+			if (address.critical) {
+				this.mc.logger.sendTelemetryEvent({
+					eventName: "SignalCriticalAddressNotFound",
+					...tagCodeArtifacts({
+						address: address.top,
+					}),
+				});
+			}
+			return;
+		}
+
+		// Due to a mismatch between different layers in terms of
+		// what is the interface of passing signals, we need to adjust
+		// the signal envelope before sending it to the datastores to be processed
+		const envelope: IEnvelope = {
+			address: address.subaddress ?? address.fullAddress,
+			contents: signalMessage.content,
+		};
+		signalMessage.content = envelope;
+
+		this.channelCollection.processSignal(signalMessage, local);
 	}
 
 	public processSignal(message: ISignalMessage, local: boolean) {
@@ -2999,27 +3111,32 @@ export class ContainerRuntime
 			}
 		}
 
-		const address = envelope.address;
-		if (address === undefined) {
+		const fullAddress = envelope.address;
+		if (fullAddress === undefined || fullAddress === "/runtime/") {
 			// No address indicates a container signal message.
 			this.emit("signal", transformed, local);
 			return;
 		}
 
-		if (this.handleSignal(address, transformed, local)) {
-			return;
-		}
-
-		// Due to a mismatch between different layers in terms of
-		// what is the interface of passing signals, we need to adjust
-		// the signal envelope before sending it to the datastores to be processed
-		const envelope2: IEnvelope = {
-			address,
-			contents: transformed.content,
+		const topAddressAndSubaddress = fullAddress.match(
+			/^\/(?<critical>!?)(?<top>[^/]*)\/(?<subaddress>.*)$/,
+		);
+		const { critical, top, subaddress } = topAddressAndSubaddress?.groups ?? {
+			critical: undefined,
+			top: undefined,
+			subaddress: undefined,
 		};
-		transformed.content = envelope2;
-
-		this.channelCollection.processSignal(transformed, local);
+		this.routeNonContainerSignal(
+			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+			{
+				top,
+				critical: critical !== undefined,
+				subaddress,
+				fullAddress,
+			} as NonContainerAddressInfo,
+			transformed,
+			local,
+		);
 	}
 
 	/**
@@ -3279,7 +3396,7 @@ export class ContainerRuntime
 	}
 
 	protected submitSignalImpl(
-		address: string | undefined,
+		address: `/${string}/${string}` | undefined,
 		type: string,
 		content: unknown,
 		targetClientId?: string,
@@ -4626,56 +4743,77 @@ export class ContainerRuntime
 	}
 }
 
+type ExtensionEntry = ContainerExtensionFactory<unknown, unknown[]> extends new (
+	...args: any[]
+) => infer T
+	? T
+	: never;
+
 /**
- * Represents the runtime of the container. Contains helper functions/state of the container.
- * It will define the store level mappings.
+ * Mixin class that adds IRuntimeInternal implementation to ContainerRuntime.
+ * Represents the full runtime of the container.
+ *
+ * @param Base - base class, inherits from ContainerRuntime
  */
-class ContainerRuntimeInternal extends ContainerRuntime implements IRuntimeInternal {
-	private independentStateManager: IndependentStateManager | undefined;
+const mixinRuntimeInternal = (Base: typeof ContainerRuntime) =>
+	class ContainerRuntimeInternal extends Base implements IRuntimeInternal {
+		private readonly extensions = new Map<ContainerExtensionId, ExtensionEntry>();
 
-	/**
-	 * Internal method for experimental Distributed Independent State support
-	 * @remarks Do not use outside of Fluid Framework
-	 * @privateRemarks This is optional to make it clear that is may be removed
-	 * at any time without warning.
-	 */
-	public acquireIndependentMap<
-		T extends IndependentMap<unknown>,
-		TSchema = T extends IndependentMap<infer _TSchema> ? _TSchema : never,
-	>(
-		address: IndependentMapAddress,
-		requestedContent: TSchema,
-		factory: IndependentMapFactory<T>,
-	): T {
-		if (this.independentStateManager === undefined) {
-			this.independentStateManager = new IndependentStateManager();
+		private static composeRuntime(
+			base: Omit<IExtensionRuntime, "clientId">,
+			clientIdFn: () => IExtensionRuntime["clientId"],
+		): IExtensionRuntime {
+			Object.defineProperty(base, "clientId", {
+				get: clientIdFn,
+			});
+			return base as IExtensionRuntime;
 		}
-		return this.independentStateManager.acquireIndependentMap(
-			this,
-			address,
-			requestedContent,
-			factory,
-		);
-	}
 
-	public submitAddressedSignal<T>(
-		address: string,
-		type: string,
-		content: JsonSerializable<T>,
-		targetClientId?: string,
-	): void {
-		this.submitSignalImpl(address, type, content, targetClientId);
-	}
-
-	protected override handleSignal(
-		address: string,
-		signalMessage: IInboundSignalMessage,
-		local: boolean,
-	): boolean {
-		if (address.startsWith("dis:")) {
-			this.independentStateManager?.processSignal(address, signalMessage, local);
-			return true;
+		public acquireExtension<T, TContext extends unknown[]>(
+			id: ContainerExtensionId,
+			factory: ContainerExtensionFactory<T, TContext>,
+			...context: TContext
+		): T {
+			let entry = this.extensions.get(id);
+			if (entry !== undefined) {
+				assert(entry instanceof factory, "Extension entry is not of the expected type");
+				entry.interface.onNewContext(...context);
+			} else {
+				const runtime = ContainerRuntimeInternal.composeRuntime(
+					{
+						submitAddressedSignal: (address, type, content, targetClientId) =>
+							this.submitSignalImpl(`/ext/${id}/${address}`, type, content, targetClientId),
+					},
+					() => this.clientId,
+				);
+				entry = new factory(runtime, ...context);
+				this.extensions.set(id, entry);
+			}
+			return entry.extension as T;
 		}
-		return false;
-	}
-}
+
+		protected override routeNonContainerSignal(
+			address: NonContainerAddressInfo,
+			signalMessage: IInboundSignalMessage,
+			local: boolean,
+		): void {
+			if (address.top === "ext") {
+				const idAndSubaddress = address.subaddress.match(
+					/^(?<id>[^/]*:[^/]*)\/(?<subaddress>.*)$/,
+				);
+				const { id, subaddress } = idAndSubaddress?.groups ?? {};
+				if (id !== undefined && subaddress !== undefined) {
+					const entry = this.extensions.get(id as ContainerExtensionId);
+					if (entry !== undefined) {
+						entry.interface.processSignal?.(
+							subaddress,
+							signalMessage as JsonDeserialized<typeof signalMessage>,
+							local,
+						);
+					}
+				}
+			} else {
+				super.routeNonContainerSignal(address, signalMessage, local);
+			}
+		}
+	};

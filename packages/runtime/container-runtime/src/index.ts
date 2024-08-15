@@ -22,6 +22,9 @@ export {
 	CompressionAlgorithms,
 	RuntimeHeaderData,
 	disabledCompressionConfig,
+	LegacyAddressInfo,
+	NonContainerAddressInfo,
+	PathedAddressInfo,
 } from "./containerRuntime.js";
 export {
 	ContainerMessageType,
@@ -125,4 +128,3 @@ export {
 	IFluidDataStoreContextEvents,
 } from "./dataStoreContext.js";
 export { DataStoreContexts } from "./dataStoreContexts.js";
-export type { IndependentMapEntry, IndependentMapFactory } from "./independentStateManager.js";
