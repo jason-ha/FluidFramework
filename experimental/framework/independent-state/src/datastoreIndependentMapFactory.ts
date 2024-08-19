@@ -20,15 +20,13 @@ import type {
 	NamedFluidDataStoreRegistryEntry,
 } from "@fluidframework/runtime-definitions/internal";
 
-import { acquireIndependentMapInternal } from "./experimentalAccess.js";
-// import { createIndependentMap } from "./independentMap.js";
+import { createIndependentMap } from "./independentMap.js";
 import type { IndependentMap, IndependentMapSchema } from "./types.js";
 
 class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 	implements IFluidDataStoreFactory
 {
 	public readonly type = "@fluidframework/independent-state-map-data-store";
-	public containerRuntime: IContainerRuntimeBase | undefined;
 
 	public constructor(
 		private readonly initialContent: TSchema,
@@ -44,7 +42,6 @@ class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 		context: IFluidDataStoreContext,
 		existing: boolean,
 	): Promise<FluidDataStoreRuntime> {
-		assert(this.containerRuntime !== undefined, "container runtime not set");
 		// Create a new runtime for our data store, as if via new FluidDataStoreRuntime,
 		// The runtime is what Fluid uses to route to our data store.
 		const runtime: FluidDataStoreRuntime = new this.runtimeClass(
@@ -58,11 +55,7 @@ class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
 			} /* provideEntryPoint */,
 		);
 
-		const instance = acquireIndependentMapInternal<TSchema>(
-			this.containerRuntime,
-			`datastore:${context.IFluidHandleContext.absolutePath}`,
-			this.initialContent,
-		);
+		const instance = createIndependentMap<TSchema>(runtime, this.initialContent).externalMap;
 
 		return runtime;
 	}
@@ -98,7 +91,6 @@ export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
 	public async initializingFirstTime(
 		containerRuntime: IContainerRuntimeBase,
 	): Promise<AliasResult> {
-		this.dataStoreFactory.containerRuntime = containerRuntime;
 		return containerRuntime
 			.createDataStore(this.dataStoreFactory.type)
 			.then(async (datastore) => datastore.trySetAlias(this.alias));

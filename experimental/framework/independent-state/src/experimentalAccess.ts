@@ -45,22 +45,3 @@ export function acquireIndependentMap<TSchema extends IndependentMapSchema>(
 	);
 	return acquireIndependentMapViaContainer(innerContainer, id, requestedContent);
 }
-
-/**
- * Acquire an IndependentMap from a Container Runtime
- *
- * @privateRemarks
- * Remove this utility for internal use - either state manager will exist under
- * a datastore or it was registered as extension with container runtime and no
- * need for this path trying to get from container using a datastore.
- *
- * @internal
- */
-export function acquireIndependentMapInternal<TSchema extends IndependentMapSchema>(
-	runtime: IContainerRuntimeBase,
-	id: IndependentMapAddress,
-	requestedContent: TSchema,
-): IndependentMap<TSchema> {
-	assert(isContainerExtensionStore(runtime), "Container does not support Independent State");
-	return acquireIndependentMapViaContainer(runtime, id, requestedContent);
-}

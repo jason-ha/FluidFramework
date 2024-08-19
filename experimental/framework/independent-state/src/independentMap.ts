@@ -6,6 +6,7 @@
 import type { IRuntimeInternal } from "@fluidframework/container-definitions/internal";
 import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
 import { assert } from "@fluidframework/core-utils/internal";
+import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions/internal";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions/internal";
 
 import type { ClientId } from "./baseTypes.js";
@@ -113,7 +114,7 @@ function isDISMessage(
 }
 
 /**
- * This interface is a subset of IFluidDataStoreRuntime that is needed by the IndependentMap.
+ * This interface is a subset of (IContainerRuntime & IRuntimeInternal) and (IFluidDataStoreRuntime) that is needed by the IndependentMap.
  *
  * @privateRemarks
  * Replace with non-DataStore based interface.
@@ -121,7 +122,7 @@ function isDISMessage(
  * @internal
  */
 export type IEphemeralRuntime = Pick<
-	IContainerRuntime & IRuntimeInternal,
+	(IContainerRuntime & IRuntimeInternal) | IFluidDataStoreRuntime,
 	"clientId" | "getAudience" | "off" | "on" | "submitSignal"
 >;
 
