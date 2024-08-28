@@ -42,6 +42,8 @@
 		"webpack:dev": "webpack --env development"
 	},
 	"dependencies": {
+		"@fluid-experimental/data-objects": "workspace:^",
+		"@fluid-experimental/independent-state": "workspace:~",
 		"@fluidframework/azure-client": "workspace:~",
 		"@fluidframework/map": "workspace:~",
 		"@fluidframework/routerlicious-driver": "workspace:~",
@@ -83,6 +85,7 @@
 		"process": "^0.11.10",
 		"puppeteer": "^22.2.0",
 		"rimraf": "^4.4.0",
+		"source-map-loader": "^5.0.0",
 		"start-server-and-test": "^2.0.3",
 		"tinylicious": "^5.0.0",
 		"ts-jest": "^29.1.1",

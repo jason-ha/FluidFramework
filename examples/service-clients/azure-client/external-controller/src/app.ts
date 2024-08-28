@@ -3,6 +3,12 @@
  * Licensed under the MIT License.
  */
 
+import { Signaler } from "@fluid-experimental/data-objects";
+import {
+	// acquireIndependentMap,
+	acquireIndependentMapViaDataObject,
+	ExperimentalPresenceManager,
+} from "@fluid-experimental/independent-state";
 import {
 	AzureClient,
 	AzureContainerServices,
@@ -66,7 +72,10 @@ const containerSchema = {
 		/* [id]: DataObject */
 		map1: SharedMap,
 		map2: SharedMap,
+		signaler: Signaler,
+		presence: ExperimentalPresenceManager,
 	},
+	// dynamicObjectTypes: [Signaler, ExperimentalPresenceManager],
 } satisfies ContainerSchema;
 type DiceRollerContainerSchema = typeof containerSchema;
 
@@ -166,6 +175,19 @@ async function start(): Promise<void> {
 	}
 
 	document.title = id;
+
+	// container.initialObjects.presence;
+	// const mapX = await container.create(SharedMap);
+	// console.log(`mapX attached: ${mapX.isAttached()}`);
+
+	const independentMap = await acquireIndependentMapViaDataObject(
+		container.initialObjects.presence,
+		"name:app-presence",
+		{},
+	);
+	if ("add" in independentMap) {
+		console.log("add exists - independentMap could be the real deal");
+	}
 
 	// Initialize Devtools
 	initializeDevtools({
