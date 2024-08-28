@@ -3,7 +3,6 @@
  * Licensed under the MIT License.
  */
 
-export { SchemaBuilder } from "./schemaBuilder.js";
 export {
 	cursorToJsonObject,
 	jsonArray,
@@ -11,9 +10,7 @@ export {
 	jsonRoot,
 	jsonSchema,
 	singleJsonCursor,
-	typedJsonCursor,
-	type TypedJsonCompatible,
-	type TypedJsonCompatibleObject,
+	fieldJsonCursor,
 } from "./json/index.js";
 
 export { leaf } from "./leafDomain.js";
