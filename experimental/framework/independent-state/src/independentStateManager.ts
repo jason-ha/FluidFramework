@@ -4,10 +4,8 @@
  */
 
 import type {
-	ContainerExtensionStore,
 	IContainerExtension,
 	IExtensionMessage,
-	IExtensionRuntime,
 } from "@fluidframework/container-definitions/internal";
 
 import {
@@ -22,7 +20,11 @@ interface IndependentMapEntry<TSchema extends IndependentMapSchema> {
 	internalMap: IndependentMapInternal;
 }
 
-interface IIndependentStateManager {
+/**
+ * @internal
+ */
+export interface IIndependentStateManager
+	extends Pick<Required<IContainerExtension<[]>>, "processSignal"> {
 	/**
 	 * Acquires an Independent Map from store or adds new one.
 	 *
@@ -37,19 +39,11 @@ interface IIndependentStateManager {
 }
 
 /**
- * Common Presence manager for a container
+ * Common Presence manager
  */
-class IndependentStateManager implements IIndependentStateManager, IContainerExtension<never> {
-	public readonly extension: IIndependentStateManager = this;
-	public readonly interface = this;
+class IndependentStateManager implements IIndependentStateManager {
+	public constructor(private readonly runtime: IEphemeralRuntime) {}
 
-	public constructor(private readonly runtime: IExtensionRuntime) {}
-
-	public onNewContext(): void {
-		// No-op
-	}
-
-	public static readonly extensionId = "dis:bb89f4c0-80fd-4f0c-8469-4f2848ee7f4a";
 	private readonly maps = new Map<string, IndependentMapEntry<IndependentMapSchema>>();
 
 	/**
@@ -67,11 +61,7 @@ class IndependentStateManager implements IIndependentStateManager, IContainerExt
 		if (entry) {
 			entry.internalMap.ensureContent(requestedContent);
 		} else {
-			// TODO create the appropriate ephemeral runtime (map address must be in submitSignal, etc.)
-			entry = createIndependentMap(
-				this.runtime as unknown as IEphemeralRuntime,
-				requestedContent,
-			);
+			entry = createIndependentMap(this.runtime, requestedContent);
 			this.maps.set(mapAddress, entry);
 		}
 		// Could avoid this cast if ensureContent were to return itself as expected type
@@ -95,21 +85,14 @@ class IndependentStateManager implements IIndependentStateManager, IContainerExt
 }
 
 /**
- * Acquire an IndependentMap from IndependentStateManager that is expected to
- * be part of the store (or will be added if not already there).
+ * Instantiates Presence State Manager
  *
- * @param store - the store containing or to contain the state manager
+ * @internal
  */
-export function acquireIndependentMapViaContainer<TSchema extends IndependentMapSchema>(
-	store: ContainerExtensionStore,
-	id: IndependentMapAddress,
-	requestedContent: TSchema,
-): IndependentMap<TSchema> {
-	const ism = store.acquireExtension(
-		IndependentStateManager.extensionId,
-		IndependentStateManager,
-	);
-	return ism.acquireIndependentMap(id, requestedContent);
+export function createPresenceStateManager(
+	runtime: IEphemeralRuntime,
+): IIndependentStateManager {
+	return new IndependentStateManager(runtime);
 }
 
 // ============================================================================
