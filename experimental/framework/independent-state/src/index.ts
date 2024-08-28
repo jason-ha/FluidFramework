@@ -21,6 +21,12 @@ export { type IEphemeralRuntime } from "./independentMap.js";
 export { acquireIndependentMap } from "./experimentalAccess.js";
 export { IndependentMapFactory } from "./datastoreIndependentMapFactory.js";
 
+export {
+	acquireIndependentMapViaDataObject,
+	type ExperimentalPresenceDO,
+	ExperimentalPresenceManager,
+} from "./datastorePresenceStateManagerFactory.js";
+
 export type { LatestValueControls } from "./latestValueControls.js";
 export {
 	LatestMap,

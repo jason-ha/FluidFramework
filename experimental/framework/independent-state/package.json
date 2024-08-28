@@ -75,7 +75,8 @@
 		"@fluidframework/datastore": "workspace:~",
 		"@fluidframework/datastore-definitions": "workspace:~",
 		"@fluidframework/fluid-static": "workspace:~",
-		"@fluidframework/runtime-definitions": "workspace:~"
+		"@fluidframework/runtime-definitions": "workspace:~",
+		"@fluidframework/shared-object-base": "workspace:^"
 	},
 	"devDependencies": {
 		"@arethetypeswrong/cli": "^0.15.2",
@@ -95,6 +96,15 @@
 	"fluidBuild": {
 		"tasks": {
 			"build:test": [
+				"build:esnext"
+			],
+			"check:exports:bundle-release-tags": [
+				"build:esnext"
+			],
+			"check:exports:cjs:index": [
+				"tsc"
+			],
+			"check:exports:esm:index": [
 				"build:esnext"
 			]
 		}

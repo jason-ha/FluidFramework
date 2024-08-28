@@ -7,6 +7,9 @@
 // @alpha
 export function acquireIndependentMap<TSchema extends IndependentMapSchema>(fluidContainer: IFluidContainer, id: IndependentMapAddress, requestedContent: TSchema): IndependentMap<TSchema>;
 
+// @alpha
+export function acquireIndependentMapViaDataObject<TSchema extends IndependentMapSchema>(fluidLoadable: ExperimentalPresenceDO, id: IndependentMapAddress, requestedContent: TSchema): Promise<IndependentMap<TSchema>>;
+
 // @beta
 export type ClientId = string;
 
@@ -14,6 +17,13 @@ export type ClientId = string;
 export type Events<E> = {
     [P in (string | symbol) & keyof E as IsEvent<E[P]> extends true ? P : never]: E[P];
 };
+
+// @alpha
+export class ExperimentalPresenceDO {
+}
+
+// @alpha
+export const ExperimentalPresenceManager: SharedObjectKind<IFluidLoadable & ExperimentalPresenceDO>;
 
 // @beta
 export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;
