@@ -76,6 +76,7 @@
 		"@fluidframework/datastore-definitions": "workspace:~",
 		"@fluidframework/fluid-static": "workspace:~",
 		"@fluidframework/runtime-definitions": "workspace:~",
+		"@fluidframework/runtime-utils": "workspace:^",
 		"@fluidframework/shared-object-base": "workspace:^"
 	},
 	"devDependencies": {

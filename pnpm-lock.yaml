@@ -7748,6 +7748,9 @@ importers:
       '@fluidframework/runtime-definitions':
         specifier: workspace:~
         version: link:../../../packages/runtime/runtime-definitions
+      '@fluidframework/runtime-utils':
+        specifier: workspace:^
+        version: link:../../../packages/runtime/runtime-utils
       '@fluidframework/shared-object-base':
         specifier: workspace:^
         version: link:../../../packages/dds/shared-object-base

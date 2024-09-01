@@ -9,80 +9,68 @@
 
 // imports
 import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
-import type { IFluidHandle } from "@fluidframework/core-interfaces";
-import { assert } from "@fluidframework/core-utils/internal";
-import { FluidDataStoreRuntime } from "@fluidframework/datastore/internal";
+import type { IFluidHandle, IFluidLoadable } from "@fluidframework/core-interfaces";
+import type { FluidDataStoreRuntime } from "@fluidframework/datastore/internal";
 import type {
 	AliasResult,
 	IContainerRuntimeBase,
-	IFluidDataStoreContext,
-	IFluidDataStoreFactory,
 	NamedFluidDataStoreRegistryEntry,
 } from "@fluidframework/runtime-definitions/internal";
+import type { SharedObjectKind } from "@fluidframework/shared-object-base";
 
+import { BasicDataStoreFactory, LoadableFluidObject } from "./datastoreSupport.js";
 import { createIndependentMap } from "./independentMap.js";
 import type { IndependentMap, IndependentMapSchema } from "./types.js";
 
-class IndependentMapDataStoreFactory<TSchema extends IndependentMapSchema>
-	implements IFluidDataStoreFactory
-{
-	public readonly type = "@fluidframework/independent-state-map-data-store";
-
-	public constructor(
-		private readonly initialContent: TSchema,
-		private readonly runtimeClass: typeof FluidDataStoreRuntime = FluidDataStoreRuntime,
-	) {}
-
-	/**
-	 * This is where we do data store setup.
-	 *
-	 * @param context - data store context used to load a data store runtime
-	 */
-	public async instantiateDataStore(
-		context: IFluidDataStoreContext,
-		existing: boolean,
-	): Promise<FluidDataStoreRuntime> {
-		// Create a new runtime for our data store, as if via new FluidDataStoreRuntime,
-		// The runtime is what Fluid uses to route to our data store.
-		const runtime: FluidDataStoreRuntime = new this.runtimeClass(
-			// calls new FluidDataStoreRuntime(...)
-			context,
-			/* ISharedObjectRegistry */ new Map(),
-			existing,
-			async () => {
-				assert(instance !== undefined, "entryPoint is undefined");
-				return instance;
-			} /* provideEntryPoint */,
-		);
-
-		const instance = createIndependentMap<TSchema>(runtime, this.initialContent).externalMap;
-
-		return runtime;
-	}
-
-	public get IFluidDataStoreFactory(): IFluidDataStoreFactory {
-		return this;
-	}
+/**
+ * Interface to provide independent map.
+ * @alpha
+ */
+export interface IProvideIndependentMap<TSchema extends IndependentMapSchema> {
+	readonly map: IndependentMap<TSchema>;
 }
+
+// Explicit return type is left out it is inexpressible except as abstract class
+// which will not satisfy BasicDataStoreFactory requirements.
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createIndependentMapFluidObjectClass<TSchema extends IndependentMapSchema>(
+	initialContent: TSchema,
+) {
+	return class IndependentMapFluidObject
+		extends LoadableFluidObject
+		implements IProvideIndependentMap<TSchema>
+	{
+		public readonly map: IndependentMap<TSchema>;
+
+		public constructor(runtime: FluidDataStoreRuntime) {
+			super(runtime);
+			this.map = createIndependentMap<TSchema>(runtime, initialContent).externalMap;
+		}
+	};
+}
+
+const factoryType = "@fluidframework/independent-state-map-data-store";
 
 /**
  * Convenience helper class to create ${@link IndependentMap} in own data store.
  *
  * @internal
  */
-export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
-	private readonly dataStoreFactory: IndependentMapDataStoreFactory<TSchema>;
+export class IndependentMapFactoryInternal<TSchema extends IndependentMapSchema> {
+	private readonly factory: BasicDataStoreFactory<typeof factoryType>;
 
 	public constructor(
 		initialContent: TSchema,
 		private readonly alias: string = "independent-state-map.0",
-		runtimeClass: typeof FluidDataStoreRuntime = FluidDataStoreRuntime,
 	) {
-		this.dataStoreFactory = new IndependentMapDataStoreFactory(initialContent, runtimeClass);
+		this.factory = new BasicDataStoreFactory(
+			factoryType,
+			createIndependentMapFluidObjectClass(initialContent),
+		);
 	}
 
 	public get registryEntry(): NamedFluidDataStoreRegistryEntry {
-		return [this.dataStoreFactory.type, Promise.resolve(this.dataStoreFactory)];
+		return [this.factory.type, Promise.resolve(this.factory)];
 	}
 
 	/**
@@ -92,7 +80,7 @@ export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
 		containerRuntime: IContainerRuntimeBase,
 	): Promise<AliasResult> {
 		return containerRuntime
-			.createDataStore(this.dataStoreFactory.type)
+			.createDataStore(this.factory.type)
 			.then(async (datastore) => datastore.trySetAlias(this.alias));
 	}
 
@@ -103,12 +91,25 @@ export class IndependentMapFactory<TSchema extends IndependentMapSchema> {
 	public async getMap(containerRuntime: IContainerRuntime): Promise<IndependentMap<TSchema>> {
 		const entryPointHandle = (await containerRuntime.getAliasedDataStoreEntryPoint(
 			this.alias,
-		)) as IFluidHandle<IndependentMap<TSchema>> | undefined;
+		)) as IFluidHandle<IProvideIndependentMap<TSchema>> | undefined;
 
 		if (entryPointHandle === undefined) {
 			throw new Error(`dataStore [${this.alias}] must exist`);
 		}
 
-		return entryPointHandle.get();
+		const obj = await entryPointHandle.get();
+		return obj.map;
 	}
+}
+
+/**
+ * Provides factory
+ * @alpha
+ */
+export function IndependentMapFactory<TSchema extends IndependentMapSchema>(
+	initialObjects: TSchema,
+): SharedObjectKind<IFluidLoadable & IProvideIndependentMap<TSchema>> {
+	return new IndependentMapFactoryInternal(initialObjects) as unknown as SharedObjectKind<
+		IFluidLoadable & IProvideIndependentMap<TSchema>
+	>;
 }

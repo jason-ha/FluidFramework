@@ -19,7 +19,10 @@ export type { Events, IsEvent, ISubscribable } from "./events.js";
 export { type IEphemeralRuntime } from "./independentMap.js";
 
 export { acquireIndependentMap } from "./experimentalAccess.js";
-export { IndependentMapFactory } from "./datastoreIndependentMapFactory.js";
+export {
+	IndependentMapFactory,
+	type IProvideIndependentMap,
+} from "./datastoreIndependentMapFactory.js";
 
 export {
 	acquireIndependentMapViaDataObject,
