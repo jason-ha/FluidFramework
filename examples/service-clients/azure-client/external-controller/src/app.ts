@@ -8,6 +8,7 @@ import {
 	// acquireIndependentMap,
 	acquireIndependentMapViaDataObject,
 	ExperimentalPresenceManager,
+	IndependentMapFactory,
 } from "@fluid-experimental/independent-state";
 import {
 	AzureClient,
@@ -74,6 +75,7 @@ const containerSchema = {
 		map2: SharedMap,
 		signaler: Signaler,
 		presence: ExperimentalPresenceManager,
+		independentMap: IndependentMapFactory({}),
 	},
 	// dynamicObjectTypes: [Signaler, ExperimentalPresenceManager],
 } satisfies ContainerSchema;
@@ -180,14 +182,21 @@ async function start(): Promise<void> {
 	// const mapX = await container.create(SharedMap);
 	// console.log(`mapX attached: ${mapX.isAttached()}`);
 
+	console.log(
+		`presence is expected instance type: ${ExperimentalPresenceManager.is(container.initialObjects.presence)}`,
+	);
 	const independentMap = await acquireIndependentMapViaDataObject(
 		container.initialObjects.presence,
 		"name:app-presence",
 		{},
 	);
-	if ("add" in independentMap) {
-		console.log("add exists - independentMap could be the real deal");
-	}
+	console.log(
+		`add ${"add" in independentMap ? "exists" : "does NOT exist"} in independentMap.`,
+	);
+
+	console.log(
+		`add ${"add" in container.initialObjects.independentMap.externalMap ? "exists" : "does NOT exist"} in container independentMap.`,
+	);
 
 	// Initialize Devtools
 	initializeDevtools({
