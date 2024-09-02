@@ -142,6 +142,9 @@
 		"broken": {
 			"TypeAlias_CompatibilityMode": {
 				"backCompat": false
+			},
+			"TypeAlias_InitialObjects": {
+				"forwardCompat": false
 			}
 		}
 	}
