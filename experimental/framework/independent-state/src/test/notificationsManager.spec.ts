@@ -3,12 +3,13 @@
  * Licensed under the MIT License.
  */
 
+import type { ConnectedClientId, IEphemeralRuntime } from "../index.js";
+import { Notifications } from "../index.js";
 import {
-	// Most clients should use acquireIndependentMap from @fluid-experimental/independent-state
+	// Most clients should use acquirePresence from @fluid-experimental/presence
 	// until the interface is stabilized.
-	createIndependentMap,
-} from "../independentMap.js";
-import { type ClientId, type IEphemeralRuntime, Notifications } from "../index.js";
+	createPresenceStates as createIndependentMap,
+} from "../presenceStates.js";
 
 // ---- test (example) code ----
 
@@ -22,7 +23,7 @@ const { externalMap } = createIndependentMap(
 			},
 			string
 		>({
-			msg: (clientId: ClientId, message: string) => {
+			msg: (clientId: ConnectedClientId, message: string) => {
 				console.log(`${clientId} says, "${message}"`);
 			},
 		}),
@@ -32,7 +33,7 @@ const { externalMap } = createIndependentMap(
 const map: typeof externalMap = externalMap;
 
 const NF = Notifications({
-	newId: (clientId: ClientId, id: number): void => {
+	newId: (clientId: ConnectedClientId, id: number): void => {
 		console.log(`${clientId} has a new id: ${id}`);
 	},
 });
@@ -44,13 +45,17 @@ map.add("my_events", NF);
 // 		},
 // 		"events"
 // 	>({
-// 		newId: (clientId: ClientId, id: number) => {
+// 		newId: (clientId: ConnectedClientId, id: number) => {
 // 			console.log(`${clientId} has a new id: ${id}`);
 // 		},
 // 	}),
 // );
 
-function logUnattended(name: string, clientId: ClientId, ...content: unknown[]): void {
+function logUnattended(
+	name: string,
+	clientId: ConnectedClientId,
+	...content: unknown[]
+): void {
 	console.log(`${clientId} sent unattended notification '${name}' with content`, ...content);
 }
 

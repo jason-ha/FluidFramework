@@ -5,13 +5,13 @@
 ```ts
 
 // @alpha
-export function acquireIndependentMap<TSchema extends IndependentMapSchema>(fluidContainer: IFluidContainer, id: IndependentMapAddress, requestedContent: TSchema): IndependentMap<TSchema>;
+export function acquirePresence(fluidContainer: IFluidContainer): IPresence;
 
 // @alpha
-export function acquireIndependentMapViaDataObject<TSchema extends IndependentMapSchema>(fluidLoadable: ExperimentalPresenceDO, id: IndependentMapAddress, requestedContent: TSchema): Promise<IndependentMap<TSchema>>;
+export function acquirePresenceViaDataObject(fluidLoadable: ExperimentalPresenceDO): Promise<IPresence>;
 
 // @beta
-export type ClientId = string;
+export type ConnectedClientId = string;
 
 // @beta
 export type Events<E> = {
@@ -26,44 +26,10 @@ export class ExperimentalPresenceDO {
 export const ExperimentalPresenceManager: SharedObjectKind<IFluidLoadable & ExperimentalPresenceDO>;
 
 // @beta
-export type IndependentMap<TSchema extends IndependentMapSchema> = IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;
-
-// @alpha
-export type IndependentMapAddress = `${string}:${string}`;
-
-// @beta
-export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
-    /**
-    * Registered `Value Manager`s
-    */
-    readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<TSchema[Key]>["manager"] extends InternalTypes.IndependentValue<infer TManager> ? TManager : never;
-};
-
-// @beta
-export type IndependentMapEntry<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<unknown>, TManager = unknown> = InternalTypes.ManagerFactory<TKey, TValue, TManager>;
-
-// @beta
-export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
-    add<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<any>, TManager>(key: TKey, manager: InternalTypes.ManagerFactory<TKey, TValue, TManager>): asserts this is IndependentMap<TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>>;
-}
-
-// @beta
-export interface IndependentMapSchema {
-    // (undocumented)
-    [key: string]: IndependentMapEntry<typeof key, InternalTypes.ValueDirectoryOrState<any>>;
-}
-
-// @beta
 export namespace InternalTypes {
-    // (undocumented)
-    export class IndependentDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
-    }
-    export type IndependentValue<T> = T & IndependentValueBrand<T>;
-    export class IndependentValueBrand<T> {
-    }
-    export type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager> = (key: TKey, datastoreHandle: IndependentDatastoreHandle<TKey, TValue>) => {
+    export type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager> = (key: TKey, datastoreHandle: StateDatastoreHandle<TKey, TValue>) => {
         value: TValue;
-        manager: IndependentValue<TManager>;
+        manager: StateValue<TManager>;
     };
     // (undocumented)
     export interface NotificationType {
@@ -71,6 +37,12 @@ export namespace InternalTypes {
         args: (JsonSerializable<unknown> & JsonDeserialized<unknown>)[];
         // (undocumented)
         name: string;
+    }
+    // (undocumented)
+    export class StateDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
+    }
+    export type StateValue<T> = T & StateValueBrand<T>;
+    export class StateValueBrand<T> {
     }
     // (undocumented)
     export interface ValueDirectory<T> {
@@ -115,6 +87,25 @@ export namespace InternalUtilityTypes {
     };
 }
 
+// @alpha (undocumented)
+export interface IPresence {
+    // (undocumented)
+    getAttendee(clientId: ConnectedClientId): ISessionClient;
+    // (undocumented)
+    getAttendees(): ReadonlyMap<ConnectedClientId, ISessionClient>;
+    // (undocumented)
+    getMyself(): ISessionClient;
+    getNotifications<NotificationsSchema extends {
+        [key: string]: InternalTypes.ManagerFactory<typeof key, InternalTypes.ValueRequiredState<InternalTypes.NotificationType>, NotificationsManager<any>>;
+    }>(notifcationsId: PresenceWorkspaceAddress, requestedContent: NotificationsSchema): PresenceStates<NotificationsSchema, NotificationsManager<any>>;
+    getStates<StatesSchema extends PresenceStatesSchema>(workspaceAddress: PresenceWorkspaceAddress, requestedContent: StatesSchema): PresenceStates<StatesSchema>;
+}
+
+// @alpha (undocumented)
+export interface ISessionClient {
+    currentClientId(): ConnectedClientId;
+}
+
 // @beta
 export type IsEvent<Event> = Event extends (...args: any[]) => any ? true : false;
 
@@ -134,7 +125,7 @@ export function LatestMap<T extends object, RegistrationKey extends string, Keys
 // @beta
 export interface LatestMapItemRemovedClientData<K extends string | number> {
     // (undocumented)
-    clientId: ClientId;
+    clientId: ConnectedClientId;
     // (undocumented)
     key: K;
     // (undocumented)
@@ -148,7 +139,7 @@ export interface LatestMapItemValueClientData<T, K extends string | number> exte
 }
 
 // @beta
-export interface LatestMapValueClientData<SpecificClientId extends ClientId, T, Keys extends string | number> {
+export interface LatestMapValueClientData<SpecificClientId extends ConnectedClientId, T, Keys extends string | number> {
     clientId: SpecificClientId;
     // (undocumented)
     items: ReadonlyMap<Keys, LatestValueData<T>>;
@@ -156,9 +147,9 @@ export interface LatestMapValueClientData<SpecificClientId extends ClientId, T, 
 
 // @beta
 export interface LatestMapValueManager<T, Keys extends string | number = string | number> {
-    clients(): ClientId[];
-    clientValue<SpecificClientId extends ClientId>(clientId: SpecificClientId): LatestMapValueClientData<SpecificClientId, T, Keys>;
-    clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>>;
+    clients(): ConnectedClientId[];
+    clientValue<SpecificClientId extends ConnectedClientId>(clientId: SpecificClientId): LatestMapValueClientData<SpecificClientId, T, Keys>;
+    clientValues(): IterableIterator<LatestMapValueClientData<ConnectedClientId, T, Keys>>;
     readonly controls: LatestValueControls;
     readonly events: ISubscribable<LatestMapValueManagerEvents<T, Keys>>;
     readonly local: ValueMap<Keys, T>;
@@ -171,13 +162,13 @@ export interface LatestMapValueManagerEvents<T, K extends string | number> {
     // @eventProperty
     itemUpdated: (updatedItem: LatestMapItemValueClientData<T, K>) => void;
     // @eventProperty
-    updated: (updates: LatestMapValueClientData<ClientId, T, K>) => void;
+    updated: (updates: LatestMapValueClientData<ConnectedClientId, T, K>) => void;
 }
 
 // @beta
 export interface LatestValueClientData<T> extends LatestValueData<T> {
     // (undocumented)
-    clientId: ClientId;
+    clientId: ConnectedClientId;
 }
 
 // @beta
@@ -196,8 +187,8 @@ export interface LatestValueData<T> {
 
 // @beta
 export interface LatestValueManager<T> {
-    clients(): ClientId[];
-    clientValue(clientId: ClientId): LatestValueData<T>;
+    clients(): ConnectedClientId[];
+    clientValue(clientId: ConnectedClientId): LatestValueData<T>;
     clientValues(): IterableIterator<LatestValueClientData<T>>;
     readonly controls: LatestValueControls;
     readonly events: ISubscribable<LatestValueManagerEvents<T>>;
@@ -230,7 +221,7 @@ export interface MapValueState<T> {
 // @beta
 export interface NotificationEmitter<E extends InternalUtilityTypes.NotificationEvents<E>> {
     broadcast<K extends string & keyof InternalUtilityTypes.NotificationEvents<E>>(notificationName: K, ...args: Parameters<E[K]>): void;
-    unicast<K extends string & keyof InternalUtilityTypes.NotificationEvents<E>>(notificationName: K, targetClientId: ClientId, ...args: Parameters<E[K]>): void;
+    unicast<K extends string & keyof InternalUtilityTypes.NotificationEvents<E>>(notificationName: K, targetClientId: ConnectedClientId, ...args: Parameters<E[K]>): void;
 }
 
 // @beta
@@ -246,18 +237,46 @@ export interface NotificationsManager<T extends InternalUtilityTypes.Notificatio
 // @beta (undocumented)
 export interface NotificationsManagerEvents {
     // @eventProperty
-    unattendedNotification: (name: string, sender: ClientId, ...content: unknown[]) => void;
+    unattendedNotification: (name: string, sender: ConnectedClientId, ...content: unknown[]) => void;
 }
 
 // @beta
 export interface NotificationSubscribable<E extends InternalUtilityTypes.NotificationEvents<E>> {
-    on<K extends keyof InternalUtilityTypes.NotificationEvents<E>>(notificationName: K, listener: (sender: ClientId, ...args: InternalUtilityTypes.JsonDeserializedParameters<E[K]>) => void): () => void;
+    on<K extends keyof InternalUtilityTypes.NotificationEvents<E>>(notificationName: K, listener: (sender: ConnectedClientId, ...args: InternalUtilityTypes.JsonDeserializedParameters<E[K]>) => void): () => void;
 }
 
 // @beta
 export type NotificationSubscriptions<E extends InternalUtilityTypes.NotificationEvents<E>> = {
-    [K in string & keyof InternalUtilityTypes.NotificationEvents<E>]: (sender: ClientId, ...args: InternalUtilityTypes.JsonSerializableParameters<E[K]>) => void;
+    [K in string & keyof InternalUtilityTypes.NotificationEvents<E>]: (sender: ConnectedClientId, ...args: InternalUtilityTypes.JsonSerializableParameters<E[K]>) => void;
 };
+
+// @beta
+export type PresenceStates<TSchema extends PresenceStatesSchema, TManagerRestrictions = unknown> = PresenceStatesEntries<TSchema, TManagerRestrictions> & PresenceStatesMethods<TSchema, TManagerRestrictions>;
+
+// @beta
+export type PresenceStatesEntries<TSchema extends PresenceStatesSchema, TManagerRestrictions> = {
+    /**
+    * Registered `Value Manager`s
+    */
+    readonly [Key in Exclude<keyof TSchema, keyof PresenceStatesMethods<TSchema, TManagerRestrictions>>]: ReturnType<TSchema[Key]>["manager"] extends InternalTypes.StateValue<infer TManager> ? TManager : never;
+};
+
+// @beta
+export type PresenceStatesEntry<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<unknown>, TManager = unknown> = InternalTypes.ManagerFactory<TKey, TValue, TManager>;
+
+// @beta
+export interface PresenceStatesMethods<TSchema extends PresenceStatesSchema, TManagerRestrictions> {
+    add<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<any>, TManager extends TManagerRestrictions>(key: TKey, manager: InternalTypes.ManagerFactory<TKey, TValue, TManager>): asserts this is PresenceStates<TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>>;
+}
+
+// @beta
+export interface PresenceStatesSchema {
+    // (undocumented)
+    [key: string]: PresenceStatesEntry<typeof key, InternalTypes.ValueDirectoryOrState<any>>;
+}
+
+// @alpha
+export type PresenceWorkspaceAddress = `${string}:${string}`;
 
 // @beta
 export interface ValueMap<K extends string | number, V> {

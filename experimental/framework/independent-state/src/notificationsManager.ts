@@ -3,14 +3,14 @@
  * Licensed under the MIT License.
  */
 
-import type { ClientId } from "./baseTypes.js";
+import type { ConnectedClientId } from "./baseTypes.js";
 import type { ISubscribable } from "./events.js";
 import { createEmitter } from "./events.js";
 import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
-import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
-import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
+import { datastoreFromHandle, type StateDatastore } from "./stateDatastore.js";
+import { brandIVM } from "./valueManager.js";
 
 /**
  * @beta
@@ -21,7 +21,11 @@ export interface NotificationsManagerEvents {
 	 *
 	 * @eventProperty
 	 */
-	unattendedNotification: (name: string, sender: ClientId, ...content: unknown[]) => void;
+	unattendedNotification: (
+		name: string,
+		sender: ConnectedClientId,
+		...content: unknown[]
+	) => void;
 }
 
 /**
@@ -43,7 +47,7 @@ export interface NotificationSubscribable<
 	on<K extends keyof InternalUtilityTypes.NotificationEvents<E>>(
 		notificationName: K,
 		listener: (
-			sender: ClientId,
+			sender: ConnectedClientId,
 			...args: InternalUtilityTypes.JsonDeserializedParameters<E[K]>
 		) => void,
 	): () => void;
@@ -56,7 +60,7 @@ export interface NotificationSubscribable<
  */
 export type NotificationSubscriptions<E extends InternalUtilityTypes.NotificationEvents<E>> = {
 	[K in string & keyof InternalUtilityTypes.NotificationEvents<E>]: (
-		sender: ClientId,
+		sender: ConnectedClientId,
 		...args: InternalUtilityTypes.JsonSerializableParameters<E[K]>
 	) => void;
 };
@@ -85,7 +89,7 @@ export interface NotificationEmitter<E extends InternalUtilityTypes.Notification
 	 */
 	unicast<K extends string & keyof InternalUtilityTypes.NotificationEvents<E>>(
 		notificationName: K,
-		targetClientId: ClientId,
+		targetClientId: ConnectedClientId,
 		...args: Parameters<E[K]>
 	): void;
 }
@@ -94,7 +98,7 @@ export interface NotificationEmitter<E extends InternalUtilityTypes.Notification
  * Value manager that provides notifications from this client to others and subscription
  * to their notifications.
  *
- * @remarks Create using {@link Latest} registered to {@link IndependentMap}.
+ * @remarks Create using {@link Latest} registered to {@link PresenceStates}.
  *
  * @beta
  */
@@ -153,7 +157,7 @@ class NotificationsManagerImpl<
 
 	public constructor(
 		private readonly key: Key,
-		private readonly datastore: IndependentDatastore<
+		private readonly datastore: StateDatastore<
 			Key,
 			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
 		>,
@@ -197,7 +201,7 @@ export function Notifications<
 	};
 	return (
 		key: Key,
-		datastoreHandle: InternalTypes.IndependentDatastoreHandle<
+		datastoreHandle: InternalTypes.StateDatastoreHandle<
 			Key,
 			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
 		>,

@@ -5,7 +5,7 @@
 
 import type { JsonDeserialized } from "@fluidframework/core-interfaces/internal";
 
-import type { ClientId } from "./baseTypes.js";
+import type { ConnectedClientId } from "./baseTypes.js";
 import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
 
 /**
@@ -41,5 +41,5 @@ export interface LatestValueData<T> {
  * @beta
  */
 export interface LatestValueClientData<T> extends LatestValueData<T> {
-	clientId: ClientId;
+	clientId: ConnectedClientId;
 }

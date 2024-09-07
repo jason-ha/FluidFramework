@@ -1,13 +1,10 @@
 /*!
  * Copyright (c) Microsoft Corporation and contributors. All rights reserved.
  * Licensed under the MIT License.
- */
-
-/**
+ *
  * Hacky support for internal datastore based usages.
  */
 
-// imports
 // import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
 import type { IFluidLoadable } from "@fluidframework/core-interfaces";
 import type { FluidDataStoreRuntime } from "@fluidframework/datastore/internal";
@@ -19,49 +16,46 @@ import type { FluidDataStoreRuntime } from "@fluidframework/datastore/internal";
 import type { SharedObjectKind } from "@fluidframework/shared-object-base";
 
 import { BasicDataStoreFactory, LoadableFluidObject } from "./datastoreSupport.js";
-import {
-	createPresenceStateManager,
-	type IIndependentStateManager,
-} from "./independentStateManager.js";
-import type { IndependentMap, IndependentMapAddress, IndependentMapSchema } from "./types.js";
+import type { IPresence } from "./presence.js";
+import { createPresenceManager } from "./presenceManager.js";
 
 /**
- * Simple FluidObject holding Presence State Manager.
+ * Simple FluidObject holding Presence Manager.
  */
-class PresenceSateManagerDataObject extends LoadableFluidObject {
-	public readonly psm: IIndependentStateManager;
+class PresenceManagerDataObject extends LoadableFluidObject {
+	public readonly psm: IPresence;
 
 	public constructor(runtime: FluidDataStoreRuntime) {
 		super(runtime);
 		// TODO: investigate if ContainerExtensionStore (path-based address routing for
 		// Signals) is readily detectable here and use that presence manager directly.
-		this.psm = createPresenceStateManager(runtime);
+		this.psm = createPresenceManager(runtime);
 	}
 }
 
 /**
- * Factory class to create {@link IIndependentStateManager} in own data store.
+ * Factory class to create {@link IPresence} in own data store.
  */
-class PresenceStateManagerFactory {
+class PresenceManagerFactory {
 	public is(value: IFluidLoadable | ExperimentalPresenceDO): value is ExperimentalPresenceDO {
-		return value instanceof PresenceSateManagerDataObject;
+		return value instanceof PresenceManagerDataObject;
 	}
 
 	public readonly factory = new BasicDataStoreFactory(
-		"@fluidframework/presence-state-data-store",
-		PresenceSateManagerDataObject,
+		"@fluid-experimental/presence",
+		PresenceManagerDataObject,
 	);
 
 	// #region Encapsulated model support
 
-	// private readonly alias: string = "system:presence-state-manager";
+	// private readonly alias: string = "system:presence-manager";
 
 	// public get registryEntry(): NamedFluidDataStoreRegistryEntry {
 	// 	return [this.factory.type, Promise.resolve(this.factory)];
 	// }
 
 	// /**
-	//  * Creates exclusive data store for {@link IIndependentStateManager} to work in.
+	//  * Creates exclusive data store for {@link IPresenceManager} to work in.
 	//  */
 	// public async initializingFirstTime(
 	// 	containerRuntime: IContainerRuntimeBase,
@@ -72,15 +66,15 @@ class PresenceStateManagerFactory {
 	// }
 
 	// /**
-	//  * Provides {@link IIndependentStateManager} once factory has been registered and
+	//  * Provides {@link IPresence} once factory has been registered and
 	//  * instantiation is complete.
 	//  */
-	// public async getStateManager(
+	// public async getPresenceManager(
 	// 	containerRuntime: IContainerRuntime,
-	// ): Promise<IIndependentStateManager> {
+	// ): Promise<IPresence> {
 	// 	const entryPointHandle = (await containerRuntime.getAliasedDataStoreEntryPoint(
 	// 		this.alias,
-	// 	)) as IFluidHandle<IIndependentStateManager> | undefined;
+	// 	)) as IFluidHandle<IPresence> | undefined;
 
 	// 	if (entryPointHandle === undefined) {
 	// 		throw new Error(`dataStore [${this.alias}] must exist`);
@@ -96,7 +90,7 @@ class PresenceStateManagerFactory {
  * Brand for Experimental Presence Data Object.
  *
  * @remarks
- * See {@link acquireIndependentMapViaDataObject} for example usage.
+ * See {@link acquirePresenceViaDataObject} for example usage.
  *
  * @alpha
  */
@@ -105,18 +99,18 @@ export declare class ExperimentalPresenceDO {
 }
 
 /**
- * DataStore based Presence State Manager that is used as fallback for preferred Container
+ * DataStore based Presence Manager that is used as fallback for preferred Container
  * Extension based version requires registration. Export SharedObjectKind for registration.
  *
  * @alpha
  */
 export const ExperimentalPresenceManager =
-	new PresenceStateManagerFactory() as unknown as SharedObjectKind<
+	new PresenceManagerFactory() as unknown as SharedObjectKind<
 		IFluidLoadable & ExperimentalPresenceDO
 	>;
 
 /**
- * Acquire an IndependentMap from a DataStore based Presence State Manager
+ * Acquire IPresence from a DataStore based Presence Manager
  *
  * @example
  * ```typescript
@@ -128,22 +122,18 @@ export const ExperimentalPresenceManager =
  * ```
  * then
  * ```typescript
- * const presenceWorkspace = acquireIndependentMapViaDataObject(
+ * const presence = acquirePresenceViaDataObject(
  * 	container.initialObjects.experimentalPresence,
- * 	"name:my-package/presence-workspace",
- * 	{ ...schema }
  * 	);
  * ```
  *
  * @alpha
  */
-export async function acquireIndependentMapViaDataObject<TSchema extends IndependentMapSchema>(
+export async function acquirePresenceViaDataObject(
 	fluidLoadable: ExperimentalPresenceDO,
-	id: IndependentMapAddress,
-	requestedContent: TSchema,
-): Promise<IndependentMap<TSchema>> {
-	if (fluidLoadable instanceof PresenceSateManagerDataObject) {
-		return fluidLoadable.psm.acquireIndependentMap(id, requestedContent);
+): Promise<IPresence> {
+	if (fluidLoadable instanceof PresenceManagerDataObject) {
+		return fluidLoadable.psm;
 	}
 
 	throw new Error("Incompatible loadable; make sure to use ExperimentalPresenceManager");

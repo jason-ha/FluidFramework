@@ -8,24 +8,24 @@ import type {
 	JsonSerializable,
 } from "@fluidframework/core-interfaces/internal";
 
+import type { IEphemeralRuntime, InternalTypes } from "../index.js";
 import {
-	// Most clients should use acquireIndependentMap from @fluid-experimental/independent-state
+	// Most clients should use acquirePresence from @fluid-experimental/presence
 	// until the interface is stabilized.
-	createIndependentMap,
-} from "../independentMap.js";
-import { type IEphemeralRuntime, type InternalTypes } from "../index.js";
+	createPresenceStates as createIndependentMap,
+} from "../presenceStates.js";
 
 declare function createValueManager<T, Key extends string>(
 	initial: JsonSerializable<T> & JsonDeserialized<T>,
 ): (
 	key: Key,
-	datastoreHandle: InternalTypes.IndependentDatastoreHandle<
+	datastoreHandle: InternalTypes.StateDatastoreHandle<
 		Key,
 		InternalTypes.ValueRequiredState<T>
 	>,
 ) => {
 	value: InternalTypes.ValueRequiredState<T>;
-	manager: InternalTypes.IndependentValue<JsonDeserialized<T>>;
+	manager: InternalTypes.StateValue<JsonDeserialized<T>>;
 };
 
 // ---- test (example) code ----
@@ -38,7 +38,7 @@ const { externalMap } = createIndependentMap(
 		camera: () => ({
 			value: { rev: 0, timestamp: Date.now(), value: { x: 0, y: 0, z: 0 } },
 			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			manager: {} as InternalTypes.IndependentValue<{ x: number; y: number; z: number }>,
+			manager: {} as InternalTypes.StateValue<{ x: number; y: number; z: number }>,
 		}),
 	},
 );

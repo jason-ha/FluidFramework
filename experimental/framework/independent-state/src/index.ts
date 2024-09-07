@@ -3,28 +3,31 @@
  * Licensed under the MIT License.
  */
 
-export type { ClientId } from "./baseTypes.js";
-
-export type {
-	IndependentMap,
-	IndependentMapAddress,
-	IndependentMapEntries,
-	IndependentMapEntry,
-	IndependentMapMethods,
-	IndependentMapSchema,
-} from "./types.js";
+export type { ConnectedClientId } from "./baseTypes.js";
 
 export type { Events, IsEvent, ISubscribable } from "./events.js";
 
-export { type IEphemeralRuntime } from "./independentMap.js";
+export type {
+	PresenceStates,
+	PresenceWorkspaceAddress,
+	PresenceStatesEntries,
+	PresenceStatesEntry,
+	PresenceStatesMethods,
+	PresenceStatesSchema,
+} from "./types.js";
 
-export { acquireIndependentMap } from "./experimentalAccess.js";
+export type { IPresence, ISessionClient } from "./presence.js";
+
+// Consider not exporting this internal type.
+export { type IEphemeralRuntime } from "./presenceManager.js";
+
+export { acquirePresence } from "./experimentalAccess.js";
 
 export {
-	acquireIndependentMapViaDataObject,
+	acquirePresenceViaDataObject,
 	type ExperimentalPresenceDO,
 	ExperimentalPresenceManager,
-} from "./datastorePresenceStateManagerFactory.js";
+} from "./datastorePresenceManagerFactory.js";
 
 export type { LatestValueControls } from "./latestValueControls.js";
 export {

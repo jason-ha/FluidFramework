@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import type { ClientId } from "./baseTypes.js";
+import type { ConnectedClientId } from "./baseTypes.js";
 import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { ClientRecord } from "./internalTypes.js";
 
@@ -14,9 +14,9 @@ import type { ClientRecord } from "./internalTypes.js";
 /**
  * @internal
  */
-export interface IndependentDatastoreSchema {
+export interface StateDatastoreSchema {
 	// This type is not precise. It may
-	// need to be replaced with IndependentMap schema pattern
+	// need to be replaced with PresenceStates schema pattern
 	// similar to what is commented out.
 	[key: string]: InternalTypes.ValueDirectoryOrState<unknown>;
 	// [key: string]: IndependentDatastoreSchemaNode;
@@ -25,14 +25,14 @@ export interface IndependentDatastoreSchema {
 /**
  * @internal
  */
-export interface IndependentDatastore<
+export interface StateDatastore<
 	TKey extends string,
 	TValue extends InternalTypes.ValueDirectoryOrState<any>,
 > {
 	localUpdate(key: TKey, value: TValue, forceBroadcast: boolean): void;
-	update(key: TKey, clientId: ClientId, value: TValue): void;
+	update(key: TKey, clientId: ConnectedClientId, value: TValue): void;
 	knownValues(key: TKey): {
-		self: ClientId | undefined;
+		self: ConnectedClientId | undefined;
 		states: ClientRecord<TValue>;
 	};
 }
@@ -48,10 +48,8 @@ export function handleFromDatastore<
 	// TSchema extends IndependentDatastoreSchema,
 	TKey extends string /* & keyof TSchema */,
 	TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
->(
-	datastore: IndependentDatastore<TKey, TValue>,
-): InternalTypes.IndependentDatastoreHandle<TKey, TValue> {
-	return datastore as unknown as InternalTypes.IndependentDatastoreHandle<TKey, TValue>;
+>(datastore: StateDatastore<TKey, TValue>): InternalTypes.StateDatastoreHandle<TKey, TValue> {
+	return datastore as unknown as InternalTypes.StateDatastoreHandle<TKey, TValue>;
 }
 
 /**
@@ -62,8 +60,6 @@ export function handleFromDatastore<
 export function datastoreFromHandle<
 	TKey extends string,
 	TValue extends InternalTypes.ValueDirectoryOrState<any>,
->(
-	handle: InternalTypes.IndependentDatastoreHandle<TKey, TValue>,
-): IndependentDatastore<TKey, TValue> {
-	return handle as unknown as IndependentDatastore<TKey, TValue>;
+>(handle: InternalTypes.StateDatastoreHandle<TKey, TValue>): StateDatastore<TKey, TValue> {
+	return handle as unknown as StateDatastore<TKey, TValue>;
 }

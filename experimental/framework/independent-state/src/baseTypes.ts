@@ -4,8 +4,8 @@
  */
 
 /**
- * A Fluid client identifier.
+ * A Fluid client connection identifier.
  *
  * @beta
  */
-export type ClientId = string;
+export type ConnectedClientId = string;

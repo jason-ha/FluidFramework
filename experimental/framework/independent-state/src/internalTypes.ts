@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import type { ClientId } from "./baseTypes.js";
+import type { ConnectedClientId } from "./baseTypes.js";
 import type { InternalTypes } from "./exposedInternalTypes.js";
 
 /**
@@ -13,7 +13,7 @@ export interface ClientRecord<TValue extends InternalTypes.ValueDirectoryOrState
 	// Caution: any particular item may or may not exist
 	// Typescript does not support absent keys without forcing type to also be undefined.
 	// See https://github.com/microsoft/TypeScript/issues/42810.
-	[ClientId: ClientId]: TValue;
+	[ClientId: ConnectedClientId]: TValue;
 }
 
 /**
@@ -25,5 +25,5 @@ export interface ValueManager<
 		InternalTypes.ValueDirectoryOrState<TValue> = InternalTypes.ValueDirectoryOrState<TValue>,
 > {
 	get value(): TValueState;
-	update(clientId: ClientId, received: number, value: TValueState): void;
+	update(clientId: ConnectedClientId, received: number, value: TValueState): void;
 }

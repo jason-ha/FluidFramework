@@ -17,8 +17,8 @@ export function brandIVM<
 	TValueState extends InternalTypes.ValueDirectoryOrState<TValue>,
 >(
 	manager: TManagerInterface & ValueManager<TValue, TValueState>,
-): InternalTypes.IndependentValue<TManagerInterface> {
-	return manager as TManagerInterface as InternalTypes.IndependentValue<TManagerInterface>;
+): InternalTypes.StateValue<TManagerInterface> {
+	return manager as TManagerInterface as InternalTypes.StateValue<TManagerInterface>;
 }
 
 /**
@@ -30,8 +30,6 @@ export function unbrandIVM<
 	TManagerInterface,
 	TValue,
 	TValueState extends InternalTypes.ValueDirectoryOrState<TValue>,
->(
-	branded: InternalTypes.IndependentValue<TManagerInterface>,
-): ValueManager<TValue, TValueState> {
+>(branded: InternalTypes.StateValue<TManagerInterface>): ValueManager<TValue, TValueState> {
 	return branded as unknown as ValueManager<TValue, TValueState>;
 }

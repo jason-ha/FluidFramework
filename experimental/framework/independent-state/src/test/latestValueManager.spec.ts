@@ -3,12 +3,13 @@
  * Licensed under the MIT License.
  */
 
+import type { IEphemeralRuntime, LatestValueClientData } from "../index.js";
+import { Latest } from "../index.js";
 import {
-	// Most clients should use acquireIndependentMap from @fluid-experimental/independent-state
+	// Most clients should use acquirePresence from @fluid-experimental/presence
 	// until the interface is stabilized.
-	createIndependentMap,
-} from "../independentMap.js";
-import { type IEphemeralRuntime, Latest, type LatestValueClientData } from "../index.js";
+	createPresenceStates as createIndependentMap,
+} from "../presenceStates.js";
 
 // ---- test (example) code ----
 

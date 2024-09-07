@@ -9,8 +9,8 @@ import type { InternalTypes } from "./exposedInternalTypes.js";
  * Unique address within a session.
  *
  * @remarks
- * A string known to all clients working with a certain IndependentMap and unique
- * among IndependentMaps. Recommend using specifying concatenation of: type of
+ * A string known to all clients working with a certain Workspace and unique
+ * among Workspaces. Recommend using specifying concatenation of: type of
  * unique identifier, `:` (required), and unique identifier.
  *
  * @example Examples
@@ -21,27 +21,27 @@ import type { InternalTypes } from "./exposedInternalTypes.js";
  *
  * @alpha
  */
-export type IndependentMapAddress = `${string}:${string}`;
+export type PresenceWorkspaceAddress = `${string}:${string}`;
 
 /**
- * Single entry in {@link IndependentMapSchema}.
+ * Single entry in {@link PresenceStatesSchema}.
  *
  * @beta
  */
-export type IndependentMapEntry<
+export type PresenceStatesEntry<
 	TKey extends string,
 	TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
 	TManager = unknown,
 > = InternalTypes.ManagerFactory<TKey, TValue, TManager>;
 
 /**
- * Schema for an {@link IndependentMap}.
+ * Schema for an {@link PresenceStates}.
  *
- * Keys of schema are the keys of the {@link IndependentMap} providing access to `Value Manager`s.
+ * Keys of schema are the keys of the {@link PresenceStates} providing access to `Value Manager`s.
  *
  * @beta
  */
-export interface IndependentMapSchema {
+export interface PresenceStatesSchema {
 	// [key: string]: <T, M>(initialValue: JsonSerializable<M>) => IndependentMapEntry<InternalTypes.IndependentValue<T>>;
 	// inference gobbledegook with no basis to work
 	// [key: string]: <P1 extends string, P2,R>(a: P1, b: P2) => R extends InternalTypes.ManagerFactory<typeof Key, infer TValue, infer TManager> ? InternalTypes.ManagerFactory<typeof Key, TValue, TManager> : never;
@@ -61,40 +61,51 @@ export interface IndependentMapSchema {
 	// 	value: TValue;
 	// 	manager: InternalTypes.IndependentValue<TManager>;
 	// };
-	[key: string]: IndependentMapEntry<typeof key, InternalTypes.ValueDirectoryOrState<any>>;
+	[key: string]: PresenceStatesEntry<typeof key, InternalTypes.ValueDirectoryOrState<any>>;
 }
 
 /**
- * Map of `Value Manager`s registered with {@link IndependentMap}.
+ * Map of `Value Manager`s registered with {@link PresenceStates}.
  *
  * @beta
  */
-export type IndependentMapEntries<TSchema extends IndependentMapSchema> = {
+export type PresenceStatesEntries<
+	TSchema extends PresenceStatesSchema,
+	TManagerRestrictions,
+> = {
 	/**
 	 * Registered `Value Manager`s
 	 */
-	readonly [Key in Exclude<keyof TSchema, keyof IndependentMapMethods<TSchema>>]: ReturnType<
-		TSchema[Key]
-	>["manager"] extends InternalTypes.IndependentValue<infer TManager>
+	readonly [Key in Exclude<
+		keyof TSchema,
+		keyof PresenceStatesMethods<TSchema, TManagerRestrictions>
+	>]: ReturnType<TSchema[Key]>["manager"] extends InternalTypes.StateValue<infer TManager>
 		? TManager
 		: never;
 };
 
 /**
- * Provides methods for managing `Value Manager`s in {@link IndependentMap}.
+ * Provides methods for managing `Value Manager`s in {@link PresenceStates}.
  *
  * @beta
  */
-export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
+export interface PresenceStatesMethods<
+	TSchema extends PresenceStatesSchema,
+	TManagerRestrictions,
+> {
 	/**
-	 * Registers a new `Value Manager` with the {@link IndependentMap}.
+	 * Registers a new `Value Manager` with the {@link PresenceStates}.
 	 * @param key - new unique key for the `Value Manager`
 	 * @param manager - factory for creating a `Value Manager`
 	 */
-	add<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<any>, TManager>(
+	add<
+		TKey extends string,
+		TValue extends InternalTypes.ValueDirectoryOrState<any>,
+		TManager extends TManagerRestrictions,
+	>(
 		key: TKey,
 		manager: InternalTypes.ManagerFactory<TKey, TValue, TManager>,
-	): asserts this is IndependentMap<
+	): asserts this is PresenceStates<
 		TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>
 	>;
 }
@@ -108,5 +119,8 @@ export interface IndependentMapMethods<TSchema extends IndependentMapSchema> {
  *
  * @beta
  */
-export type IndependentMap<TSchema extends IndependentMapSchema> =
-	IndependentMapEntries<TSchema> & IndependentMapMethods<TSchema>;
+export type PresenceStates<
+	TSchema extends PresenceStatesSchema,
+	TManagerRestrictions = unknown,
+> = PresenceStatesEntries<TSchema, TManagerRestrictions> &
+	PresenceStatesMethods<TSchema, TManagerRestrictions>;

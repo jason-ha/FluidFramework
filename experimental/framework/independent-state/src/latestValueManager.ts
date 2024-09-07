@@ -8,17 +8,17 @@ import type {
 	JsonSerializable,
 } from "@fluidframework/core-interfaces/internal";
 
-import type { ClientId } from "./baseTypes.js";
+import type { ConnectedClientId } from "./baseTypes.js";
 import type { ISubscribable } from "./events.js";
 import { createEmitter } from "./events.js";
 import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
-import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
-import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
 import type { LatestValueControls } from "./latestValueControls.js";
 import { LatestValueControl } from "./latestValueControls.js";
 import type { LatestValueClientData, LatestValueData } from "./latestValueTypes.js";
+import { datastoreFromHandle, type StateDatastore } from "./stateDatastore.js";
+import { brandIVM } from "./valueManager.js";
 
 /**
  * @beta
@@ -36,7 +36,7 @@ export interface LatestValueManagerEvents<T> {
  * Value manager that provides the latest known value from this client to others and read access to their values.
  * All participant clients must provide a value.
  *
- * @remarks Create using {@link Latest} registered to {@link IndependentMap}.
+ * @remarks Create using {@link Latest} registered to {@link PresenceStates}.
  *
  * @beta
  */
@@ -68,11 +68,11 @@ export interface LatestValueManager<T> {
 	/**
 	 * Array of known clients' identifiers.
 	 */
-	clients(): ClientId[];
+	clients(): ConnectedClientId[];
 	/**
 	 * Access to a specific client's value.
 	 */
-	clientValue(clientId: ClientId): LatestValueData<T>;
+	clientValue(clientId: ConnectedClientId): LatestValueData<T>;
 }
 
 class LatestValueManagerImpl<T, Key extends string>
@@ -83,7 +83,7 @@ class LatestValueManagerImpl<T, Key extends string>
 
 	public constructor(
 		private readonly key: Key,
-		private readonly datastore: IndependentDatastore<Key, InternalTypes.ValueRequiredState<T>>,
+		private readonly datastore: StateDatastore<Key, InternalTypes.ValueRequiredState<T>>,
 		public readonly value: InternalTypes.ValueRequiredState<T>,
 		controlSettings: LatestValueControls,
 	) {
@@ -105,14 +105,14 @@ class LatestValueManagerImpl<T, Key extends string>
 		throw new Error("Method not implemented.");
 	}
 
-	public clients(): ClientId[] {
+	public clients(): ConnectedClientId[] {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		return Object.keys(allKnownStates.states).filter(
 			(clientId) => clientId !== allKnownStates.self,
 		);
 	}
 
-	public clientValue(clientId: ClientId): LatestValueData<T> {
+	public clientValue(clientId: ConnectedClientId): LatestValueData<T> {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		if (clientId in allKnownStates.states) {
 			const { value, rev: revision } = allKnownStates.states[clientId];
@@ -170,7 +170,7 @@ export function Latest<T extends object, Key extends string>(
 			};
 	return (
 		key: Key,
-		datastoreHandle: InternalTypes.IndependentDatastoreHandle<
+		datastoreHandle: InternalTypes.StateDatastoreHandle<
 			Key,
 			InternalTypes.ValueRequiredState<T>
 		>,

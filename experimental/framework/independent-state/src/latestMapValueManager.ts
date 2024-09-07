@@ -8,13 +8,11 @@ import type {
 	JsonSerializable,
 } from "@fluidframework/core-interfaces/internal";
 
-import type { ClientId } from "./baseTypes.js";
+import type { ConnectedClientId } from "./baseTypes.js";
 import type { ISubscribable } from "./events.js";
 import { createEmitter } from "./events.js";
 import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
-import { datastoreFromHandle, type IndependentDatastore } from "./independentDatastore.js";
-import { brandIVM } from "./independentValue.js";
 import type { ValueManager } from "./internalTypes.js";
 import type { LatestValueControls } from "./latestValueControls.js";
 import { LatestValueControl } from "./latestValueControls.js";
@@ -23,6 +21,8 @@ import type {
 	LatestValueData,
 	LatestValueMetadata,
 } from "./latestValueTypes.js";
+import { datastoreFromHandle, type StateDatastore } from "./stateDatastore.js";
+import { brandIVM } from "./valueManager.js";
 
 /**
  * Collection of latest known values for a specific client.
@@ -30,7 +30,7 @@ import type {
  * @beta
  */
 export interface LatestMapValueClientData<
-	SpecificClientId extends ClientId,
+	SpecificClientId extends ConnectedClientId,
 	T,
 	Keys extends string | number,
 > {
@@ -62,7 +62,7 @@ export interface LatestMapItemValueClientData<T, K extends string | number>
  * @beta
  */
 export interface LatestMapItemRemovedClientData<K extends string | number> {
-	clientId: ClientId;
+	clientId: ConnectedClientId;
 	key: K;
 	metadata: LatestValueMetadata;
 }
@@ -79,7 +79,7 @@ export interface LatestMapValueManagerEvents<T, K extends string | number> {
 	 *
 	 * @eventProperty
 	 */
-	updated: (updates: LatestMapValueClientData<ClientId, T, K>) => void;
+	updated: (updates: LatestMapValueClientData<ConnectedClientId, T, K>) => void;
 
 	/**
 	 * Raised when specific item's value is updated.
@@ -275,7 +275,7 @@ class ValueMapImpl<T, K extends string | number> implements ValueMap<K, T> {
  * Entries in the map may vary over time and by client, but all values are expected to
  * be of the same type, which may be a union type.
  *
- * @remarks Create using {@link LatestMap} registered to {@link IndependentMap}.
+ * @remarks Create using {@link LatestMap} registered to {@link PresenceStates}.
  *
  * @beta
  */
@@ -298,15 +298,15 @@ export interface LatestMapValueManager<T, Keys extends string | number = string 
 	 * Iterable access to remote clients' map of values.
 	 * @remarks This is not yet implemented.
 	 */
-	clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>>;
+	clientValues(): IterableIterator<LatestMapValueClientData<ConnectedClientId, T, Keys>>;
 	/**
 	 * Array of known clients' identifiers.
 	 */
-	clients(): ClientId[];
+	clients(): ConnectedClientId[];
 	/**
 	 * Access to a specific client's map of values.
 	 */
-	clientValue<SpecificClientId extends ClientId>(
+	clientValue<SpecificClientId extends ConnectedClientId>(
 		clientId: SpecificClientId,
 	): LatestMapValueClientData<SpecificClientId, T, Keys>;
 }
@@ -322,7 +322,7 @@ class LatestMapValueManagerImpl<
 
 	public constructor(
 		private readonly key: RegistrationKey,
-		private readonly datastore: IndependentDatastore<RegistrationKey, MapValueState<T>>,
+		private readonly datastore: StateDatastore<RegistrationKey, MapValueState<T>>,
 		public readonly value: MapValueState<T>,
 		controlSettings: LatestValueControls,
 	) {
@@ -338,18 +338,20 @@ class LatestMapValueManagerImpl<
 
 	public readonly local: ValueMap<Keys, T>;
 
-	public clientValues(): IterableIterator<LatestMapValueClientData<ClientId, T, Keys>> {
+	public clientValues(): IterableIterator<
+		LatestMapValueClientData<ConnectedClientId, T, Keys>
+	> {
 		throw new Error("Method not implemented.");
 	}
 
-	public clients(): ClientId[] {
+	public clients(): ConnectedClientId[] {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		return Object.keys(allKnownStates.states).filter(
 			(clientId) => clientId !== allKnownStates.self,
 		);
 	}
 
-	public clientValue<SpecificClientId extends ClientId>(
+	public clientValue<SpecificClientId extends ConnectedClientId>(
 		clientId: SpecificClientId,
 	): LatestMapValueClientData<SpecificClientId, T, Keys> {
 		const allKnownStates = this.datastore.knownValues(this.key);
@@ -370,7 +372,7 @@ class LatestMapValueManagerImpl<
 		return { clientId, items };
 	}
 
-	public update<SpecificClientId extends ClientId>(
+	public update<SpecificClientId extends ConnectedClientId>(
 		clientId: SpecificClientId,
 		_received: number,
 		value: MapValueState<T>,
@@ -462,10 +464,7 @@ export function LatestMap<
 			};
 	return (
 		key: RegistrationKey,
-		datastoreHandle: InternalTypes.IndependentDatastoreHandle<
-			RegistrationKey,
-			MapValueState<T>
-		>,
+		datastoreHandle: InternalTypes.StateDatastoreHandle<RegistrationKey, MapValueState<T>>,
 	) => ({
 		value,
 		manager: brandIVM<

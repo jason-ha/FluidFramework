@@ -18,7 +18,6 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace InternalTypes {
 	/**
-	 * @beta
 	 * @system
 	 */
 	export interface ValueStateMetadata {
@@ -27,7 +26,6 @@ export namespace InternalTypes {
 	}
 
 	/**
-	 * @beta
 	 * @system
 	 */
 	export interface ValueOptionalState<TValue> extends ValueStateMetadata {
@@ -35,7 +33,6 @@ export namespace InternalTypes {
 	}
 
 	/**
-	 * @beta
 	 * @system
 	 */
 	export interface ValueRequiredState<TValue> extends ValueStateMetadata {
@@ -43,7 +40,6 @@ export namespace InternalTypes {
 	}
 
 	/**
-	 * @beta
 	 * @system
 	 */
 	export interface ValueDirectory<T> {
@@ -57,31 +53,25 @@ export namespace InternalTypes {
 	}
 
 	/**
-	 * @beta
 	 * @system
 	 */
 	export type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
 
 	/**
-	 * @beta
 	 * @system
 	 */
-	export declare class IndependentDatastoreHandle<
-		TKey,
-		TValue extends ValueDirectoryOrState<any>,
-	> {
-		private readonly IndependentDatastoreHandle: IndependentDatastoreHandle<TKey, TValue>;
+	export declare class StateDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
+		private readonly StateDatastoreHandle: StateDatastoreHandle<TKey, TValue>;
 	}
 
 	/**
 	 * Brand to ensure independent values internal type safety without revealing
 	 * internals that are subject to change.
 	 *
-	 * @beta
 	 * @system
 	 */
-	export declare class IndependentValueBrand<T> {
-		private readonly IndependentValue: IndependentValue<T>;
+	export declare class StateValueBrand<T> {
+		private readonly StateValue: StateValue<T>;
 	}
 
 	/**
@@ -92,15 +82,13 @@ export namespace InternalTypes {
 	 * @privateRemarks
 	 * Checkout filtering omitting unknown from T (`Omit<T,unknown> &`).
 	 *
-	 * @beta
 	 * @system
 	 */
-	export type IndependentValue<T> = T & IndependentValueBrand<T>;
+	export type StateValue<T> = T & StateValueBrand<T>;
 
 	/**
 	 * Package internal function declaration for value manager instantiation.
 	 *
-	 * @beta
 	 * @system
 	 */
 	export type ManagerFactory<
@@ -109,14 +97,13 @@ export namespace InternalTypes {
 		TManager,
 	> = (
 		key: TKey,
-		datastoreHandle: IndependentDatastoreHandle<TKey, TValue>,
+		datastoreHandle: StateDatastoreHandle<TKey, TValue>,
 	) => {
 		value: TValue;
-		manager: IndependentValue<TManager>;
+		manager: StateValue<TManager>;
 	};
 
 	/**
-	 * @beta
 	 * @system
 	 */
 	export interface NotificationType {

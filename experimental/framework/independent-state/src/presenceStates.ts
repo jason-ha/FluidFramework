@@ -3,33 +3,31 @@
  * Licensed under the MIT License.
  */
 
-import type { IRuntimeInternal } from "@fluidframework/container-definitions/internal";
-import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
 import { assert } from "@fluidframework/core-utils/internal";
-import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions/internal";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions/internal";
 
-import type { ClientId } from "./baseTypes.js";
+import type { ConnectedClientId } from "./baseTypes.js";
 import type { InternalTypes } from "./exposedInternalTypes.js";
-import { handleFromDatastore, type IndependentDatastore } from "./independentDatastore.js";
-import { unbrandIVM } from "./independentValue.js";
 import type { ClientRecord } from "./internalTypes.js";
-import type { IndependentMap, IndependentMapMethods, IndependentMapSchema } from "./types.js";
+import type { IEphemeralRuntime } from "./presenceManager.js";
+import { handleFromDatastore, type StateDatastore } from "./stateDatastore.js";
+import type { PresenceStates, PresenceStatesMethods, PresenceStatesSchema } from "./types.js";
+import { unbrandIVM } from "./valueManager.js";
 
 type MapSchemaElement<
-	TSchema extends IndependentMapSchema,
+	TSchema extends PresenceStatesSchema,
 	Part extends keyof ReturnType<TSchema[keyof TSchema]>,
 	Keys extends keyof TSchema = keyof TSchema,
 > = ReturnType<TSchema[Keys]>[Part];
 
-type IndependentSubSchemaFromMapSchema<
-	TSchema extends IndependentMapSchema,
+type PresenceSubSchemaFromWorkspaceSchema<
+	TSchema extends PresenceStatesSchema,
 	Part extends keyof ReturnType<TSchema[keyof TSchema]>,
 > = {
 	[Key in keyof TSchema]: MapSchemaElement<TSchema, Part, Key>;
 };
 
-type MapEntries<TSchema extends IndependentMapSchema> = IndependentSubSchemaFromMapSchema<
+type MapEntries<TSchema extends PresenceStatesSchema> = PresenceSubSchemaFromWorkspaceSchema<
 	TSchema,
 	"manager"
 >;
@@ -43,13 +41,13 @@ type MapEntries<TSchema extends IndependentMapSchema> = IndependentSubSchemaFrom
  * This generic aspect makes some typing difficult. The loose typing is not broadcast to the
  * consumers that are expected to maintain their schema over multiple versions of clients.
  */
-interface ValueElementMap<_TSchema extends IndependentMapSchema> {
+interface ValueElementMap<_TSchema extends PresenceStatesSchema> {
 	[key: string]: ClientRecord<InternalTypes.ValueDirectoryOrState<unknown>>;
 }
 // An attempt to make the type more precise, but it is not working.
 // If the casting in support code is too much we could keep two references to the same
 // complete datastore, but with the respective types desired.
-// type ValueElementMap<TSchema extends IndependentMapNodeSchema> =
+// type ValueElementMap<TSchema extends PresenceStatesNodeSchema> =
 // 	| {
 // 			[Key in keyof TSchema & string]?: {
 // 				[ClientId: ClientId]: InternalTypes.ValueDirectoryOrState<MapSchemaElement<TSchema,"value",Key>>;
@@ -68,9 +66,9 @@ interface ValueElementMap<_TSchema extends IndependentMapSchema> {
 // }
 
 interface GeneralDatastoreMessageContent {
-	[IndependentMapKey: string]: {
-		[IndependentValueManagerKey: string]: {
-			[ClientId: ClientId]: InternalTypes.ValueDirectoryOrState<unknown> & {
+	[PresenceStatesKey: string]: {
+		[StateValueManagerKey: string]: {
+			[ClientId: ConnectedClientId]: InternalTypes.ValueDirectoryOrState<unknown> & {
 				keepUnregistered?: true;
 			};
 		};
@@ -80,7 +78,7 @@ interface GeneralDatastoreMessageContent {
 interface SystemDatastore {
 	"system:map": {
 		priorClientIds: {
-			[ClientId: ClientId]: InternalTypes.ValueRequiredState<ClientId[]>;
+			[ClientId: ConnectedClientId]: InternalTypes.ValueRequiredState<ConnectedClientId[]>;
 		};
 	};
 }
@@ -100,7 +98,7 @@ interface DatastoreUpdateMessage extends IInboundSignalMessage {
 interface ClientJoinMessage extends IInboundSignalMessage {
 	type: "DIS:ClientJoin";
 	content: {
-		updateProviders: ClientId[];
+		updateProviders: ConnectedClientId[];
 		sendTimestamp: number;
 		avgLatency: number;
 		data: DatastoreMessageContent;
@@ -114,23 +112,10 @@ function isDISMessage(
 }
 
 /**
- * This interface is a subset of (IContainerRuntime & IRuntimeInternal) and (IFluidDataStoreRuntime) that is needed by the IndependentMap.
- *
- * @privateRemarks
- * Replace with non-DataStore based interface.
- *
  * @internal
  */
-export type IEphemeralRuntime = Pick<
-	(IContainerRuntime & IRuntimeInternal) | IFluidDataStoreRuntime,
-	"clientId" | "getAudience" | "off" | "on" | "submitSignal"
->;
-
-/**
- * @internal
- */
-export interface IndependentMapInternal {
-	ensureContent<TSchemaAdditional extends IndependentMapSchema>(
+export interface PresenceStatesInternal {
+	ensureContent<TSchemaAdditional extends PresenceStatesSchema>(
 		content: TSchemaAdditional,
 	): void;
 	processSignal(message: IInboundSignalMessage, local: boolean): void;
@@ -188,11 +173,11 @@ function mergeValueDirectory<
 	return mergeBase;
 }
 
-class IndependentMapImpl<TSchema extends IndependentMapSchema>
+class PresenceStatesImpl<TSchema extends PresenceStatesSchema>
 	implements
-		IndependentMapInternal,
-		IndependentMapMethods<TSchema>,
-		IndependentDatastore<
+		PresenceStatesInternal,
+		PresenceStatesMethods<TSchema, unknown>,
+		StateDatastore<
 			keyof TSchema & string,
 			MapSchemaElement<TSchema, "value", keyof TSchema & string>
 		>
@@ -209,7 +194,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 	) {
 		this.runtime.getAudience().on("addMember", (clientId) => {
 			for (const [_key, allKnownState] of Object.entries(this.datastore)) {
-				assert(!(clientId in allKnownState), "New client already in independent map");
+				assert(!(clientId in allKnownState), "New client already in workspace");
 			}
 			// TODO: Send all current state to the new client
 		});
@@ -307,7 +292,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 	>(
 		key: TKey,
 		nodeFactory: InternalTypes.ManagerFactory<TKey, TValue, TValueManager>,
-	): asserts this is IndependentMap<
+	): asserts this is PresenceStates<
 		TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TValueManager>>
 	> {
 		assert(!(key in this.nodes), "Already have entry for key in map");
@@ -326,7 +311,7 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 		}
 	}
 
-	public ensureContent<TSchemaAdditional extends IndependentMapSchema>(
+	public ensureContent<TSchemaAdditional extends PresenceStatesSchema>(
 		content: TSchemaAdditional,
 	): void {
 		for (const [key, nodeFactory] of Object.entries(content)) {
@@ -429,17 +414,17 @@ class IndependentMapImpl<TSchema extends IndependentMapSchema>
 }
 
 /**
- * Create a new IndependentMap using the DataStoreRuntime provided.
- * @param runtime - The dedicated runtime to use for the IndependentMap. The requirements
- * are very unstable and will change. Recommendation is to use IndependentMapFactory from
+ * Create a new PresenceStates using the DataStoreRuntime provided.
+ * @param runtime - The dedicated runtime to use for the PresenceStates. The requirements
+ * are very unstable and will change. Recommendation is to use PresenceStatesFactory from
  * `alpha` entrypoint for now.
  * @param initialContent - The initial value managers to register.
  */
-export function createIndependentMap<TSchema extends IndependentMapSchema>(
+export function createPresenceStates<TSchema extends PresenceStatesSchema>(
 	runtime: IEphemeralRuntime,
 	initialContent: TSchema,
-): { externalMap: IndependentMap<TSchema>; internalMap: IndependentMapInternal } {
-	const map = new IndependentMapImpl(runtime, initialContent);
+): { externalMap: PresenceStates<TSchema>; internalMap: PresenceStatesInternal } {
+	const map = new PresenceStatesImpl(runtime, initialContent);
 
 	// Capture the top level "public" map. Both the map implementation and
 	// the wrapper object reference this object.
@@ -451,7 +436,7 @@ export function createIndependentMap<TSchema extends IndependentMapSchema>(
 	};
 
 	return {
-		externalMap: new Proxy(wrapper as IndependentMap<TSchema>, {
+		externalMap: new Proxy(wrapper as PresenceStates<TSchema>, {
 			get(target, p, receiver): unknown {
 				if (typeof p === "string") {
 					return target[p] ?? nodes[p];
