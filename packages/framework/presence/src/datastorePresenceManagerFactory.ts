@@ -7,8 +7,14 @@
  * Hacky support for internal datastore based usages.
  */
 
-import type { IFluidLoadable } from "@fluidframework/core-interfaces";
+import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
+import type { IFluidHandle, IFluidLoadable } from "@fluidframework/core-interfaces";
 import type { FluidDataStoreRuntime } from "@fluidframework/datastore/internal";
+import type {
+	AliasResult,
+	IContainerRuntimeBase,
+	NamedFluidDataStoreRegistryEntry,
+} from "@fluidframework/runtime-definitions/internal";
 import type { SharedObjectKind } from "@fluidframework/shared-object-base";
 
 import { BasicDataStoreFactory, LoadableFluidObject } from "./datastoreSupport.js";
@@ -96,3 +102,49 @@ export async function acquirePresenceViaDataObject(
 
 	throw new Error("Incompatible loadable; make sure to use ExperimentalPresenceManager");
 }
+
+// #region Encapsulated model support
+
+class LegacyPresenceManagerFactory extends PresenceManagerFactory {
+	private readonly alias: string = "system:presence-manager";
+
+	public get registryEntry(): NamedFluidDataStoreRegistryEntry {
+		return [this.factory.type, Promise.resolve(this.factory)];
+	}
+
+	/**
+	 * Creates exclusive data store for {@link IPresenceManager} to work in.
+	 */
+	public async initializingFirstTime(
+		containerRuntime: IContainerRuntimeBase,
+	): Promise<AliasResult> {
+		return containerRuntime
+			.createDataStore(this.factory.type)
+			.then(async (datastore) => datastore.trySetAlias(this.alias));
+	}
+
+	/**
+	 * Provides {@link IPresence} once factory has been registered and
+	 * instantiation is complete.
+	 */
+	public async getPresence(containerRuntime: IContainerRuntime): Promise<IPresence> {
+		const entryPointHandle = (await containerRuntime.getAliasedDataStoreEntryPoint(
+			this.alias,
+		)) as IFluidHandle<PresenceManagerDataObject> | undefined;
+
+		if (entryPointHandle === undefined) {
+			throw new Error(`dataStore [${this.alias}] must exist`);
+		}
+
+		const dataobj = await entryPointHandle.get();
+		return dataobj.psm;
+	}
+}
+
+/**
+ * @legacy
+ * @alpha
+ */
+export const ExperimentalLegacyPresenceManager = new LegacyPresenceManagerFactory();
+
+// #endregion
