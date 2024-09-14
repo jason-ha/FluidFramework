@@ -18,7 +18,7 @@
 		"build:fast": "fluid-build --task build --worker",
 		"build:full": "fluid-build --task full",
 		"build:full:compile": "fluid-build --task compile --task webpack",
-		"build:gendocs": "concurrently npm:build:gendocs:client npm:build:gendocs:server && cd docs && npm run build",
+		"build:gendocs": "concurrently npm:build:gendocs:client npm:build:gendocs:server && cd docs && npm run build:local",
 		"build:gendocs:client": "fluid-build --task build:gendocs:client",
 		"build:gendocs:client:azure": "copyfiles \"azure/**/*.api.json\" ./_api-extractor-temp/doc-models/ -e \"**/node_modules/**\" -f -V",
 		"build:gendocs:client:examples": "copyfiles \"examples/**/*.api.json\" ./_api-extractor-temp/doc-models/ -e \"**/node_modules/**\" -f -V",
