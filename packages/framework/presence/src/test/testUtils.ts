@@ -73,9 +73,6 @@ export function prepareConnectedPresence(
 	logger?: EventAndErrorTrackingLogger,
 ): ReturnType<typeof createPresenceManager> {
 	// Set runtime to connected state
-	runtime.clientId = clientConnectionId;
-	// TODO: runtime.connected has been hacked in past to lie about true connection.
-	// This will need to be updated to an alternate status provider.
 	runtime.connected = true;
 
 	logger?.registerExpectedEvent({ eventName: "Presence:PresenceInstantiated" });
@@ -95,7 +92,10 @@ export function prepareConnectedPresence(
 	});
 	runtime.signalsExpected.push([expectedClientJoin.type, expectedClientJoin.content]);
 
-	const presence = createPresenceManager(runtime, clientSessionId as ClientSessionId);
+	const presence = createPresenceManager(runtime, {
+		clientConnectionId,
+		clientSessionId: clientSessionId as ClientSessionId,
+	});
 
 	// Validate expectations post initialization to make sure logger
 	// and runtime are left in a clean expectation state.

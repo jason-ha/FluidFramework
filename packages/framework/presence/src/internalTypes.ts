@@ -3,8 +3,13 @@
  * Licensed under the MIT License.
  */
 
+import type { IDeltaManager } from "@fluidframework/container-definitions/internal";
 import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
 import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions/internal";
+import type {
+	IDocumentMessage,
+	ISequencedDocumentMessage,
+} from "@fluidframework/driver-definitions/internal";
 
 import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { ClientSessionId, ISessionClient } from "./presence.js";
@@ -43,9 +48,12 @@ export const brandedObjectEntries = Object.entries as <K extends string, T>(
  */
 export type IEphemeralRuntime = Pick<
 	(IContainerRuntime & IRuntimeInternal) | IFluidDataStoreRuntime,
-	"clientId" | "connected" | "getQuorum" | "off" | "on" | "submitSignal"
+	"getQuorum" | "submitSignal"
 > &
-	Partial<Pick<IFluidDataStoreRuntime, "logger">>;
+	Pick<IDeltaManager<ISequencedDocumentMessage, IDocumentMessage>, "off" | "on"> &
+	Partial<Pick<IFluidDataStoreRuntime, "logger">> & {
+		signalsConnected(): boolean;
+	};
 
 /**
  * @internal

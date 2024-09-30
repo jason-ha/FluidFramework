@@ -83,6 +83,7 @@ function isPresenceMessage(
  */
 export interface PresenceDatastoreManager {
 	joinSession(clientId: ClientConnectionId): void;
+	leaveSession(): void;
 	getWorkspace<TSchema extends PresenceStatesSchema>(
 		internalWorkspaceAddress: InternalWorkspaceAddress,
 		requestedContent: TSchema,
@@ -94,6 +95,7 @@ export interface PresenceDatastoreManager {
  * Manages singleton datastore for all Presence.
  */
 export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
+	private clientConnectionId: ClientConnectionId | undefined = undefined;
 	private readonly datastore: PresenceDatastore;
 	private averageLatency = 0;
 	private returnedMessages = 0;
@@ -115,6 +117,8 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 	}
 
 	public joinSession(clientId: ClientConnectionId): void {
+		this.clientConnectionId = clientId;
+
 		// Broadcast join message to all clients
 		const updateProviders = [...this.runtime.getQuorum().getMembers().keys()].filter(
 			(quorumClientId) => quorumClientId !== clientId,
@@ -130,6 +134,10 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			data: this.datastore,
 			updateProviders,
 		} satisfies ClientJoinMessage["content"]);
+	}
+
+	public leaveSession(): void {
+		this.clientConnectionId = undefined;
 	}
 
 	public getWorkspace<TSchema extends PresenceStatesSchema>(
@@ -151,11 +159,11 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			forceBroadcast: boolean,
 		): void => {
 			// Check for connectivity before sending updates.
-			if (!this.runtime.connected) {
+			if (!this.runtime.signalsConnected()) {
 				return;
 			}
 
-			const clientConnectionId = this.runtime.clientId;
+			const clientConnectionId = this.clientConnectionId;
 			assert(clientConnectionId !== undefined, 0xa59 /* Client connected without clientId */);
 			const currentClientToSessionValueState =
 				this.datastore["system:presence"].clientToSessionId[clientConnectionId];
@@ -251,7 +259,7 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			// It is possible for some signals to come in while client is not connected due
 			// to how work is scheduled. If we are not connected, we can't respond to the
 			// join request. We will make our own Join request once we are connected.
-			if (this.runtime.connected) {
+			if (this.runtime.signalsConnected()) {
 				this.prepareJoinResponse(message.content.updateProviders, message.clientId);
 			}
 			// It is okay to continue processing the contained updates even if we are not
@@ -301,12 +309,12 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 		requestor: ClientConnectionId,
 	): void {
 		this.refreshBroadcastRequested = true;
-		// We must be connected to receive this message, so clientId should be defined.
-		// If it isn't then, not really a problem; just won't be in provider or quorum list.
+		// We must be connected to receive this message, so clientConnectionId
+		// should be defined. // If it isn't then, not really a problem; just
+		// won't be in provider or quorum list.
 		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-		const clientId = this.runtime.clientId!;
-		// const requestor = message.clientId;
-		if (updateProviders.includes(clientId)) {
+		const clientConnectionId = this.clientConnectionId!;
+		if (updateProviders.includes(clientConnectionId)) {
 			// Send all current state to the new client
 			this.broadcastAllKnownState();
 			this.logger?.sendTelemetryEvent({
@@ -325,7 +333,7 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			// to prevent a flood of broadcasts.
 			let relativeResponseOrder;
 			const quorumMembers = this.runtime.getQuorum().getMembers();
-			const self = quorumMembers.get(clientId);
+			const self = quorumMembers.get(clientConnectionId);
 			if (self) {
 				// Compute order quorum join order (indicated by sequenceNumber)
 				relativeResponseOrder = 0;
@@ -345,7 +353,7 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			setTimeout(() => {
 				// Make sure a broadcast is still needed and we are currently connected.
 				// If not connected, nothing we can do.
-				if (this.refreshBroadcastRequested && this.runtime.connected) {
+				if (this.refreshBroadcastRequested && this.runtime.signalsConnected()) {
 					this.broadcastAllKnownState();
 					this.logger?.sendTelemetryEvent({
 						eventName: "JoinResponse",

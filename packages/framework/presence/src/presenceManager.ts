@@ -3,6 +3,8 @@
  * Licensed under the MIT License.
  */
 
+import type { IConnectionDetails } from "@fluidframework/container-definitions/internal";
+import { assert } from "@fluidframework/core-utils/internal";
 import { createSessionId } from "@fluidframework/id-compressor/internal";
 import type {
 	ITelemetryLoggerExt,
@@ -45,9 +47,22 @@ export type PresenceExtensionInterface = Required<
 >;
 
 /**
+ * Kludge to manage special connection delay where
+ * runtime.signalsConnected() is true but clientConnectionId is undefined at
+ * the time of construction. In this situation, registration for
+ * "connect" event is insufficient (it has already occurred) and the
+ * caller must provide the clientConnectionId explicitly.
+ */
+export interface FirstConnectionWorkaround {
+	onFirstConnection(clientConnectionId: ClientConnectionId): void;
+}
+
+/**
  * The Presence manager
  */
-class PresenceManager implements IPresence, PresenceExtensionInterface {
+class PresenceManager
+	implements IPresence, PresenceExtensionInterface, FirstConnectionWorkaround
+{
 	private readonly datastoreManager: PresenceDatastoreManager;
 	private readonly systemWorkspace: SystemWorkspace;
 
@@ -55,7 +70,11 @@ class PresenceManager implements IPresence, PresenceExtensionInterface {
 
 	private readonly mc: MonitoringContext | undefined = undefined;
 
-	public constructor(runtime: IEphemeralRuntime, clientSessionId: ClientSessionId) {
+	public constructor(
+		runtime: IEphemeralRuntime,
+		clientConnectionId: ClientConnectionId | undefined,
+		clientSessionId: ClientSessionId,
+	) {
 		const logger = runtime.logger;
 		if (logger) {
 			this.mc = createChildMonitoringContext({ logger, namespace: "Presence" });
@@ -69,23 +88,38 @@ class PresenceManager implements IPresence, PresenceExtensionInterface {
 			this.mc?.logger,
 		);
 
-		runtime.on("connected", this.onConnect.bind(this));
+		runtime.on("connect", (details: IConnectionDetails) => {
+			assert(
+				runtime.signalsConnected(),
+				"connection inconsistency: connect event when not connected",
+			);
+			this.onConnect(details.clientId);
+		});
+		runtime.on("disconnect", () => {
+			assert(
+				!runtime.signalsConnected(),
+				"connection inconsistency: disconnect event while still connected",
+			);
+			this.onDisconnect();
+		});
 
 		// Check if already connected at the time of construction.
-		// If constructed during data store load, the runtime may already be connected
-		// and the "connected" event will be raised during completion. With construction
-		// delayed we expect that "connected" event has passed.
-		// Note: In some manual testing, this does not appear to be enough to
-		// always trigger an initial connect.
-		const clientId = runtime.clientId;
-		if (clientId !== undefined && runtime.connected) {
-			this.onConnect(clientId);
+		if (clientConnectionId !== undefined && runtime.signalsConnected()) {
+			this.onConnect(clientConnectionId);
 		}
+	}
+
+	public onFirstConnection(clientConnectionId: ClientConnectionId): void {
+		this.onConnect(clientConnectionId);
 	}
 
 	private onConnect(clientConnectionId: ClientConnectionId): void {
 		this.systemWorkspace.onConnectionAdded(clientConnectionId);
 		this.datastoreManager.joinSession(clientConnectionId);
+	}
+
+	private onDisconnect(): void {
+		this.datastoreManager.leaveSession();
 	}
 
 	public getAttendees(): ReadonlySet<ISessionClient> {
@@ -168,7 +202,13 @@ function setupSubComponents(
  */
 export function createPresenceManager(
 	runtime: IEphemeralRuntime,
-	clientSessionId: ClientSessionId = createSessionId() as ClientSessionId,
-): IPresence & PresenceExtensionInterface {
-	return new PresenceManager(runtime, clientSessionId);
+	{
+		clientConnectionId,
+		clientSessionId = createSessionId() as ClientSessionId,
+	}: {
+		clientConnectionId: ClientConnectionId | undefined;
+		clientSessionId?: ClientSessionId;
+	},
+): IPresence & PresenceExtensionInterface & FirstConnectionWorkaround {
+	return new PresenceManager(runtime, clientConnectionId, clientSessionId);
 }

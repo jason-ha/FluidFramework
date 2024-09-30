@@ -52,7 +52,7 @@ describe("Presence", () => {
 
 		it("can be created", () => {
 			// Act & Verify (does not throw)
-			createPresenceManager(runtime);
+			createPresenceManager(runtime, { clientConnectionId: undefined });
 		});
 
 		it("creation logs initialization event", () => {
@@ -60,7 +60,7 @@ describe("Presence", () => {
 			logger.registerExpectedEvent({ eventName: "Presence:PresenceInstantiated" });
 
 			// Act
-			createPresenceManager(runtime);
+			createPresenceManager(runtime, { clientConnectionId: undefined });
 
 			// Verify
 			assertFinalExpectations(runtime, logger);
@@ -68,7 +68,7 @@ describe("Presence", () => {
 
 		it("throws when unknown attendee is requested via `getAttendee`", () => {
 			// Setup
-			const presence = createPresenceManager(runtime);
+			const presence = createPresenceManager(runtime, { clientConnectionId: undefined });
 
 			// Act & Verify
 			assert.throws(() => presence.getAttendee("unknown"), /Attendee not found/);

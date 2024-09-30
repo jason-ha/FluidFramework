@@ -45,7 +45,7 @@ describe("Presence", () => {
 
 		it("does not signal when disconnected during initialization", () => {
 			// Act & Verify
-			createPresenceManager(runtime);
+			createPresenceManager(runtime, { clientConnectionId: undefined });
 		});
 
 		it("sends join when connected during initialization", () => {

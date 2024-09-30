@@ -8,7 +8,7 @@
 export function acquirePresence(fluidContainer: IFluidContainer): IPresence;
 
 // @alpha
-export function acquirePresenceViaDataObject(fluidLoadable: ExperimentalPresenceDO): IPresence;
+export function acquirePresenceViaDataObject(fluidContainer: IFluidContainer, fluidLoadable: ExperimentalPresenceDO): IPresence;
 
 // @alpha
 export type ClientConnectionId = string;

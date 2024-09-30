@@ -56,7 +56,10 @@ export class BasicDataStoreFactory<Type extends string> implements IFluidDataSto
 
 	public constructor(
 		public readonly type: Type,
-		private readonly instanceCtor: new (runtime: FluidDataStoreRuntime) => LoadableFluidObject,
+		private readonly instanceCtor: new (
+			runtime: FluidDataStoreRuntime,
+			context: IFluidDataStoreContext,
+		) => LoadableFluidObject,
 	) {}
 
 	public async instantiateDataStore(
@@ -75,7 +78,7 @@ export class BasicDataStoreFactory<Type extends string> implements IFluidDataSto
 			},
 		);
 
-		const instance = new this.instanceCtor(runtime);
+		const instance = new this.instanceCtor(runtime, context);
 
 		return runtime;
 	}

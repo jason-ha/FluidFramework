@@ -5,11 +5,12 @@
 
 import { strict as assert } from "node:assert";
 
+import type { IConnectionDetails } from "@fluidframework/container-definitions/internal";
 import type { ITelemetryBaseLogger } from "@fluidframework/core-interfaces";
 import type { IQuorumClients, ISequencedClient } from "@fluidframework/driver-definitions";
+import type { IAnyDriverError } from "@fluidframework/driver-definitions/internal";
 import { MockQuorumClients } from "@fluidframework/test-runtime-utils/internal";
 
-import type { ClientConnectionId } from "../baseTypes.js";
 import type { IEphemeralRuntime } from "../internalTypes.js";
 
 /**
@@ -47,12 +48,15 @@ export function makeMockQuorum(clientIds: string[]): IQuorumClients {
  */
 export class MockEphemeralRuntime implements IEphemeralRuntime {
 	public logger?: ITelemetryBaseLogger;
+	public connected: boolean = false;
 	public readonly quorum: IQuorumClients;
 
 	public readonly listeners: {
-		connected: ((clientId: ClientConnectionId) => void)[];
+		connect: ((details: IConnectionDetails, opsBehind?: number) => void)[];
+		disconnect: ((reason: string, error?: IAnyDriverError) => void)[];
 	} = {
-		connected: [],
+		connect: [],
+		disconnect: [],
 	};
 	private isSupportedEvent(event: string): event is keyof typeof this.listeners {
 		return event in this.listeners;
@@ -115,8 +119,9 @@ export class MockEphemeralRuntime implements IEphemeralRuntime {
 
 	// #region IEphemeralRuntime
 
-	public clientId: string | undefined;
-	public connected: boolean = false;
+	public signalsConnected(): boolean {
+		return this.connected;
+	}
 
 	public on: IEphemeralRuntime["on"];
 

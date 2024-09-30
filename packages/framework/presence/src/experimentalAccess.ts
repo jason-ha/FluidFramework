@@ -39,6 +39,7 @@ class ContainerPresenceManager implements IContainerExtension<never> {
 		// TODO create the appropriate ephemeral runtime (map address must be in submitSignal, etc.)
 		this.interface = this.manager = createPresenceManager(
 			runtime as unknown as IEphemeralRuntime,
+			{ clientConnectionId: undefined },
 		);
 	}
 
