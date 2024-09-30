@@ -3,6 +3,7 @@
  * Licensed under the MIT License.
  */
 
+import type { IContainer } from "@fluidframework/container-definitions/internal";
 import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
 import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions/internal";
 import type { MonitoringContext } from "@fluidframework/telemetry-utils/internal";
@@ -44,8 +45,9 @@ export const brandedObjectEntries = Object.entries as <K extends string, T>(
  */
 export type IEphemeralRuntime = Pick<
 	(IContainerRuntime & IRuntimeInternal) | IFluidDataStoreRuntime,
-	"clientId" | "connected" | "getQuorum" | "off" | "on" | "submitSignal"
+	"clientId" | "connected" | "getQuorum" | "submitSignal"
 > &
+	Pick<IContainer, "off" | "on"> &
 	Partial<Pick<IFluidDataStoreRuntime, "logger">>;
 
 /**
