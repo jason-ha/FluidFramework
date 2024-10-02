@@ -3,6 +3,7 @@
  * Licensed under the MIT License.
  */
 
+import type { IConnectionDetails } from "@fluidframework/container-definitions/internal";
 import { assert } from "@fluidframework/core-utils/internal";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions/internal";
 
@@ -106,7 +107,13 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 		private readonly runtime: IEphemeralRuntime,
 		private readonly presence: PresenceManagerInternal,
 	) {
-		runtime.on("connected", this.onConnect.bind(this));
+		runtime.on("connect", (details: IConnectionDetails) => this.onConnect(details.clientId));
+		runtime.on("disconnect", () =>
+			assert(
+				!this.runtime.signalsConnected(),
+				"connection inconsistency: disconnect event while still connected",
+			),
+		);
 
 		// Check if already connected at the time of construction.
 		// If constructed during data store load, the runtime may already be connected
@@ -115,12 +122,17 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 		// Note: In some manual testing, this does not appear to be enough to
 		// always trigger an initial connect.
 		const clientId = runtime.clientId;
-		if (clientId !== undefined && runtime.connected) {
+		if (clientId !== undefined && runtime.signalsConnected()) {
 			this.onConnect(clientId);
 		}
 	}
 
 	private onConnect(clientId: ClientConnectionId): void {
+		assert(
+			this.runtime.signalsConnected(),
+			"connection inconsistency: connect event when not connected",
+		);
+
 		this.datastore["system:presence"].clientToSessionId[clientId] = {
 			rev: 0,
 			timestamp: Date.now(),
@@ -163,7 +175,7 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			forceBroadcast: boolean,
 		): void => {
 			// Check for connectivity before sending updates.
-			if (!this.runtime.connected) {
+			if (!this.runtime.signalsConnected()) {
 				return;
 			}
 
@@ -249,7 +261,10 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			(this.averageLatency + message.content.avgLatency + message.content.sendTimestamp);
 
 		if (message.type === joinMessageType) {
-			assert(this.runtime.connected, "Received presence join signal while not connected");
+			assert(
+				this.runtime.signalsConnected(),
+				"Received presence join signal while not connected",
+			);
 			this.prepareJoinResponse(message.content.updateProviders, message.clientId);
 		} else {
 			assert(message.type === datastoreUpdateMessageType, 0xa3b /* Unexpected message type */);
@@ -330,7 +345,7 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			setTimeout(() => {
 				// Make sure a broadcast is still needed and we are currently connected.
 				// If not connected, nothing we can do.
-				if (this.refreshBroadcastRequested && this.runtime.connected) {
+				if (this.refreshBroadcastRequested && this.runtime.signalsConnected()) {
 					this.broadcastAllKnownState();
 					this.presence.mc?.logger.sendTelemetryEvent({
 						eventName: "JoinResponse",

@@ -3,9 +3,13 @@
  * Licensed under the MIT License.
  */
 
-import type { IContainer } from "@fluidframework/container-definitions/internal";
+import type { IDeltaManager } from "@fluidframework/container-definitions/internal";
 import type { IContainerRuntime } from "@fluidframework/container-runtime-definitions/internal";
 import type { IFluidDataStoreRuntime } from "@fluidframework/datastore-definitions/internal";
+import type {
+	IDocumentMessage,
+	ISequencedDocumentMessage,
+} from "@fluidframework/driver-definitions/internal";
 import type { MonitoringContext } from "@fluidframework/telemetry-utils/internal";
 
 import type { InternalTypes } from "./exposedInternalTypes.js";
@@ -45,10 +49,12 @@ export const brandedObjectEntries = Object.entries as <K extends string, T>(
  */
 export type IEphemeralRuntime = Pick<
 	(IContainerRuntime & IRuntimeInternal) | IFluidDataStoreRuntime,
-	"clientId" | "connected" | "getQuorum" | "submitSignal"
+	"clientId" | "getQuorum" | "submitSignal"
 > &
-	Pick<IContainer, "off" | "on"> &
-	Partial<Pick<IFluidDataStoreRuntime, "logger">>;
+	Pick<IDeltaManager<ISequencedDocumentMessage, IDocumentMessage>, "off" | "on"> &
+	Partial<Pick<IFluidDataStoreRuntime, "logger">> & {
+		signalsConnected(): boolean;
+	};
 
 /**
  * Collection of utilities provided by PresenceManager that are used by presence sub-components.

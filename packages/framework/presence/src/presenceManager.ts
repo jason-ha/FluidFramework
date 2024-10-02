@@ -3,6 +3,7 @@
  * Licensed under the MIT License.
  */
 
+import type { IConnectionDetails } from "@fluidframework/container-definitions/internal";
 import { createSessionId } from "@fluidframework/id-compressor/internal";
 import type { MonitoringContext } from "@fluidframework/telemetry-utils/internal";
 import { createChildMonitoringContext } from "@fluidframework/telemetry-utils/internal";
@@ -78,7 +79,8 @@ class PresenceManager
 		// might possibly try to use it. (Datastore manager is expected to
 		// use connected clientId more directly and no order dependence should
 		// be relied upon, but helps with debugging consistency.)
-		runtime.on("connected", (clientId: ClientConnectionId) => {
+		runtime.on("connect", (details: IConnectionDetails) => {
+			const { clientId } = details;
 			this.selfAttendee.currentConnectionId = () => clientId;
 			this.attendees.set(clientId, this.selfAttendee);
 		});
