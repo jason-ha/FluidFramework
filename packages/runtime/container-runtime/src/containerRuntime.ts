@@ -145,7 +145,8 @@ import {
 	getSummaryForDatastores,
 	wrapContext,
 } from "./channelCollection.js";
-import { IPerfSignalReport, ReportOpPerfTelemetry } from "./connectionTelemetry.js";
+import type { IPerfSignalReport, SignalTracking } from "./connectionTelemetry.js";
+import { ReportOpPerfTelemetry } from "./connectionTelemetry.js";
 import { ContainerFluidHandleContext } from "./containerHandleContext.js";
 import { channelToDataStore } from "./dataStore.js";
 import { FluidDataStoreRegistry } from "./dataStoreRegistry.js";
@@ -1333,17 +1334,12 @@ export class ContainerRuntime
 	private readonly useDeltaManagerOpsProxy: boolean;
 	private readonly closeSummarizerDelayMs: number;
 	private readonly defaultTelemetrySignalSampleCount = 100;
-	private readonly _signalTracking: IPerfSignalReport = {
-		totalSignalsSentInLatencyWindow: 0,
-		signalsLost: 0,
-		signalsOutOfOrder: 0,
-		signalsSentSinceLastLatencyMeasurement: 0,
-		broadcastSignalSequenceNumber: 0,
-		signalTimestamp: 0,
-		roundTripSignalSequenceNumber: undefined,
-		trackingSignalSequenceNumber: undefined,
-		minimumTrackingSignalSequenceNumber: undefined,
-	};
+	/**
+	 * Identifier to track broadcast signals being submitted in order to
+	 * allow collection of data around the roundtrip of signal messages.
+	 */
+	private broadcastSignalSequenceNumber = 0;
+	private _signalTracking: SignalTracking | undefined = undefined;
 
 	/**
 	 * Summarizer is responsible for coordinating when to send generate and send summaries.
@@ -2637,14 +2633,7 @@ export class ContainerRuntime
 		this._connected = connected;
 
 		if (!connected) {
-			this._signalTracking.signalsLost = 0;
-			this._signalTracking.signalsOutOfOrder = 0;
-			this._signalTracking.signalTimestamp = 0;
-			this._signalTracking.signalsSentSinceLastLatencyMeasurement = 0;
-			this._signalTracking.totalSignalsSentInLatencyWindow = 0;
-			this._signalTracking.roundTripSignalSequenceNumber = undefined;
-			this._signalTracking.trackingSignalSequenceNumber = undefined;
-			this._signalTracking.minimumTrackingSignalSequenceNumber = undefined;
+			this._signalTracking = undefined;
 		} else {
 			assert(
 				this.attachState === AttachState.Attached,
@@ -3005,22 +2994,22 @@ export class ContainerRuntime
 	/**
 	 * Emits the Signal event and update the perf signal data.
 	 */
-	private sendSignalTelemetryEvent() {
-		const duration = Date.now() - this._signalTracking.signalTimestamp;
+	private sendSignalTelemetryEvent(report: IPerfSignalReport) {
+		const duration = Date.now() - report.signalTimestamp;
 		this.mc.logger.sendPerformanceEvent({
 			eventName: "SignalLatency",
 			details: {
 				duration, // Roundtrip duration of the tracked signal in milliseconds.
-				sent: this._signalTracking.totalSignalsSentInLatencyWindow, // Signals sent since the last logged SignalLatency event.
-				lost: this._signalTracking.signalsLost, // Signals lost since the last logged SignalLatency event.
-				outOfOrder: this._signalTracking.signalsOutOfOrder, // Out of order signals since the last logged SignalLatency event.
+				sent: report.totalSignalsSentInLatencyWindow, // Signals sent since the last logged SignalLatency event.
+				lost: report.signalsLost, // Signals lost since the last logged SignalLatency event.
+				outOfOrder: report.signalsOutOfOrder, // Out of order signals since the last logged SignalLatency event.
 				reconnectCount: this.consecutiveReconnects, // Container reconnect count.
 			},
 		});
-		this._signalTracking.signalsLost = 0;
-		this._signalTracking.signalsOutOfOrder = 0;
-		this._signalTracking.signalTimestamp = 0;
-		this._signalTracking.totalSignalsSentInLatencyWindow = 0;
+		report.signalsLost = 0;
+		report.signalsOutOfOrder = 0;
+		report.signalTimestamp = 0;
+		report.totalSignalsSentInLatencyWindow = 0;
 	}
 
 	/**
@@ -3032,27 +3021,22 @@ export class ContainerRuntime
 			return;
 		}
 
-		if (
-			this._signalTracking.trackingSignalSequenceNumber === undefined ||
-			this._signalTracking.minimumTrackingSignalSequenceNumber === undefined
-		) {
+		if (this._signalTracking === undefined) {
 			return;
 		}
 
-		if (
-			clientBroadcastSignalSequenceNumber >= this._signalTracking.trackingSignalSequenceNumber
-		) {
-			// Calculate the number of signals lost and log the event.
-			const signalsLost =
-				clientBroadcastSignalSequenceNumber -
-				this._signalTracking.trackingSignalSequenceNumber;
+		const { trackingSignalSequenceNumber: expectedSequenceNumber, report } =
+			this._signalTracking;
+		if (clientBroadcastSignalSequenceNumber >= expectedSequenceNumber) {
+			// Calculate the number of signals lost, if any.
+			const signalsLost = clientBroadcastSignalSequenceNumber - expectedSequenceNumber;
 			if (signalsLost > 0) {
-				this._signalTracking.signalsLost += signalsLost;
+				report.signalsLost += signalsLost;
 				this.mc.logger.sendErrorEvent({
 					eventName: "SignalLost",
 					details: {
 						signalsLost, // Number of lost signals detected.
-						expectedSequenceNumber: this._signalTracking.trackingSignalSequenceNumber, // The next expected signal sequence number.
+						expectedSequenceNumber, // The next expected signal sequence number.
 						clientBroadcastSignalSequenceNumber, // Actual signal sequence number received.
 					},
 				});
@@ -3065,9 +3049,9 @@ export class ContainerRuntime
 			clientBroadcastSignalSequenceNumber >=
 			this._signalTracking.minimumTrackingSignalSequenceNumber
 		) {
-			this._signalTracking.signalsOutOfOrder++;
+			report.signalsOutOfOrder++;
 			const details: TelemetryEventPropertyTypeExt = {
-				expectedSequenceNumber: this._signalTracking.trackingSignalSequenceNumber, // The next expected signal sequence number.
+				expectedSequenceNumber, // The next expected signal sequence number.
 				clientBroadcastSignalSequenceNumber, // Sequence number of the out of order signal.
 			};
 			// Only log `contents.type` when address is for container to avoid
@@ -3081,21 +3065,18 @@ export class ContainerRuntime
 			});
 		}
 		if (
-			this._signalTracking.roundTripSignalSequenceNumber !== undefined &&
-			clientBroadcastSignalSequenceNumber >= this._signalTracking.roundTripSignalSequenceNumber
+			report.roundTripSignalSequenceNumber !== undefined &&
+			clientBroadcastSignalSequenceNumber >= report.roundTripSignalSequenceNumber
 		) {
-			if (
-				clientBroadcastSignalSequenceNumber ===
-				this._signalTracking.roundTripSignalSequenceNumber
-			) {
+			if (clientBroadcastSignalSequenceNumber === report.roundTripSignalSequenceNumber) {
 				// Latency tracked signal has been received.
 				// We now log the roundtrip duration of the tracked signal.
 				// This telemetry event also logs metrics for broadcast signals
 				// sent, lost, and out of order.
 				// These metrics are reset after logging the telemetry event.
-				this.sendSignalTelemetryEvent();
+				this.sendSignalTelemetryEvent(report);
 			}
-			this._signalTracking.roundTripSignalSequenceNumber = undefined;
+			report.roundTripSignalSequenceNumber = undefined;
 		}
 	}
 
@@ -3379,36 +3360,40 @@ export class ContainerRuntime
 		const isBroadcastSignal = targetClientId === undefined;
 
 		if (isBroadcastSignal) {
-			const clientBroadcastSignalSequenceNumber = ++this._signalTracking
-				.broadcastSignalSequenceNumber;
+			const clientBroadcastSignalSequenceNumber = ++this.broadcastSignalSequenceNumber;
 			// Stamp with the broadcast signal sequence number.
 			envelope.clientBroadcastSignalSequenceNumber = clientBroadcastSignalSequenceNumber;
 
-			this._signalTracking.signalsSentSinceLastLatencyMeasurement++;
-
-			if (
-				this._signalTracking.minimumTrackingSignalSequenceNumber === undefined ||
-				this._signalTracking.trackingSignalSequenceNumber === undefined
-			) {
+			if (this._signalTracking === undefined) {
 				// Signal monitoring window is undefined
 				// Initialize tracking to expect the next signal sent by the connected client.
-				this._signalTracking.minimumTrackingSignalSequenceNumber =
-					clientBroadcastSignalSequenceNumber;
-				this._signalTracking.trackingSignalSequenceNumber =
-					clientBroadcastSignalSequenceNumber;
+				this._signalTracking = {
+					minimumTrackingSignalSequenceNumber: clientBroadcastSignalSequenceNumber,
+					trackingSignalSequenceNumber: clientBroadcastSignalSequenceNumber,
+					report: {
+						totalSignalsSentInLatencyWindow: 0,
+						signalsLost: 0,
+						signalsOutOfOrder: 0,
+						signalsSentSinceLastLatencyMeasurement: 0,
+						signalTimestamp: 0,
+						roundTripSignalSequenceNumber: undefined,
+					},
+				};
 			}
+
+			const { report } = this._signalTracking;
+			report.signalsSentSinceLastLatencyMeasurement++;
 
 			// We should not track the round trip of a new signal in the case we are already tracking one.
 			if (
 				clientBroadcastSignalSequenceNumber % this.defaultTelemetrySignalSampleCount === 1 &&
-				this._signalTracking.roundTripSignalSequenceNumber === undefined
+				report.roundTripSignalSequenceNumber === undefined
 			) {
-				this._signalTracking.signalTimestamp = Date.now();
-				this._signalTracking.roundTripSignalSequenceNumber =
-					clientBroadcastSignalSequenceNumber;
-				this._signalTracking.totalSignalsSentInLatencyWindow +=
-					this._signalTracking.signalsSentSinceLastLatencyMeasurement;
-				this._signalTracking.signalsSentSinceLastLatencyMeasurement = 0;
+				report.signalTimestamp = Date.now();
+				report.roundTripSignalSequenceNumber = clientBroadcastSignalSequenceNumber;
+				report.totalSignalsSentInLatencyWindow +=
+					report.signalsSentSinceLastLatencyMeasurement;
+				report.signalsSentSinceLastLatencyMeasurement = 0;
 			}
 		}
 
