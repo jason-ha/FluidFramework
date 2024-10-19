@@ -2709,6 +2709,7 @@ describe("Runtime", () => {
 							sent: 1,
 							lost: 0,
 							outOfOrder: 0,
+							duplicated: 0,
 							reconnectCount: 0,
 						},
 
@@ -2717,6 +2718,7 @@ describe("Runtime", () => {
 							sent: 100,
 							lost: 0,
 							outOfOrder: 0,
+							duplicated: 0,
 							reconnectCount: 0,
 						},
 					],
@@ -2841,6 +2843,485 @@ describe("Runtime", () => {
 				);
 			});
 
+			describe("within single window", () => {
+				it("logs duplicate count without error event when signal received twice in a row", () => {
+					// Send 1st signal and process it to prime the system
+					sendSignals(1);
+					processSubmittedSignals(1);
+
+					// Send 100 more signals and process each of them in order duplicating one in the middle
+					sendSignals(100); //                        100 outstanding including 1 tracked signal (#101); max #101
+					processSubmittedSignals(50); //              50 outstanding including 1 tracked signal (#101)
+					// Send next signal without removing it from test queue
+					processSignals([submittedSignals[0]], 1); // 49 outstanding including 1 tracked signal (#101)
+					// Sent duplicated signal and the remaining 49 others
+					processSubmittedSignals(50); //               0 outstanding; none tracked
+
+					// Check SignalLatency logs amount of sent and lost signals
+					logger.assertMatch(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 0,
+								outOfOrder: 0,
+								duplicated: 1,
+								reconnectCount: 0,
+							},
+						],
+						"SignalLatency telemetry should log duplicated signal count",
+						/* inlineDetailsProp = */ true,
+						/* clearEventsAfterCheck = */ false,
+					);
+
+					logger.assertMatchNone(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLost",
+							},
+							{
+								eventName: "ContainerRuntime:SignalOutOfOrder",
+							},
+						],
+						"SignalLost and SignalOutOfOrder telemetry should not be logged when signals are processed in order",
+					);
+				});
+
+				it("logs duplicate count without error event when past signal is received again", () => {
+					// Send 1st signal and process it to prime the system
+					sendSignals(1);
+					processSubmittedSignals(1);
+
+					// Send 100 more signals and process each of them in order duplicating some and sending along the way
+					sendSignals(100); //             100 outstanding including 1 tracked signal (#101); max #101
+					processSubmittedSignals(30); //   70 outstanding including 1 tracked signal (#101)
+					const duplicates = [submittedSignals[0]]; // extract 1 signal to duplicate
+					processSubmittedSignals(20); //   50 outstanding including 1 tracked signal (#101)
+					// duplicate a past signal
+					processSignals(duplicates, 1); // 50 outstanding including 1 tracked signal (#101)
+					duplicates.push(submittedSignals[0]); // extract another signal to duplicate
+					processSubmittedSignals(20); //   30 outstanding including 1 tracked signal (#101)
+					duplicates.push(submittedSignals[0]); // extract one more signal to duplicate
+					processSubmittedSignals(20); //   10 outstanding including 1 tracked signal (#101)
+					// duplicate 2 past signals
+					processSignals(duplicates, 2); // 10 outstanding including 1 tracked signal (#101)
+					processSubmittedSignals(10); //    0 outstanding; none tracked
+
+					// Check SignalLatency logs amount of sent and lost signals
+					logger.assertMatch(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 0,
+								outOfOrder: 0,
+								duplicated: 3,
+								reconnectCount: 0,
+							},
+						],
+						"SignalLatency telemetry should log duplicated signal count",
+						/* inlineDetailsProp = */ true,
+						/* clearEventsAfterCheck = */ false,
+					);
+
+					logger.assertMatchNone(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLost",
+							},
+							{
+								eventName: "ContainerRuntime:SignalOutOfOrder",
+							},
+						],
+						"SignalLost and SignalOutOfOrder telemetry should not be logged when signals are processed in order (with some duplicates)",
+					);
+				});
+
+				it("logs duplicate count without order error event when signals are dropped and another is received twice", () => {
+					// Send 1st signal and process it to prime the system
+					sendSignals(1);
+					processSubmittedSignals(1);
+
+					// Send 100 more signals and process each of them in order apart for skipping some and a duplicate later
+					sendSignals(100); //             100 outstanding including 1 tracked signal (#101); max #101
+					processSubmittedSignals(50); //   50 outstanding including 1 tracked signal (#101)
+					dropSignals(10); //               40 outstanding including 1 tracked signal (#101)
+					const duplicates = [submittedSignals[10]]; // extract 1 signal to duplicate from pending signals
+					processSubmittedSignals(20); //   20 outstanding including 1 tracked signal (#101)
+					processSignals(duplicates, 1); // 20 outstanding including 1 tracked signal (#101)
+					processSubmittedSignals(20); //    0 outstanding; none tracked
+
+					// Check SignalLatency logs amount of sent and lost signals
+					logger.assertMatch(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 10,
+								outOfOrder: 0,
+								duplicated: 1,
+								reconnectCount: 0,
+							},
+						],
+						"SignalLatency telemetry should log duplicated signal count",
+						/* inlineDetailsProp = */ true,
+						/* clearEventsAfterCheck = */ false,
+					);
+
+					logger.assertMatchNone(
+						[
+							{
+								eventName: "ContainerRuntime:SignalOutOfOrder",
+							},
+						],
+						"SignalOutOfOrder telemetry should not be logged when signals are processed in order (with duplicates)",
+					);
+				});
+
+				it("logs duplicate count and order error event when signals are dropped and last dropped is received twice", () => {
+					// Send 1st signal and process it to prime the system
+					sendSignals(1);
+					processSubmittedSignals(1);
+
+					// Send 100 more signals and process each of them in order apart for skipping some and a duplicate later
+					sendSignals(100); //                  100 outstanding including 1 tracked signal (#101); max #101
+					processSubmittedSignals(50); //        50 outstanding including 1 tracked signal (#101)
+					dropSignals(10); //                    40 outstanding including 1 tracked signal (#101)
+					const duplicates = [droppedSignals[9]]; // extract 1 signal to duplicate from dropped signals
+					processSubmittedSignals(10); //        30 outstanding including 1 tracked signal (#101); missing count 10
+					processSignals([...duplicates], 1); // 30 outstanding including 1 tracked signal (#101); missing count 9; 1st out of order
+					processSubmittedSignals(10); //        20 outstanding including 1 tracked signal (#101)
+					processSignals(duplicates, 1); //      20 outstanding including 1 tracked signal (#101); missing count 9; 1st dupe
+					processSubmittedSignals(20); //         0 outstanding; none tracked; missing count 9
+
+					// Check SignalLatency logs amount of sent and lost signals
+					logger.assertMatch(
+						[
+							{
+								eventName: "ContainerRuntime:SignalOutOfOrder",
+							},
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 10,
+								outOfOrder: 1,
+								duplicated: 1,
+								reconnectCount: 0,
+							},
+						],
+						"SignalLatency telemetry should log duplicated signal count",
+						/* inlineDetailsProp = */ true,
+					);
+				});
+
+				it("logs duplicate count and order error event when signals are dropped and two are received twice", () => {
+					// Send 1st signal and process it to prime the system
+					sendSignals(1);
+					processSubmittedSignals(1);
+
+					// Send 100 more signals and process each of them in order apart for skipping some and a duplicate later
+					sendSignals(100); //              100 outstanding including 1 tracked signal (#101); max #101
+					processSubmittedSignals(50); //    50 outstanding including 1 tracked signal (#101)
+					dropSignals(10); //                40 outstanding including 1 tracked signal (#101)
+					// extract 2 signals to duplicate from dropped signals
+					const duplicatesA = [droppedSignals[2]];
+					const duplicatesB = [droppedSignals[7]];
+					processSubmittedSignals(10); //    30 outstanding including 1 tracked signal (#101); missing count 10
+					processSignals(duplicatesA, 1); // 20 outstanding including 1 tracked signal (#101); missing count 9
+					processSubmittedSignals(10); //    20 outstanding including 1 tracked signal (#101)
+					processDroppedSignals(10); //      20 outstanding including 1 tracked signal (#101); missing count 0; 1st dupe
+					processSignals(duplicatesB, 1); // 20 outstanding including 1 tracked signal (#101); missing count 0; 2nd dupes
+					processSubmittedSignals(20); //     0 outstanding; none tracked
+
+					// Check SignalLatency logs amount of sent and lost signals
+					logger.assertMatch(
+						[
+							{
+								eventName: "ContainerRuntime:SignalOutOfOrder",
+							},
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 10,
+								outOfOrder: 10,
+								duplicated: 2,
+								reconnectCount: 0,
+							},
+						],
+						"SignalLatency telemetry should log duplicated signal count",
+						/* inlineDetailsProp = */ true,
+					);
+				});
+			});
+
+			describe("across two windows", () => {
+				it("logs duplicate count without error event when signal received twice in a row", () => {
+					// Send 1st signal and process it to prime the system
+					sendSignals(1);
+					processSubmittedSignals(1);
+
+					// Send 100 more signals and process each of them in order duplicating one in the middle
+					sendSignals(100); //                        100 outstanding including 1 tracked signal (#101); max #101
+					const duplicates = [submittedSignals[99]]; // extract last signal to duplicate
+					processSubmittedSignals(100); //              0 outstanding; none tracked
+					// begin second window
+					processSignals(duplicates, 1); //             0 outstanding; none tracked; 1st dupe
+					sendSignals(100); //                        100 outstanding including 1 tracked signal (#201); max #201
+					processSubmittedSignals(100); //              0 outstanding; none tracked
+
+					// Check SignalLatency logs amount of sent and lost signals
+					logger.assertMatch(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 0,
+								outOfOrder: 0,
+								duplicated: 0,
+								reconnectCount: 0,
+							},
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 0,
+								outOfOrder: 0,
+								duplicated: 1,
+								reconnectCount: 0,
+							},
+						],
+						"SignalLatency telemetry should log duplicated signal count",
+						/* inlineDetailsProp = */ true,
+						/* clearEventsAfterCheck = */ false,
+					);
+
+					logger.assertMatchNone(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLost",
+							},
+							{
+								eventName: "ContainerRuntime:SignalOutOfOrder",
+							},
+						],
+						"SignalLost and SignalOutOfOrder telemetry should not be logged when signals are processed in order",
+					);
+				});
+
+				it("logs duplicate count without error event when past signal is received again", () => {
+					// Send 1st signal and process it to prime the system
+					sendSignals(1);
+					processSubmittedSignals(1);
+
+					// Send 100 more signals and process each of them in order duplicating some and sending along the way
+					sendSignals(100); //             100 outstanding including 1 tracked signal (#101); max #101
+					processSubmittedSignals(30); //   70 outstanding including 1 tracked signal (#101)
+					const duplicates = [submittedSignals[0]]; // extract 1 signal to duplicate
+					processSubmittedSignals(20); //   50 outstanding including 1 tracked signal (#101)
+					duplicates.push(submittedSignals[0]); // extract another signal to duplicate
+					processSubmittedSignals(20); //   30 outstanding including 1 tracked signal (#101)
+					duplicates.push(submittedSignals[0]); // extract one more signal to duplicate
+					processSubmittedSignals(30); //    0 outstanding; none tracked
+					// begin second window
+					sendSignals(100); //             100 outstanding including 1 tracked signal (#201); max #201
+					processSubmittedSignals(30); //   70 outstanding including 1 tracked signal (#201)
+					duplicates.push(submittedSignals[0]); // extract 1 signal to duplicate from second window
+					// duplicate a past signal from first window
+					processSignals(duplicates, 1); // 70 outstanding including 1 tracked signal (#201); 1st dupe
+					processSubmittedSignals(30); //   40 outstanding including 1 tracked signal (#201)
+					// duplicate 3 past signals from first window and second windows
+					processSignals(duplicates, 3); // 40 outstanding including 1 tracked signal (#201); 2nd thru 4th dupes
+					processSubmittedSignals(40); //    0 outstanding; none tracked
+
+					// Check SignalLatency logs amount of sent and lost signals
+					logger.assertMatch(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 0,
+								outOfOrder: 0,
+								duplicated: 0,
+								reconnectCount: 0,
+							},
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 0,
+								outOfOrder: 0,
+								duplicated: 4,
+								reconnectCount: 0,
+							},
+						],
+						"SignalLatency telemetry should log duplicated signal count",
+						/* inlineDetailsProp = */ true,
+						/* clearEventsAfterCheck = */ false,
+					);
+
+					logger.assertMatchNone(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLost",
+							},
+							{
+								eventName: "ContainerRuntime:SignalOutOfOrder",
+							},
+						],
+						"SignalLost and SignalOutOfOrder telemetry should not be logged when signals are processed in order (with some duplicates)",
+					);
+				});
+
+				it("logs duplicate count without order error event when signals are dropped and another is received twice", () => {
+					// Send 1st signal and process it to prime the system
+					sendSignals(1);
+					processSubmittedSignals(1);
+
+					// Send 100 more signals and process each of them in order apart for skipping some and a duplicate later
+					sendSignals(100); //             100 outstanding including 1 tracked signal (#101); max #101
+					processSubmittedSignals(50); //   50 outstanding including 1 tracked signal (#101)
+					dropSignals(10); //               40 outstanding including 1 tracked signal (#101)
+					const duplicates = [submittedSignals[10]]; // extract 1 signal to duplicate from pending signals
+					processSubmittedSignals(40); //    0 outstanding; none tracked
+					// begin second window
+					sendSignals(100); //             100 outstanding including 1 tracked signal (#201); max #201
+					processSubmittedSignals(30); //   70 outstanding including 1 tracked signal (#201)
+					processSignals(duplicates, 1); // 20 outstanding including 1 tracked signal (#201); 1st dupe
+					processSubmittedSignals(70); //    0 outstanding; none tracked
+
+					// Check SignalLatency logs amount of sent and lost signals
+					logger.assertMatch(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 10,
+								outOfOrder: 0,
+								duplicated: 0,
+								reconnectCount: 0,
+							},
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 0,
+								outOfOrder: 0,
+								duplicated: 1,
+								reconnectCount: 0,
+							},
+						],
+						"SignalLatency telemetry should log duplicated signal count",
+						/* inlineDetailsProp = */ true,
+						/* clearEventsAfterCheck = */ false,
+					);
+
+					logger.assertMatchNone(
+						[
+							{
+								eventName: "ContainerRuntime:SignalOutOfOrder",
+							},
+						],
+						"SignalOutOfOrder telemetry should not be logged when signals are processed in order (with duplicates)",
+					);
+				});
+
+				it("logs duplicate count and order error event when signals are dropped and last dropped is received twice", () => {
+					// Send 1st signal and process it to prime the system
+					sendSignals(1);
+					processSubmittedSignals(1);
+
+					// Send 100 more signals and process each of them in order apart for skipping some and a duplicate later
+					sendSignals(100); //                  100 outstanding including 1 tracked signal (#101); max #101
+					processSubmittedSignals(50); //        50 outstanding including 1 tracked signal (#101)
+					dropSignals(10); //                    40 outstanding including 1 tracked signal (#101)
+					const duplicates = [droppedSignals[9]]; // extract 1 signal to duplicate from dropped signals
+					processSubmittedSignals(10); //        30 outstanding including 1 tracked signal (#101); missing count 10
+					processSubmittedSignals(30); //         0 outstanding; none tracked; missing count 10
+					// begin second window
+					sendSignals(100); //                  100 outstanding including 1 tracked signal (#201); max #201
+					processSubmittedSignals(30); //        70 outstanding including 1 tracked signal (#201)
+					processSignals([...duplicates], 1); // 70 outstanding including 1 tracked signal (#201); missing count 9; 1st out of order
+					processSubmittedSignals(10); //        60 outstanding including 1 tracked signal (#201)
+					processSignals(duplicates, 1); //      60 outstanding including 1 tracked signal (#201); missing count 9; 1st dupe
+					processSubmittedSignals(60); //         0 outstanding; none tracked; missing count 9
+
+					// Check SignalLatency logs amount of sent and lost signals
+					logger.assertMatch(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 10,
+								outOfOrder: 0,
+								duplicated: 0,
+								reconnectCount: 0,
+							},
+							{
+								eventName: "ContainerRuntime:SignalOutOfOrder",
+							},
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 0,
+								outOfOrder: 1,
+								duplicated: 1,
+								reconnectCount: 0,
+							},
+						],
+						"SignalLatency telemetry should log duplicated signal count",
+						/* inlineDetailsProp = */ true,
+					);
+				});
+
+				it("logs duplicate count and order error event when signals are dropped and two are received twice", () => {
+					// Send 1st signal and process it to prime the system
+					sendSignals(1);
+					processSubmittedSignals(1);
+
+					// Send 100 more signals and process each of them in order apart for skipping some and a duplicate later
+					sendSignals(100); //              100 outstanding including 1 tracked signal (#101); max #101
+					processSubmittedSignals(50); //    50 outstanding including 1 tracked signal (#101)
+					dropSignals(10); //                40 outstanding including 1 tracked signal (#101)
+					// extract 2 signals to duplicate from dropped signals
+					const duplicatesA = [droppedSignals[2]];
+					const duplicatesB = [droppedSignals[7]];
+					processSubmittedSignals(10); //    30 outstanding including 1 tracked signal (#101); missing count 10
+					processSubmittedSignals(30); //     0 outstanding; none tracked
+					// begin second window
+					sendSignals(100); //              100 outstanding including 1 tracked signal (#201); max #201
+					processSubmittedSignals(30); //    70 outstanding including 1 tracked signal (#201)
+					processSignals(duplicatesA, 1); // 70 outstanding including 1 tracked signal (#201); missing count 9
+					processSubmittedSignals(10); //    60 outstanding including 1 tracked signal (#201)
+					processDroppedSignals(10); //      60 outstanding including 1 tracked signal (#201); missing count 0; 1st dupe
+					processSignals(duplicatesB, 1); // 60 outstanding including 1 tracked signal (#201); missing count 0; 2nd dupes
+					processSubmittedSignals(60); //     0 outstanding; none tracked
+
+					// Check SignalLatency logs amount of sent and lost signals
+					logger.assertMatch(
+						[
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 10,
+								outOfOrder: 0,
+								duplicated: 0,
+								reconnectCount: 0,
+							},
+							{
+								eventName: "ContainerRuntime:SignalOutOfOrder",
+							},
+							{
+								eventName: "ContainerRuntime:SignalLatency",
+								sent: 100,
+								lost: 0,
+								outOfOrder: 10,
+								duplicated: 2,
+								reconnectCount: 0,
+							},
+						],
+						"SignalLatency telemetry should log duplicated signal count",
+						/* inlineDetailsProp = */ true,
+					);
+				});
+			});
+
 			it("ignores in-flight signals on disconnect/reconnect", () => {
 				// Define resubmit and setConnectionState on channel collection
 				// This is needed to submit test data store ops
@@ -2900,6 +3381,7 @@ describe("Runtime", () => {
 							sent: 97, // 101 (tracked latency signal) - 5 (earliest sent signal on reconnect) + 1 = 97
 							lost: 0,
 							outOfOrder: 0,
+							duplicated: 0,
 							reconnectCount: 1,
 						},
 					],
@@ -2954,6 +3436,7 @@ describe("Runtime", () => {
 							sent: 100,
 							lost: 10,
 							outOfOrder: 0,
+							duplicated: 0,
 							reconnectCount: 0,
 						},
 					],
@@ -2991,6 +3474,7 @@ describe("Runtime", () => {
 							sent: 101,
 							lost: 20,
 							outOfOrder: 0,
+							duplicated: 0,
 							reconnectCount: 0,
 						},
 						{
@@ -2998,6 +3482,7 @@ describe("Runtime", () => {
 							sent: 100,
 							lost: 1,
 							outOfOrder: 0,
+							duplicated: 0,
 							reconnectCount: 0,
 						},
 					],
@@ -3035,6 +3520,7 @@ describe("Runtime", () => {
 							sent: 201,
 							lost: 26,
 							outOfOrder: 0,
+							duplicated: 0,
 							reconnectCount: 0,
 						},
 					],
@@ -3057,6 +3543,7 @@ describe("Runtime", () => {
 							sent: 100,
 							lost: 10,
 							outOfOrder: 0,
+							duplicated: 0,
 							reconnectCount: 0,
 						},
 					],
@@ -3090,6 +3577,7 @@ describe("Runtime", () => {
 							sent: 100,
 							lost: 1,
 							outOfOrder: 0,
+							duplicated: 0,
 							reconnectCount: 0,
 						},
 						{
@@ -3100,6 +3588,7 @@ describe("Runtime", () => {
 							sent: 100,
 							lost: 0,
 							outOfOrder: 1,
+							duplicated: 0,
 							reconnectCount: 0,
 						},
 					],
@@ -3107,6 +3596,7 @@ describe("Runtime", () => {
 					/* inlineDetailsProp = */ true,
 				);
 			});
+
 			describe("multi-client", () => {
 				let remoteContainerRuntime: ContainerRuntime;
 				let remoteLogger: MockLogger;
@@ -3169,6 +3659,7 @@ describe("Runtime", () => {
 								sent: 100,
 								lost: 0,
 								outOfOrder: 0,
+								duplicated: 0,
 								reconnectCount: 0,
 							},
 						],
@@ -3186,6 +3677,7 @@ describe("Runtime", () => {
 								sent: 100,
 								lost: 0,
 								outOfOrder: 0,
+								duplicated: 0,
 								reconnectCount: 0,
 							},
 						],
@@ -3207,6 +3699,7 @@ describe("Runtime", () => {
 								sent: 100,
 								lost: 0,
 								outOfOrder: 0,
+								duplicated: 0,
 								reconnectCount: 0,
 							},
 						],
@@ -3225,6 +3718,7 @@ describe("Runtime", () => {
 								sent: 100,
 								lost: 0,
 								outOfOrder: 0,
+								duplicated: 0,
 								reconnectCount: 0,
 							},
 						],
@@ -3261,6 +3755,7 @@ describe("Runtime", () => {
 								sent: 100,
 								lost: 10,
 								outOfOrder: 5,
+								duplicated: 0,
 								reconnectCount: 0,
 							},
 						],
@@ -3292,6 +3787,7 @@ describe("Runtime", () => {
 								sent: 100,
 								lost: 0,
 								outOfOrder: 0,
+								duplicated: 0,
 								reconnectCount: 0,
 							},
 						],
@@ -3311,6 +3807,7 @@ describe("Runtime", () => {
 								sent: 100,
 								lost: 0,
 								outOfOrder: 0,
+								duplicated: 0,
 								reconnectCount: 0,
 							},
 						],

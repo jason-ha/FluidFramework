@@ -465,6 +465,11 @@ export interface IPerfSignalReport {
 	signalsOutOfOrder: number;
 
 	/**
+	 * Number of signals received multiple times.
+	 */
+	signalsDuplicated: number;
+
+	/**
 	 * Timestamp before submitting the signal we will trace.
 	 */
 	signalTimestamp: number;
@@ -485,6 +490,22 @@ export interface SignalTracking {
 	 * Inclusive lower bound of signal monitoring window.
 	 */
 	minimumTrackingSignalSequenceNumber: number;
+
+	/**
+	 * Inclusive lower bound of signal sequence without any missing signals.
+	 * This will initially be same as {@link trackingSignalSequenceNumber}
+	 * which represents no sequence of signals.
+	 * When signals are lost this will be bumped to the received signal's
+	 * sequence number. It may be lowered when the prior signal is received
+	 * (that signal is considered out of order).
+	 */
+	lowerBoundOfIntactSequence: number;
+
+	/**
+	 * Count of signals not received with a sequence number less than
+	 * {@link lowerBoundOfIntactSequence}.
+	 */
+	countMissing: number;
 
 	report: IPerfSignalReport;
 }

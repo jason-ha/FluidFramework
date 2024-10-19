@@ -3003,11 +3003,13 @@ export class ContainerRuntime
 				sent: report.totalSignalsSentInLatencyWindow, // Signals sent since the last logged SignalLatency event.
 				lost: report.signalsLost, // Signals lost since the last logged SignalLatency event.
 				outOfOrder: report.signalsOutOfOrder, // Out of order signals since the last logged SignalLatency event.
+				duplicated: report.signalsDuplicated, // Signals duplicated since the last logged SignalLatency event.
 				reconnectCount: this.consecutiveReconnects, // Container reconnect count.
 			},
 		});
 		report.signalsLost = 0;
 		report.signalsOutOfOrder = 0;
+		report.signalsDuplicated = 0;
 		report.signalTimestamp = 0;
 		report.totalSignalsSentInLatencyWindow = 0;
 	}
@@ -3031,6 +3033,9 @@ export class ContainerRuntime
 			// Calculate the number of signals lost, if any.
 			const signalsLost = clientBroadcastSignalSequenceNumber - expectedSequenceNumber;
 			if (signalsLost > 0) {
+				// Advance the intact range to be just this signal.
+				this._signalTracking.lowerBoundOfIntactSequence = clientBroadcastSignalSequenceNumber;
+				this._signalTracking.countMissing += signalsLost;
 				report.signalsLost += signalsLost;
 				this.mc.logger.sendErrorEvent({
 					eventName: "SignalLost",
@@ -3049,21 +3054,47 @@ export class ContainerRuntime
 			clientBroadcastSignalSequenceNumber >=
 			this._signalTracking.minimumTrackingSignalSequenceNumber
 		) {
-			report.signalsOutOfOrder++;
-			const details: TelemetryEventPropertyTypeExt = {
-				expectedSequenceNumber, // The next expected signal sequence number.
-				clientBroadcastSignalSequenceNumber, // Sequence number of the out of order signal.
-			};
-			// Only log `contents.type` when address is for container to avoid
-			// chance that contents type is customer data.
-			if (envelope.address === undefined) {
-				details.contentsType = envelope.contents.type; // Type of signal that was received out of order.
+			// Tracking of out of order signals and duplicate signals is imprecise.
+			// If signal is in a known intact range or there are no outstanding missing
+			// signals, then this must be a duplicate.
+			if (
+				clientBroadcastSignalSequenceNumber >=
+					this._signalTracking.lowerBoundOfIntactSequence ||
+				this._signalTracking.countMissing === 0
+			) {
+				report.signalsDuplicated++;
+			} else {
+				// Treat this signal as out of order. (It could possibly be a duplicate
+				// of older signal that was already processed.)
+				// Out of order is no longer missing, so decrement the count.
+				this._signalTracking.countMissing--;
+				// If this signal is just before the lower bound of the intact sequence,
+				// extend the lower bound to include this signal's sequence number.
+				if (
+					clientBroadcastSignalSequenceNumber ===
+					this._signalTracking.lowerBoundOfIntactSequence - 1
+				) {
+					this._signalTracking.lowerBoundOfIntactSequence =
+						clientBroadcastSignalSequenceNumber;
+				}
+
+				report.signalsOutOfOrder++;
+				const details: TelemetryEventPropertyTypeExt = {
+					expectedSequenceNumber, // The next expected signal sequence number.
+					clientBroadcastSignalSequenceNumber, // Sequence number of the out of order signal.
+				};
+				// Only log `contents.type` when address is for container to avoid
+				// chance that contents type is customer data.
+				if (envelope.address === undefined) {
+					details.contentsType = envelope.contents.type; // Type of signal that was received out of order.
+				}
+				this.mc.logger.sendTelemetryEvent({
+					eventName: "SignalOutOfOrder",
+					details,
+				});
 			}
-			this.mc.logger.sendTelemetryEvent({
-				eventName: "SignalOutOfOrder",
-				details,
-			});
 		}
+
 		if (
 			report.roundTripSignalSequenceNumber !== undefined &&
 			clientBroadcastSignalSequenceNumber >= report.roundTripSignalSequenceNumber
@@ -3072,7 +3103,7 @@ export class ContainerRuntime
 				// Latency tracked signal has been received.
 				// We now log the roundtrip duration of the tracked signal.
 				// This telemetry event also logs metrics for broadcast signals
-				// sent, lost, and out of order.
+				// sent, lost, out of order, and duplicated.
 				// These metrics are reset after logging the telemetry event.
 				this.sendSignalTelemetryEvent(report);
 			}
@@ -3370,10 +3401,13 @@ export class ContainerRuntime
 				this._signalTracking = {
 					minimumTrackingSignalSequenceNumber: clientBroadcastSignalSequenceNumber,
 					trackingSignalSequenceNumber: clientBroadcastSignalSequenceNumber,
+					lowerBoundOfIntactSequence: clientBroadcastSignalSequenceNumber,
+					countMissing: 0,
 					report: {
 						totalSignalsSentInLatencyWindow: 0,
 						signalsLost: 0,
 						signalsOutOfOrder: 0,
+						signalsDuplicated: 0,
 						signalsSentSinceLastLatencyMeasurement: 0,
 						signalTimestamp: 0,
 						roundTripSignalSequenceNumber: undefined,
