@@ -775,10 +775,17 @@ export class Container
 
 	private readonly _lifecycleEvents = new TypedEventEmitter<IContainerLifecycleEvents>();
 
+	private static debug = false;
 	constructor(
 		createProps: IContainerCreateProps,
 		loadProps?: Pick<IContainerLoadProps, "pendingLocalState">,
 	) {
+		if (Container.debug) {
+			debugger;
+			if (!Container.debug) {
+				Container.debug = false;
+			}
+		}
 		super((name, error) => {
 			this.mc.logger.sendErrorEvent(
 				{
@@ -1637,7 +1644,7 @@ export class Container
 				this.client.details.type === summarizerClientType,
 			),
 		);
-
+		// debugger;
 		// Except in cases where it has stashed ops or requested by feature gate, the container will connect in "read" mode
 		const mode =
 			this.mc.config.getBoolean("Fluid.Container.ForceWriteConnection") === true ||

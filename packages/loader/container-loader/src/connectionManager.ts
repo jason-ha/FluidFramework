@@ -594,7 +594,7 @@ export class ConnectionManager implements IConnectionManager {
 			},
 			connectionMode: requestedMode,
 		};
-
+		// debugger;
 		// This loop will keep trying to connect until successful, with a delay between each iteration.
 		while (connection === undefined) {
 			if (this._disposed) {
@@ -861,7 +861,7 @@ export class ConnectionManager implements IConnectionManager {
 		);
 
 		this.pendingConnection = undefined;
-
+		// debugger;
 		const oldReadonlyValue = this.readonly;
 		this.connection = connection;
 

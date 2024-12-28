@@ -73,6 +73,8 @@ class PresenceManager implements IPresence, PresenceExtensionInterface {
 		runtime.on("connected", this.onConnect.bind(this));
 
 		runtime.on("disconnected", () => {
+			if (PresenceManager.debug) debugger;
+			PresenceManager.debug = PresenceManager.debug ? true : false;
 			if (runtime.clientId !== undefined) {
 				this.removeClientConnectionId(runtime.clientId);
 			}
@@ -92,7 +94,9 @@ class PresenceManager implements IPresence, PresenceExtensionInterface {
 		}
 	}
 
+	private static debug = true;
 	private onConnect(clientConnectionId: ClientConnectionId): void {
+		if (PresenceManager.debug) debugger;
 		this.systemWorkspace.onConnectionAdded(clientConnectionId);
 		this.datastoreManager.joinSession(clientConnectionId);
 	}

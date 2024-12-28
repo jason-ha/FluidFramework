@@ -3,12 +3,13 @@
  * Licensed under the MIT License.
  */
 
-import {
-	AzureClient,
+import type {
 	AzureContainerServices,
 	AzureLocalConnectionConfig,
 	AzureRemoteConnectionConfig,
 } from "@fluidframework/azure-client";
+import { AzureClient } from "@fluidframework/azure-client";
+import { ScopeType } from "@fluidframework/azure-client/legacy";
 import { createDevtoolsLogger, initializeDevtools } from "@fluidframework/devtools/beta";
 import { ISharedMap, IValueChanged, SharedMap } from "@fluidframework/map/legacy";
 import {
@@ -55,18 +56,23 @@ const azureUser = {
 	additionalDetails: userDetails,
 };
 
-const connectionConfig: AzureRemoteConnectionConfig | AzureLocalConnectionConfig = useAzure
-	? {
-			type: "remote",
-			tenantId: "",
-			tokenProvider: new AzureFunctionTokenProvider("", azureUser),
-			endpoint: "",
-		}
-	: {
-			type: "local",
-			tokenProvider: new InsecureTokenProvider("fooBar", user),
-			endpoint: "http://localhost:7070",
-		};
+function connectionConfig(
+	readonly: boolean,
+): AzureRemoteConnectionConfig | AzureLocalConnectionConfig {
+	const scopes = readonly ? [ScopeType.DocRead] : undefined;
+	return useAzure
+		? {
+				type: "remote",
+				tenantId: "",
+				tokenProvider: new AzureFunctionTokenProvider("", azureUser, scopes),
+				endpoint: "",
+			}
+		: {
+				type: "local",
+				tokenProvider: new InsecureTokenProvider("fooBar", user, scopes),
+				endpoint: "http://localhost:7070",
+			};
+}
 
 // Define the schema of our Container.
 // This includes the DataObjects we support and any initial DataObjects we want created
@@ -138,7 +144,7 @@ async function start(): Promise<void> {
 	const devtoolsLogger = createDevtoolsLogger(baseLogger);
 
 	const clientProps = {
-		connection: connectionConfig,
+		connection: connectionConfig(window.location.search === "?readonly"),
 		logger: devtoolsLogger,
 	};
 	const client = new AzureClient(clientProps);
@@ -173,7 +179,7 @@ async function start(): Promise<void> {
 		id = location.hash.slice(1);
 		// Use the unique container ID to fetch the container created earlier.  It will already be connected to the
 		// collaboration session.
-		({ container, services } = await client.getContainer(id, containerSchema, "2"));
+		({ container, services } = await client.getContainer(id, containerSchema, "2", "read"));
 		[diceRollerController1Props, diceRollerController2Props] =
 			createDiceRollerControllerPropsFromContainer(container);
 	}

@@ -581,7 +581,7 @@ export class DocumentDeltaConnection
 				) {
 					return;
 				}
-
+				// debugger;
 				const requestedMode = connectMessage.mode;
 				const actualMode = response.mode;
 				const writingPermitted = response.claims.scopes.includes(ScopeType.DocWrite);

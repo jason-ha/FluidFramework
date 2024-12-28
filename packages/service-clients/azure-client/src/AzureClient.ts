@@ -23,6 +23,7 @@ import type {
 import { assert } from "@fluidframework/core-utils/internal";
 import type { IClient } from "@fluidframework/driver-definitions";
 import type {
+	ConnectionMode,
 	IDocumentServiceFactory,
 	IUrlResolver,
 } from "@fluidframework/driver-definitions/internal";
@@ -72,7 +73,7 @@ const MAX_VERSION_COUNT = 5;
  */
 const azureClientFeatureGates = {
 	// Azure client requires a write connection by default
-	"Fluid.Container.ForceWriteConnection": true,
+	// "Fluid.Container.ForceWriteConnection": true,
 };
 
 /**
@@ -137,7 +138,7 @@ export class AzureClient {
 		container: IFluidContainer<TContainerSchema>;
 		services: AzureContainerServices;
 	}> {
-		const loaderProps = this.getLoaderProps(containerSchema, compatibilityMode);
+		const loaderProps = this.getLoaderProps(containerSchema, compatibilityMode, "write");
 
 		const container = await createDetachedContainer({
 			...loaderProps,
@@ -168,11 +169,16 @@ export class AzureClient {
 		id: string,
 		containerSchema: TContainerSchema,
 		compatibilityMode: CompatibilityMode,
+		connectionMode: "write" | "read" = "write",
 	): Promise<{
 		container: IFluidContainer<TContainerSchema>;
 		services: AzureContainerServices;
 	}> {
-		const loaderProps = this.getLoaderProps(containerSchema, compatibilityMode);
+		const loaderProps = this.getLoaderProps(
+			containerSchema,
+			compatibilityMode,
+			connectionMode,
+		);
 		const url = new URL(this.connectionConfig.endpoint);
 		url.searchParams.append("storage", encodeURIComponent(this.connectionConfig.endpoint));
 		url.searchParams.append(
@@ -212,7 +218,7 @@ export class AzureClient {
 	): Promise<{
 		container: IFluidContainer<TContainerSchema>;
 	}> {
-		const loaderProps = this.getLoaderProps(containerSchema, compatibilityMode);
+		const loaderProps = this.getLoaderProps(containerSchema, compatibilityMode, "read");
 		const url = new URL(this.connectionConfig.endpoint);
 		url.searchParams.append("storage", encodeURIComponent(this.connectionConfig.endpoint));
 		url.searchParams.append(
@@ -280,6 +286,7 @@ export class AzureClient {
 	private getLoaderProps(
 		schema: ContainerSchema,
 		compatibilityMode: CompatibilityMode,
+		connectionMode: ConnectionMode,
 	): ILoaderProps {
 		const runtimeFactory = createDOProviderContainerRuntimeFactory({
 			schema,
@@ -300,7 +307,7 @@ export class AzureClient {
 			permission: [],
 			scopes: [],
 			user: { id: "" },
-			mode: "write",
+			mode: connectionMode,
 		};
 
 		return {

@@ -3,8 +3,9 @@
  * Licensed under the MIT License.
  */
 
-import { AzureMember } from "@fluidframework/azure-client";
-import { ITokenProvider, ITokenResponse } from "@fluidframework/routerlicious-driver";
+import type { AzureMember } from "@fluidframework/azure-client";
+import type { ScopeType } from "@fluidframework/azure-client/legacy";
+import type { ITokenProvider, ITokenResponse } from "@fluidframework/routerlicious-driver";
 import axios from "axios";
 
 /**
@@ -22,6 +23,7 @@ export class AzureFunctionTokenProvider implements ITokenProvider {
 	public constructor(
 		private readonly azFunctionUrl: string,
 		private readonly user?: Pick<AzureMember, "id" | "name" | "additionalDetails">,
+		private readonly scopes?: ScopeType[],
 	) {}
 
 	public async fetchOrdererToken(
@@ -54,6 +56,7 @@ export class AzureFunctionTokenProvider implements ITokenProvider {
 				id: this.user?.id,
 				name: this.user?.name,
 				additionalDetails: this.user?.additionalDetails as unknown,
+				scopes: this.scopes,
 			},
 		});
 		return response.data as string;
