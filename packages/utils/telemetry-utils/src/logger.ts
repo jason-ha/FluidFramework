@@ -373,9 +373,9 @@ export class TaggedLoggerAdapter implements ITelemetryBaseLogger {
  * @alpha
  */
 export function createChildLogger(props?: {
-	logger?: ITelemetryBaseLogger;
-	namespace?: string;
-	properties?: ITelemetryLoggerPropertyBags;
+	logger?: ITelemetryBaseLogger | undefined;
+	namespace?: string | undefined;
+	properties?: ITelemetryLoggerPropertyBags | undefined;
 }): ITelemetryLoggerExt {
 	return ChildLogger.create(props?.logger, props?.namespace, props?.properties);
 }
@@ -394,9 +394,9 @@ export class ChildLogger extends TelemetryLogger {
 	 * @param properties - Base properties to add to all events
 	 */
 	public static create(
-		baseLogger?: ITelemetryBaseLogger,
-		namespace?: string,
-		properties?: ITelemetryLoggerPropertyBags,
+		baseLogger?: ITelemetryBaseLogger | undefined,
+		namespace?: string | undefined,
+		properties?: ITelemetryLoggerPropertyBags | undefined,
 	): TelemetryLogger {
 		// if we are creating a child of a child, rather than nest, which will increase
 		// the callstack overhead, just generate a new logger that includes everything from the previous
@@ -725,9 +725,9 @@ export class PerformanceEvent {
 		return performanceNow() - this.startTime;
 	}
 
-	private event?: ITelemetryGenericEventExt;
+	private event: ITelemetryGenericEventExt | undefined;
 	private readonly startTime = performanceNow();
-	private startMark?: string;
+	private startMark: string | undefined;
 
 	protected constructor(
 		private readonly logger: ITelemetryLoggerExt,

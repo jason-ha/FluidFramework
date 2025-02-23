@@ -32,8 +32,8 @@ export function extractLogSafeErrorProperties(
 	sanitizeStack: boolean,
 ): {
 	message: string;
-	errorType?: string | undefined;
-	stack?: string | undefined;
+	errorType?: string;
+	stack?: string;
 } {
 	const removeMessageFromStack = (stack: string, errorName?: string): string => {
 		if (!sanitizeStack) {
@@ -125,11 +125,8 @@ export function normalizeError(
 	}
 
 	// We have to construct a new Fluid Error, copying safe properties over
-	const { message, stack } = extractLogSafeErrorProperties(error, false /* sanitizeStack */);
-	const fluidError: IFluidErrorBase = new NormalizedLoggingError({
-		message,
-		stack,
-	});
+	const safeProps = extractLogSafeErrorProperties(error, false /* sanitizeStack */);
+	const fluidError: IFluidErrorBase = new NormalizedLoggingError(safeProps);
 
 	// We need to preserve these properties which are used in a non-typesafe way throughout driver code (see #8743)
 	// Anywhere they are set should be on a valid Fluid Error that would have been returned above,

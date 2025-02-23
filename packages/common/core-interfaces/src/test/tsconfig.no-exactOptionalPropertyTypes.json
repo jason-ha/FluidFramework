@@ -8,7 +8,12 @@
 		"exactOptionalPropertyTypes": false,
 		"noEmit": true,
 	},
-	"exclude": ["./jsonSerializable.exactOptionalPropertyTypes.true.spec.ts"],
+	"exclude": [
+		"./jsonSerializable.exactOptionalPropertyTypes.true.spec.ts",
+		// With exact optional property types disabled, ITelemetryBaseLogger does not appear
+		// incompatible and the expected error will not surface; so, skip for now.
+		"./types/validateCoreInterfacesPrevious.generated.ts",
+	],
 	"references": [
 		{
 			"path": "../..",

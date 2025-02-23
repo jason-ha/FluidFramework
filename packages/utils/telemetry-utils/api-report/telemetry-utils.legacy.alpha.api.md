@@ -6,9 +6,9 @@
 
 // @alpha
 export function createChildLogger(props?: {
-    logger?: ITelemetryBaseLogger;
-    namespace?: string;
-    properties?: ITelemetryLoggerPropertyBags;
+    logger?: ITelemetryBaseLogger | undefined;
+    namespace?: string | undefined;
+    properties?: ITelemetryLoggerPropertyBags | undefined;
 }): ITelemetryLoggerExt;
 
 // @alpha

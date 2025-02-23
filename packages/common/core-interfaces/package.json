@@ -153,7 +153,11 @@
 		}
 	},
 	"typeValidation": {
-		"broken": {},
+		"broken": {
+			"Interface_ITelemetryBaseLogger": {
+				"backCompat": false
+			}
+		},
 		"entrypoint": "legacy"
 	}
 }
