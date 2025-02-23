@@ -6,9 +6,13 @@
 import { strict as assert } from "node:assert";
 import { fork, ChildProcess } from "node:child_process";
 
+import type { JsonDeserialized } from "@fluidframework/core-interfaces/internal";
 import { timeoutPromise } from "@fluidframework/test-utils/internal";
 
-import type { MessageFromChild, MessageToChild } from "./messageTypes.js";
+import type {
+	OrchestratorMessageFromActor,
+	OrchestratorMessageToActor,
+} from "./messageTypes.js";
 
 /**
  * This test suite is a prototype for a multi-process end to end test for Fluid using the new Presence API on AzureClient.
@@ -55,13 +59,13 @@ describe(`Presence with AzureClient`, () => {
 		let containerCreatorSessionId: string | undefined;
 		for (const [index, child] of childProcesses.entries()) {
 			const user = { id: `test-user-id-${index}`, name: `test-user-name-${index}` };
-			const message: MessageToChild = { command: "connect", user };
+			const message: OrchestratorMessageToActor = { command: "connect", user };
 
 			if (containerIdPromise === undefined) {
 				// Create a promise that resolves with the containerId from the created container.
 				containerIdPromise = timeoutPromise<string>(
 					(resolve, reject) => {
-						child.once("message", (msg: MessageFromChild) => {
+						child.once("message", (msg: JsonDeserialized<OrchestratorMessageFromActor>) => {
 							if (msg.event === "ready" && msg.containerId) {
 								containerCreatorSessionId = msg.sessionId;
 								resolve(msg.containerId);
@@ -124,7 +128,7 @@ describe(`Presence with AzureClient`, () => {
 		const attendeeJoinedPromise = timeoutPromise(
 			(resolve) => {
 				let attendeesJoinedEvents = 0;
-				children[0].on("message", (msg: MessageFromChild) => {
+				children[0].on("message", (msg: OrchestratorMessageFromActor) => {
 					if (msg.event === "attendeeJoined") {
 						attendeesJoinedEvents++;
 						if (attendeesJoinedEvents === numClients - 1) {
@@ -151,7 +155,7 @@ describe(`Presence with AzureClient`, () => {
 			.map(async (child, index) =>
 				timeoutPromise(
 					(resolve) => {
-						child.on("message", (msg: MessageFromChild) => {
+						child.on("message", (msg: OrchestratorMessageFromActor) => {
 							if (msg.event === "attendeeDisconnected" && msg.sessionId === creatorSessionId) {
 								resolve();
 							}

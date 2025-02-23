@@ -4,10 +4,15 @@
  */
 
 import type { AzureUser } from "@fluidframework/azure-client/internal";
+import type {
+	JsonDeserialized,
+	JsonSerializable,
+} from "@fluidframework/core-interfaces/internal";
 // eslint-disable-next-line import/no-internal-modules
 import type { ClientSessionId } from "@fluidframework/presence/alpha";
 
-export type MessageToChild = ConnectCommand | DisconnectSelfCommand;
+type OrchestratorMessage = ConnectCommand | DisconnectSelfCommand;
+
 interface ConnectCommand {
 	command: "connect";
 	user: AzureUser;
@@ -18,7 +23,7 @@ interface DisconnectSelfCommand {
 	command: "disconnectSelf";
 }
 
-export type MessageFromChild =
+type ActorMessage =
 	| AttendeeDisconnectedEvent
 	| AttendeeJoinedEvent
 	| ReadyEvent
@@ -44,7 +49,28 @@ interface DisconnectedSelfEvent {
 	event: "disconnectedSelf";
 	sessionId: ClientSessionId;
 }
+
 interface ErrorEvent {
 	event: "error";
 	error: string;
 }
+
+// Actor messages sent and received
+export type ActorMessageToOrchestrator = JsonSerializable<
+	ActorMessage,
+	{ AllowExactly: ClientSessionId }
+>;
+export type ActorMessageFromOrchestrator = JsonDeserialized<
+	OrchestratorMessage,
+	{ AllowExactly: ClientSessionId }
+>;
+
+// Orchestrator messages sent and received
+export type OrchestratorMessageToActor = JsonSerializable<
+	OrchestratorMessage,
+	{ AllowExactly: ClientSessionId }
+>;
+export type OrchestratorMessageFromActor = JsonDeserialized<
+	ActorMessage,
+	{ AllowExactly: ClientSessionId }
+>;

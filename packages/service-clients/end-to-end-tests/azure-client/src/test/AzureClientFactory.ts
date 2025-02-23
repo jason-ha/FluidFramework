@@ -8,12 +8,13 @@ import {
 	AzureLocalConnectionConfig,
 	AzureRemoteConnectionConfig,
 	ITelemetryBaseLogger,
+	type AzureClientProps,
 } from "@fluidframework/azure-client";
 import {
 	AzureClient as AzureClientLegacy,
+	AzureClientProps as AzureClientPropsLegacy,
 	AzureLocalConnectionConfig as AzureLocalConnectionConfigLegacy,
 	AzureRemoteConnectionConfig as AzureRemoteConnectionConfigLegacy,
-	ITelemetryBaseLogger as ITelemetryBaseLoggerLegacy,
 } from "@fluidframework/azure-client-legacy";
 import { IConfigProviderBase } from "@fluidframework/core-interfaces";
 import { ScopeType } from "@fluidframework/driver-definitions/internal";
@@ -30,6 +31,11 @@ import { createAzureTokenProvider } from "./AzureTokenFactory.js";
 
 // eslint-disable-next-line unicorn/prefer-export-from
 export { ScopeType };
+
+/**
+ * Inverse of Readonly<T> for all properties; makes all properties mutable.
+ */
+type Mutable<T> = { -readonly [P in keyof T]: T[P] };
 
 /**
  * This function will determine if local or remote mode is required (based on FLUID_CLIENT), and return a new
@@ -100,11 +106,14 @@ export function createAzureClient(
 			},
 		},
 	});
-	return new AzureClient({
+	const props: Mutable<AzureClientProps> = {
 		connection: connectionProps,
 		logger: createLogger,
-		configProvider,
-	});
+	};
+	if (configProvider) {
+		props.configProvider = configProvider;
+	}
+	return new AzureClient(props);
 }
 
 /**
@@ -144,20 +153,18 @@ export function createAzureClientLegacy(
 					endpoint: "http://localhost:7071",
 					type: "local",
 				};
-	const getLogger = (): ITelemetryBaseLoggerLegacy | undefined => {
-		const testLogger = getTestLogger?.();
-		if (!logger && !testLogger) {
-			return undefined;
-		}
-		if (logger && testLogger) {
-			return createMultiSinkLogger({ loggers: [logger, testLogger] });
-		}
-		return logger ?? testLogger;
-	};
-	return new AzureClientLegacy({
+	const props: Mutable<AzureClientPropsLegacy> = {
 		connection: connectionProps,
-		logger: getLogger(),
-	});
+	};
+	const testLogger = getTestLogger?.();
+	const loggerOrTestLogger = logger ?? testLogger;
+	if (loggerOrTestLogger) {
+		props.logger =
+			logger && testLogger
+				? createMultiSinkLogger({ loggers: [logger, testLogger] })
+				: loggerOrTestLogger;
+	}
+	return new AzureClientLegacy(props);
 }
 
 /**

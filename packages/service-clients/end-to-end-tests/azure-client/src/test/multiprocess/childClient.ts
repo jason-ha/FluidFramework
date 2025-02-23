@@ -29,10 +29,11 @@ import { ScopeType } from "../AzureClientFactory.js";
 import { createAzureTokenProvider } from "../AzureTokenFactory.js";
 import { configProvider } from "../utils.js";
 
-import { MessageFromChild, MessageToChild } from "./messageTypes.js";
+import type {
+	ActorMessageFromOrchestrator,
+	ActorMessageToOrchestrator,
+} from "./messageTypes.js";
 
-type MessageFromParent = MessageToChild;
-type MessageToParent = Required<MessageFromChild>;
 interface UserIdAndName {
 	id: string;
 	name: string;
@@ -118,7 +119,7 @@ const getOrCreatePresenceContainer = async (
 		containerId,
 	};
 };
-function createSendFunction(): (msg: MessageToParent) => void {
+function createSendFunction(): (msg: ActorMessageToOrchestrator) => void {
 	if (process.send) {
 		return process.send.bind(process);
 	}
@@ -136,7 +137,7 @@ class MessageHandler {
 	public container: IFluidContainer | undefined;
 	public containerId: string | undefined;
 
-	public async onMessage(msg: MessageFromParent): Promise<void> {
+	public async onMessage(msg: ActorMessageFromOrchestrator): Promise<void> {
 		switch (msg.command) {
 			// Respond to connect command by connecting to Fluid container with the provided user information.
 			case "connect": {
@@ -160,17 +161,17 @@ class MessageHandler {
 
 				// Listen for presence events to notify parent/orchestrator when a new attendee joins or leaves the session.
 				presence.events.on("attendeeJoined", (attendee: ISessionClient) => {
-					const m: MessageToParent = {
+					const m = {
 						event: "attendeeJoined",
 						sessionId: attendee.sessionId,
-					};
+					} satisfies ActorMessageToOrchestrator;
 					send(m);
 				});
 				presence.events.on("attendeeDisconnected", (attendee: ISessionClient) => {
-					const m: MessageToParent = {
+					const m = {
 						event: "attendeeDisconnected",
 						sessionId: attendee.sessionId,
-					};
+					} satisfies ActorMessageToOrchestrator;
 					send(m);
 				});
 				send({ event: "ready", containerId, sessionId: presence.getMyself().sessionId });
@@ -208,7 +209,7 @@ class MessageHandler {
 
 function setupMessageHandler(): void {
 	const messageHandler = new MessageHandler();
-	process.on("message", (msg: MessageFromParent) => {
+	process.on("message", (msg: ActorMessageFromOrchestrator) => {
 		messageHandler.onMessage(msg).catch((error: Error) => {
 			console.error(`Error in client ${process_id}`, error);
 			send({ event: "error", error: `${process_id}: ${error.message}` });
