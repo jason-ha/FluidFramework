@@ -3,6 +3,7 @@
  * Licensed under the MIT License.
  */
 
+import { InternalUtilityTypes } from "@fluidframework/core-interfaces/internal";
 import { ISequencedDocumentMessage } from "@fluidframework/driver-definitions/internal";
 import type { IdCreationRange } from "@fluidframework/id-compressor/internal";
 import {
@@ -66,16 +67,25 @@ export enum ContainerMessageType {
  * IMPORTANT: when creating one to be serialized, set the properties in the order they appear here.
  * This way stringified values can be compared.
  */
-interface TypedContainerRuntimeMessage<TType extends ContainerMessageType, TContents> {
+type TypedContainerRuntimeMessage<TType extends ContainerMessageType, TContents> = {
 	/**
 	 * Type of the op, within the ContainerRuntime's domain
 	 */
 	type: TType;
-	/**
-	 * Domain-specific contents, interpreted according to the type
-	 */
-	contents: TContents;
-}
+} & InternalUtilityTypes.IfSameType<
+	TContents,
+	undefined,
+	{
+		// No `contents` when type is `undefined`
+		contents?: undefined;
+	},
+	{
+		/**
+		 * Domain-specific contents, interpreted according to the type
+		 */
+		contents: TContents;
+	}
+>;
 
 export type ContainerRuntimeDataStoreOpMessage = TypedContainerRuntimeMessage<
 	ContainerMessageType.FluidDataStoreOp,
@@ -115,7 +125,6 @@ export type ContainerRuntimeGCMessage = TypedContainerRuntimeMessage<
 >;
 export type ContainerRuntimeDocumentSchemaMessage = TypedContainerRuntimeMessage<
 	ContainerMessageType.DocumentSchemaChange,
-	// eslint-disable-next-line import/no-deprecated
 	IDocumentSchemaChangeMessage
 >;
 
@@ -134,7 +143,7 @@ export interface UnknownContainerRuntimeMessage {
 	/**
 	 * Domain-specific contents, but not decipherable by an unknown op.
 	 */
-	contents: unknown;
+	contents?: unknown;
 }
 
 /**

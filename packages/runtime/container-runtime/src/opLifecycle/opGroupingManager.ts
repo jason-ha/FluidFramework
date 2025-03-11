@@ -4,6 +4,7 @@
  */
 
 import { ITelemetryBaseLogger } from "@fluidframework/core-interfaces";
+import { JsonStringify } from "@fluidframework/core-interfaces/internal";
 import { assert } from "@fluidframework/core-utils/internal";
 import { ISequencedDocumentMessage } from "@fluidframework/driver-definitions/internal";
 import {
@@ -11,12 +12,14 @@ import {
 	type ITelemetryLoggerExt,
 } from "@fluidframework/telemetry-utils/internal";
 
+import type { LocalContainerRuntimeMessage } from "../messageTypes.js";
+
 import { IBatch, type BatchMessage } from "./definitions.js";
 
 /**
  * Grouping makes assumptions about the shape of message contents. This interface codifies those assumptions, but does not validate them.
  */
-interface IGroupedBatchMessageContents {
+export interface IGroupedBatchMessageContents {
 	type: typeof OpGroupingManager.groupedBatchOp;
 	contents: IGroupedMessage[];
 }
@@ -34,7 +37,11 @@ function isGroupContents(opContents: unknown): opContents is IGroupedBatchMessag
 	);
 }
 
-export function isGroupedBatch(op: ISequencedDocumentMessage): boolean {
+export function isGroupedBatch(
+	op: ISequencedDocumentMessage,
+): op is ISequencedDocumentMessage & {
+	contents: IGroupedBatchMessageContents;
+} & IGroupedMessage {
 	return isGroupContents(op.contents);
 }
 
@@ -43,7 +50,7 @@ export interface OpGroupingManagerConfig {
 }
 
 export class OpGroupingManager {
-	static readonly groupedBatchOp = "groupedBatch";
+	static readonly groupedBatchOp = "groupedBatch" as const;
 	private readonly logger: ITelemetryLoggerExt;
 
 	constructor(
@@ -63,12 +70,12 @@ export class OpGroupingManager {
 	public createEmptyGroupedBatch(
 		resubmittingBatchId: string,
 		referenceSequenceNumber: number,
-	): IBatch<[BatchMessage]> {
+	): IBatch<[BatchMessage<IGroupedBatchMessageContents>]> {
 		assert(
 			this.config.groupedBatchingEnabled,
 			0xa00 /* cannot create empty grouped batch when grouped batching is disabled */,
 		);
-		const serializedContent = JSON.stringify({
+		const serializedContent = JsonStringify<IGroupedBatchMessageContents>({
 			type: OpGroupingManager.groupedBatchOp,
 			contents: [],
 		});
@@ -94,7 +101,9 @@ export class OpGroupingManager {
 	 * @remarks - Remember that a BatchMessage has its content JSON serialized, so the incoming batch message contents
 	 * must be parsed first, and then the type and contents mentioned above are hidden in that JSON serialization.
 	 */
-	public groupBatch(batch: IBatch): IBatch<[BatchMessage]> {
+	public groupBatch(
+		batch: IBatch<BatchMessage<LocalContainerRuntimeMessage>[]>,
+	): IBatch<[BatchMessage<IGroupedBatchMessageContents>]> {
 		assert(this.shouldGroup(batch), 0x946 /* cannot group the provided batch */);
 
 		if (batch.messages.length >= 1000) {
@@ -117,7 +126,7 @@ export class OpGroupingManager {
 			}
 		}
 
-		const serializedContent = JSON.stringify({
+		const serializedContent = JsonStringify({
 			type: OpGroupingManager.groupedBatchOp,
 			contents: batch.messages.map<IGroupedMessage>((message) => ({
 				contents: message.contents === undefined ? undefined : JSON.parse(message.contents),
@@ -126,7 +135,7 @@ export class OpGroupingManager {
 			})),
 		});
 
-		const groupedBatch: IBatch<[BatchMessage]> = {
+		const groupedBatch: IBatch<[BatchMessage<IGroupedBatchMessageContents>]> = {
 			...batch,
 			messages: [
 				{
@@ -140,8 +149,8 @@ export class OpGroupingManager {
 	}
 
 	public ungroupOp(op: ISequencedDocumentMessage): ISequencedDocumentMessage[] {
-		assert(isGroupContents(op.contents), 0x947 /* can only ungroup a grouped batch */);
-		const contents: IGroupedBatchMessageContents = op.contents;
+		const contents = op.contents;
+		assert(isGroupContents(contents), 0x947 /* can only ungroup a grouped batch */);
 
 		let fakeCsn = 1;
 		return contents.contents.map((subMessage) => ({
@@ -153,7 +162,7 @@ export class OpGroupingManager {
 		}));
 	}
 
-	public shouldGroup(batch: IBatch): boolean {
+	public shouldGroup(batch: IBatch<BatchMessage<LocalContainerRuntimeMessage>[]>): boolean {
 		return (
 			// Grouped batching must be enabled
 			this.config.groupedBatchingEnabled &&

@@ -19,7 +19,7 @@ import { IBatchMetadata } from "../metadata.js";
 /**
  * Compression makes assumptions about the shape of message contents. This interface codifies those assumptions, but does not validate them.
  */
-interface IPackedContentsContents {
+export interface IPackedContentsContents {
 	packedContents: string;
 }
 

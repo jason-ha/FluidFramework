@@ -4,6 +4,7 @@
  */
 
 import { IDisposable, type ITelemetryBaseLogger } from "@fluidframework/core-interfaces";
+import { JsonStringify, type JsonString } from "@fluidframework/core-interfaces/internal";
 import { assert, Lazy } from "@fluidframework/core-utils/internal";
 import {
 	ITelemetryLoggerExt,
@@ -27,6 +28,7 @@ import {
 	getEffectiveBatchId,
 	BatchStartInfo,
 	InboundMessageResult,
+	type IGroupedBatchMessageContents,
 } from "./opLifecycle/index.js";
 
 /**
@@ -38,7 +40,7 @@ import {
 export interface IPendingMessage {
 	type: "message";
 	referenceSequenceNumber: number;
-	content: string;
+	content: JsonString<LocalContainerRuntimeMessage> | JsonString<IGroupedBatchMessageContents>;
 	localOpMetadata: unknown;
 	opMetadata: Record<string, unknown> | undefined;
 	sequenceNumber?: number;
@@ -113,12 +115,18 @@ function isEmptyBatchPendingMessage(message: IPendingMessageFromStash): boolean 
 	return content.type === "groupedBatch" && content.contents?.length === 0;
 }
 
-function buildPendingMessageContent(message: InboundSequencedContainerRuntimeMessage): string {
+function buildPendingMessageContent(
+	message: InboundSequencedContainerRuntimeMessage,
+): JsonString<InboundContainerRuntimeMessage> {
 	// IMPORTANT: Order matters here, this must match the order of the properties used
 	// when submitting the message.
 	const { type, contents }: InboundContainerRuntimeMessage = message;
 	// Any properties that are not defined, won't be emitted by stringify.
-	return JSON.stringify({ type, contents });
+	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+	return JsonStringify<InboundContainerRuntimeMessage>({
+		type,
+		contents,
+	} as InboundContainerRuntimeMessage);
 }
 
 function typesOfKeys<T extends object>(obj: T): Record<keyof T, string> {
@@ -289,7 +297,7 @@ export class PendingStateManager implements IDisposable {
 	 * @param ignoreBatchId - Whether to ignore the batchId in the batchStartInfo
 	 */
 	public onFlushBatch(
-		batch: BatchMessage[],
+		batch: BatchMessage<IGroupedBatchMessageContents>[],
 		clientSequenceNumber: number | undefined,
 		ignoreBatchId?: boolean,
 	): void {
@@ -309,7 +317,8 @@ export class PendingStateManager implements IDisposable {
 
 		for (const message of batch) {
 			const {
-				contents: content = "",
+				// !!! How is an empty string to suffice for serialized IGroupedBatchMessageContents?
+				contents: content = "" as JsonString<IGroupedBatchMessageContents>,
 				referenceSequenceNumber,
 				localOpMetadata,
 				metadata: opMetadata,

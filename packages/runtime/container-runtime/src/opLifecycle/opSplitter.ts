@@ -18,6 +18,8 @@ import { ContainerMessageType, ContainerRuntimeChunkedOpMessage } from "../messa
 
 import { estimateSocketSize } from "./batchManager.js";
 import { BatchMessage, IBatch, IChunkedOp } from "./definitions.js";
+import type { IPackedContentsContents } from "./opDecompressor.js";
+import { JsonStringify } from "@fluidframework/core-interfaces/internal";
 
 export function isChunkedMessage(message: ISequencedDocumentMessage): boolean {
 	return isChunkedContents(message.contents);
@@ -122,7 +124,7 @@ export class OpSplitter {
 	 * @param batch - the compressed batch which needs to be processed
 	 * @returns A batch with the last chunk of the original message
 	 */
-	public splitFirstBatchMessage(batch: IBatch): IBatch {
+	public splitFirstBatchMessage(batch: IBatch<BatchMessage<IPackedContentsContents>[]>): IBatch {
 		assert(this.isBatchChunkingEnabled, 0x513 /* Chunking needs to be enabled */);
 		assert(
 			batch.contentSizeInBytes > 0 && batch.messages.length > 0,
@@ -249,7 +251,7 @@ const chunkToBatchMessage = (
 		contents: chunk,
 	};
 	return {
-		contents: JSON.stringify(payload),
+		contents: JsonStringify(payload),
 		metadata,
 		referenceSequenceNumber,
 	};

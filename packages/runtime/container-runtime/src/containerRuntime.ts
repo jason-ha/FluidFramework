@@ -40,6 +40,8 @@ import {
 	IFluidHandleContext,
 	type IFluidHandleInternal,
 	IProvideFluidHandleContext,
+	JsonParse,
+	type JsonString,
 } from "@fluidframework/core-interfaces/internal";
 import { ISignalEnvelope } from "@fluidframework/core-interfaces/internal";
 import {
@@ -174,6 +176,7 @@ import { InboundBatchAggregator } from "./inboundBatchAggregator.js";
 import { RuntimeCompatDetails, validateLoaderCompatibility } from "./layerCompatState.js";
 import {
 	ContainerMessageType,
+	type ContainerRuntimeChunkedOpMessage,
 	type ContainerRuntimeDocumentSchemaMessage,
 	ContainerRuntimeGCMessage,
 	type ContainerRuntimeIdAllocationMessage,
@@ -181,6 +184,11 @@ import {
 	type LocalContainerRuntimeMessage,
 	type OutboundContainerRuntimeMessage,
 	type UnknownContainerRuntimeMessage,
+	// ContainerRuntimeDataStoreOpMessage,
+	// OutboundContainerRuntimeAttachMessage,
+	// ContainerRuntimeBlobAttachMessage,
+	// ContainerRuntimeRejoinMessage,
+	// ContainerRuntimeAliasMessage,
 } from "./messageTypes.js";
 import { ISavedOpMetadata } from "./metadata.js";
 import {
@@ -615,14 +623,14 @@ export const makeLegacySendBatchFn =
 		) => number,
 		deltaManager: Pick<IDeltaManager<unknown, unknown>, "flush">,
 	) =>
-	(batch: IBatch): number => {
+	(batch: IBatch<BatchMessage<LocalContainerRuntimeMessage>[]>): number => {
 		// Default to negative one to match Container.submitBatch behavior
 		let clientSequenceNumber: number = -1;
 		for (const message of batch.messages) {
 			clientSequenceNumber = submitFn(
 				MessageType.Operation,
 				// For back-compat (submitFn only works on deserialized content)
-				message.contents === undefined ? undefined : JSON.parse(message.contents),
+				message.contents === undefined ? undefined : JsonParse(message.contents),
 				true, // batch
 				message.metadata,
 			);
@@ -2441,14 +2449,18 @@ export class ContainerRuntime
 	 * ! Note: this format needs to be in-line with what is set in the "ContainerRuntime.submit(...)" method
 	 */
 	// TODO: markfields: confirm Local- versus Outbound- ContainerRuntimeMessage typing
-	private parseLocalOpContent(serializedContents?: string): LocalContainerRuntimeMessage {
+	private parseLocalOpContent(
+		serializedContents?: JsonString<LocalContainerRuntimeMessage>,
+	): LocalContainerRuntimeMessage {
 		assert(serializedContents !== undefined, 0x6d5 /* content must be defined */);
-		const message = JSON.parse(serializedContents) as LocalContainerRuntimeMessage;
+		const message = JsonParse(serializedContents);
 		assert(message.type !== undefined, 0x6d6 /* incorrect op content format */);
 		return message;
 	}
 
-	private async applyStashedOp(serializedOpContent: string): Promise<unknown> {
+	private async applyStashedOp(
+		serializedOpContent: JsonString<LocalContainerRuntimeMessage>,
+	): Promise<unknown> {
 		// Need to parse from string for back-compat
 		const opContents = this.parseLocalOpContent(serializedOpContent);
 		switch (opContents.type) {
@@ -4176,7 +4188,10 @@ export class ContainerRuntime
 	}
 
 	private submit(
-		containerRuntimeMessage: OutboundContainerRuntimeMessage,
+		containerRuntimeMessage: Exclude<
+			OutboundContainerRuntimeMessage,
+			ContainerRuntimeChunkedOpMessage
+		>,
 		localOpMetadata: unknown = undefined,
 		metadata?: { localId: string; blobId?: string },
 	): void {
@@ -4422,7 +4437,10 @@ export class ContainerRuntime
 		}
 	}
 
-	private rollback(content: string | undefined, localOpMetadata: unknown): void {
+	private rollback(
+		content: JsonString<LocalContainerRuntimeMessage> | undefined,
+		localOpMetadata: unknown,
+	): void {
 		// Need to parse from string for back-compat
 		const { type, contents } = this.parseLocalOpContent(content);
 		switch (type) {
