@@ -5,6 +5,7 @@
 
 import { IsoBuffer } from "@fluid-internal/client-utils";
 import { ITelemetryBaseLogger } from "@fluidframework/core-interfaces";
+import { JsonStringify, type JsonString } from "@fluidframework/core-interfaces/internal";
 import { assert } from "@fluidframework/core-utils/internal";
 import {
 	UsageError,
@@ -14,9 +15,11 @@ import {
 import { compress } from "lz4js";
 
 import { CompressionAlgorithms } from "../containerRuntime.js";
+import type { LocalContainerRuntimeMessage } from "../messageTypes.js";
 
 import { estimateSocketSize } from "./batchManager.js";
 import { BatchMessage, IBatch } from "./definitions.js";
+import type { IPackedContentsContents } from "./opDecompressor.js";
 
 /**
  * Compresses batches of ops. It generates a single compressed op that contains
@@ -38,7 +41,9 @@ export class OpCompressor {
 	 * @param batch - The batch to compress
 	 * @returns A batch of the same length as the input batch, containing a single compressed message followed by empty placeholders
 	 */
-	public compressBatch(batch: IBatch): IBatch<[BatchMessage]> {
+	public compressBatch(
+		batch: IBatch<BatchMessage<LocalContainerRuntimeMessage>[]>,
+	): IBatch<[BatchMessage<IPackedContentsContents>]> {
 		assert(
 			batch.contentSizeInBytes > 0 && batch.messages.length === 1,
 			0x5a4 /* Batch should not be empty and should contain a single message */,
@@ -50,10 +55,10 @@ export class OpCompressor {
 		const compressedContent = IsoBuffer.from(compressedContents).toString("base64");
 		const duration = Date.now() - compressionStart;
 
-		const messages: [BatchMessage] = [
+		const messages: [BatchMessage<IPackedContentsContents>] = [
 			{
 				...batch.messages[0],
-				contents: JSON.stringify({ packedContents: compressedContent }),
+				contents: JsonStringify({ packedContents: compressedContent }),
 				metadata: batch.messages[0].metadata,
 				compression: CompressionAlgorithms.lz4,
 			},
@@ -82,10 +87,14 @@ export class OpCompressor {
 	/**
 	 * Combine the batch's content strings into a single JSON string (a serialized array)
 	 */
-	private serializeBatchContents(batch: IBatch): string {
+	private serializeBatchContents(
+		batch: IBatch<BatchMessage<LocalContainerRuntimeMessage>[]>,
+	): JsonString<JsonString<LocalContainerRuntimeMessage>[]> {
 		try {
 			// Yields a valid JSON array, since each message.contents is already serialized to JSON
-			return `[${batch.messages.map(({ contents }) => contents).join(",")}]`;
+			return `[${batch.messages.map(({ contents }) => contents).join(",")}]` as JsonString<
+				JsonString<LocalContainerRuntimeMessage>[]
+			>;
 		} catch (newError: unknown) {
 			if ((newError as Partial<Error>).message === "Invalid string length") {
 				// This is how JSON.stringify signals that

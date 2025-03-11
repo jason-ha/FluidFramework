@@ -119,8 +119,8 @@ export interface IRuntime extends IDisposable {
  * @legacy
  * @alpha
  */
-export interface IBatchMessage {
-	contents?: string;
+export interface IBatchMessage<TContents extends string = string> {
+	contents?: TContents;
 	metadata?: Record<string, unknown>;
 	compression?: string;
 	referenceSequenceNumber?: number;

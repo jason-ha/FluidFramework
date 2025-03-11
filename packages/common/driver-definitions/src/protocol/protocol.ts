@@ -254,7 +254,7 @@ export interface ISequencedDocumentMessage {
 	/**
 	 * The contents of the message.
 	 */
-	contents: unknown;
+	contents?: unknown;
 
 	/**
 	 * App provided metadata about the operation.

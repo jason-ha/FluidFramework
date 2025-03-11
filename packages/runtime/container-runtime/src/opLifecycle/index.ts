@@ -17,6 +17,7 @@ export { DuplicateBatchDetector } from "./duplicateBatchDetector.js";
 export { Outbox, getLongStack, serializeOpContents } from "./outbox.js";
 export { OpCompressor } from "./opCompressor.js";
 export { OpDecompressor } from "./opDecompressor.js";
+export type { IGroupedBatchMessageContents } from "./opGroupingManager.js";
 export { OpSplitter, splitOp, isChunkedMessage } from "./opSplitter.js";
 export {
 	ensureContentsDeserialized,

@@ -41,6 +41,7 @@ import {
 	PendingStateManager,
 	type IPendingMessage,
 } from "../../pendingStateManager.js";
+import type { IPackedContentsContents } from "../../opLifecycle/opDecompressor.js";
 
 function typeFromBatchedOp(op: IBatchMessage) {
 	assert(op.contents !== undefined);
@@ -110,7 +111,7 @@ describe("Outbox", () => {
 	});
 
 	const getMockCompressor = (): Partial<OpCompressor> => ({
-		compressBatch: (batch: IBatch<[BatchMessage]>): IBatch<[BatchMessage]> => {
+		compressBatch: (batch: IBatch<[BatchMessage]>): IBatch<[BatchMessage<IPackedContentsContents>]> => {
 			state.batchesCompressed.push(batch);
 			return batch;
 		},

@@ -4,13 +4,23 @@
  */
 
 import { IBatchMessage } from "@fluidframework/container-definitions/internal";
+import type { JsonString } from "@fluidframework/core-interfaces/internal";
 
 import { CompressionAlgorithms } from "../containerRuntime.js";
+import type { LocalContainerRuntimeMessage } from "../messageTypes.js";
+
+import type { IPackedContentsContents } from "./opDecompressor.js";
+import type { IGroupedBatchMessageContents } from "./opGroupingManager.js";
 
 /**
  * Batch message type used internally by the runtime
  */
-export type BatchMessage = IBatchMessage & {
+export type BatchMessage<
+	TStringifiedContents extends
+		| LocalContainerRuntimeMessage
+		| IGroupedBatchMessageContents
+		| IPackedContentsContents = LocalContainerRuntimeMessage,
+> = IBatchMessage<JsonString<TStringifiedContents>> & {
 	localOpMetadata?: unknown;
 	referenceSequenceNumber: number;
 	compression?: CompressionAlgorithms;
@@ -19,7 +29,12 @@ export type BatchMessage = IBatchMessage & {
 /**
  * Batch interface used internally by the runtime.
  */
-export interface IBatch<TMessages extends BatchMessage[] = BatchMessage[]> {
+export interface IBatch<
+	TMessages extends
+		| BatchMessage<LocalContainerRuntimeMessage>[]
+		| BatchMessage<IGroupedBatchMessageContents>[]
+		| BatchMessage<IPackedContentsContents>[],
+> {
 	/**
 	 * Sum of the in-memory content sizes of all messages in the batch.
 	 * If the batch is compressed, this number reflects the post-compression size.
@@ -57,7 +72,7 @@ export interface IChunkedOp {
 	chunkId: number;
 	totalChunks: number;
 	contents: string;
-	originalMetadata?: Record<string, unknown>;
+	originalMetadata?: { [P in string]?: unknown };
 	originalCompression?: string;
 }
 

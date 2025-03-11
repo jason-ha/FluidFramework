@@ -8,6 +8,8 @@ import { compress } from "lz4js";
 
 import { CompressionAlgorithms } from "../../index.js";
 import type { BatchMessage, IBatch } from "../../opLifecycle/index.js";
+import { JsonStringify } from "@fluidframework/core-interfaces/internal";
+import type { IPackedContentsContents } from "../../opLifecycle/opDecompressor.js";
 
 /**
  * The code in this file recreates the legacy flow for batches that have multiple messages.
@@ -28,20 +30,20 @@ function serializeBatchContents(batch: IBatch): string {
  * But we need to ensure the current code still supports READING the old op format (where an old client compressed a multi-message batch)
  * @internal
  * @param batch - batch with messages that are going to be compressed
- * @returns compresed batch with empty placeholder messages
+ * @returns compressed batch with empty placeholder messages
  */
 export function compressMultipleMessageBatch(batch: IBatch): IBatch {
 	const contentsAsBuffer = new TextEncoder().encode(serializeBatchContents(batch));
 	const compressedContents = compress(contentsAsBuffer);
 	const compressedContent = IsoBuffer.from(compressedContents).toString("base64");
 
-	const messages: BatchMessage[] = [];
-	messages.push({
+	const messages: BatchMessage<IPackedContentsContents>[] = [
+	{
 		...batch.messages[0],
-		contents: JSON.stringify({ packedContents: compressedContent }),
+		contents: JsonStringify({ packedContents: compressedContent }),
 		metadata: batch.messages[0].metadata,
 		compression: CompressionAlgorithms.lz4,
-	});
+	}];
 
 	// Add empty placeholder messages to reserve the sequence numbers
 	for (const message of batch.messages.slice(1)) {
@@ -52,7 +54,7 @@ export function compressMultipleMessageBatch(batch: IBatch): IBatch {
 		});
 	}
 
-	const compressedBatch: IBatch = {
+	const compressedBatch: IBatch<BatchMessage<IPackedContentsContents>[]> = {
 		contentSizeInBytes: compressedContent.length,
 		messages,
 		referenceSequenceNumber: batch.referenceSequenceNumber,

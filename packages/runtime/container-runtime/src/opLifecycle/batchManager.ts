@@ -6,10 +6,13 @@
 import { assert } from "@fluidframework/core-utils/internal";
 
 import { ICompressionRuntimeOptions } from "../containerRuntime.js";
+import type { LocalContainerRuntimeMessage } from "../messageTypes.js";
 import { asBatchMetadata, type IBatchMetadata } from "../metadata.js";
 import type { IPendingMessage } from "../pendingStateManager.js";
 
 import { BatchMessage, IBatch, IBatchCheckpoint } from "./definitions.js";
+import type { IPackedContentsContents } from "./opDecompressor.js";
+import type { IGroupedBatchMessageContents } from "./opGroupingManager.js";
 import type { BatchStartInfo } from "./remoteMessageProcessor.js";
 
 export interface IBatchManagerOptions {
@@ -78,7 +81,7 @@ const opOverhead = 200;
  * Helper class that manages partial batch & rollback.
  */
 export class BatchManager {
-	private pendingBatch: BatchMessage[] = [];
+	private pendingBatch: BatchMessage<LocalContainerRuntimeMessage>[] = [];
 	private batchContentSize = 0;
 	private hasReentrantOps = false;
 
@@ -111,7 +114,7 @@ export class BatchManager {
 	constructor(public readonly options: IBatchManagerOptions) {}
 
 	public push(
-		message: BatchMessage,
+		message: BatchMessage /* !!! this type is most definitely incorrect */,
 		reentrant: boolean,
 		currentClientSequenceNumber?: number,
 	): boolean {
@@ -146,8 +149,8 @@ export class BatchManager {
 	/**
 	 * Gets the pending batch and clears state for the next batch.
 	 */
-	public popBatch(batchId?: BatchId): IBatch {
-		const batch: IBatch = {
+	public popBatch(batchId?: BatchId): IBatch<BatchMessage[]> {
+		const batch: IBatch<BatchMessage[]> = {
 			messages: this.pendingBatch,
 			contentSizeInBytes: this.batchContentSize,
 			referenceSequenceNumber: this.referenceSequenceNumber,
@@ -182,7 +185,15 @@ export class BatchManager {
 	}
 }
 
-const addBatchMetadata = (batch: IBatch, batchId?: BatchId): IBatch => {
+const addBatchMetadata = <
+	TMessages extends
+		| BatchMessage<LocalContainerRuntimeMessage>[]
+		| BatchMessage<IGroupedBatchMessageContents>[]
+		| BatchMessage<IPackedContentsContents>[],
+>(
+	batch: IBatch<TMessages>,
+	batchId?: BatchId,
+): IBatch<TMessages> => {
 	const batchEnd = batch.messages.length - 1;
 
 	const firstMsg = batch.messages[0];
@@ -220,7 +231,14 @@ const addBatchMetadata = (batch: IBatch, batchId?: BatchId): IBatch => {
  * @param batch - the batch to inspect
  * @returns An estimate of the payload size in bytes which will be produced when the batch is sent over the wire
  */
-export const estimateSocketSize = (batch: IBatch): number => {
+export const estimateSocketSize = <
+	TMessages extends
+		| BatchMessage<LocalContainerRuntimeMessage>[]
+		| BatchMessage<IGroupedBatchMessageContents>[]
+		| BatchMessage<IPackedContentsContents>[],
+>(
+	batch: IBatch<TMessages>,
+): number => {
 	return batch.contentSizeInBytes + opOverhead * batch.messages.length;
 };
 

@@ -67,7 +67,7 @@ export interface IDocumentSchema {
 	// Sequence number when this schema became active.
 	refSeq: number;
 
-	runtime: Record<string, DocumentSchemaValueType>;
+	runtime: Record<string, Exclude<DocumentSchemaValueType, undefined>>;
 }
 
 /**

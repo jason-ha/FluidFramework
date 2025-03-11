@@ -6,6 +6,8 @@
 import { ICriticalContainerError } from "@fluidframework/container-definitions";
 import { IBatchMessage } from "@fluidframework/container-definitions/internal";
 import { ITelemetryBaseLogger } from "@fluidframework/core-interfaces";
+import type { JsonString } from "@fluidframework/core-interfaces/internal";
+import { JsonStringify } from "@fluidframework/core-interfaces/internal";
 import { assert } from "@fluidframework/core-utils/internal";
 import {
 	GenericError,
@@ -15,7 +17,10 @@ import {
 } from "@fluidframework/telemetry-utils/internal";
 
 import { ICompressionRuntimeOptions } from "../containerRuntime.js";
-import { OutboundContainerRuntimeMessage } from "../messageTypes.js";
+import {
+	OutboundContainerRuntimeMessage,
+	type ContainerRuntimeChunkedOpMessage,
+} from "../messageTypes.js";
 import { PendingMessageResubmitData, PendingStateManager } from "../pendingStateManager.js";
 
 import {
@@ -45,7 +50,7 @@ export interface IOutboxParameters {
 	readonly submitBatchFn:
 		| ((batch: IBatchMessage[], referenceSequenceNumber?: number) => number)
 		| undefined;
-	readonly legacySendBatchFn: (batch: IBatch) => number;
+	readonly legacySendBatchFn: (batch: IBatch<BatchMessage[]>) => number;
 	readonly config: IOutboxConfig;
 	readonly compressor: OpCompressor;
 	readonly splitter: OpSplitter;
@@ -61,8 +66,10 @@ export interface IOutboxParameters {
  * Before submitting an op to the Outbox, its contents must be serialized using this function.
  * @remarks - The deserialization on process happens via the function {@link ensureContentsDeserialized}.
  */
-export function serializeOpContents(contents: OutboundContainerRuntimeMessage): string {
-	return JSON.stringify(contents);
+export function serializeOpContents(
+	contents: Exclude<OutboundContainerRuntimeMessage, ContainerRuntimeChunkedOpMessage>,
+): JsonString<Exclude<OutboundContainerRuntimeMessage, ContainerRuntimeChunkedOpMessage>> {
+	return JsonStringify(contents);
 }
 
 /**
