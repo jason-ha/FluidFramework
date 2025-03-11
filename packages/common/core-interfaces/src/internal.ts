@@ -6,9 +6,8 @@
 // eslint-disable-next-line no-restricted-syntax
 export * from "./index.js";
 
-// Important: all other exports must be type only exports. In package.json exports,
-//  index.js is listed as the runtime file. This is done so that all imports are
-//  using the same outer runtime file. (Could be changed if needed.)
+export type { JsonString } from "./jsonString.js";
+export { JsonStringify, JsonParse } from "./jsonString.js";
 
 // Export set of utility types re-tagged as internal for FF client convenience.
 // These types are not intended for direct use by customers and api-extractor will
