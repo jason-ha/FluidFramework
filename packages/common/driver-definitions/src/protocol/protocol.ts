@@ -341,11 +341,11 @@ export interface ISequencedDocumentAugmentedMessage extends ISequencedDocumentMe
  * @legacy
  * @alpha
  */
-export interface ISignalMessageBase {
+export interface ISignalMessageBase<TContent = unknown> {
 	/**
 	 * Signal content
 	 */
-	content: unknown;
+	content: TContent;
 
 	/**
 	 * Signal type
@@ -374,7 +374,7 @@ export interface ISignalMessageBase {
  * @legacy
  * @alpha
  */
-export interface ISignalMessage extends ISignalMessageBase {
+export interface ISignalMessage<TContent = unknown> extends ISignalMessageBase<TContent> {
 	/**
 	 * The client ID that submitted the message.
 	 * For server generated messages the clientId will be null.
@@ -387,7 +387,7 @@ export interface ISignalMessage extends ISignalMessageBase {
  * Interface for signals sent by clients to the server.
  * @internal
  */
-export type ISentSignalMessage = ISignalMessageBase;
+export type ISentSignalMessage<TContent = unknown> = ISignalMessageBase<TContent>;
 
 /**
  * @legacy

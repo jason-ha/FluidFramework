@@ -32,7 +32,7 @@ export interface IEnvelope<TContents = any> {
  * @legacy
  * @alpha
  */
-export interface IInboundSignalMessage extends ISignalMessage {
+export interface IInboundSignalMessage<TContent = unknown> extends ISignalMessage<TContent> {
 	readonly type: string;
 }
 

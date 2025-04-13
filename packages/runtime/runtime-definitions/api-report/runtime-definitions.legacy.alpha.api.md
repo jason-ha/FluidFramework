@@ -242,7 +242,7 @@ export interface IGarbageCollectionDetailsBase {
 }
 
 // @alpha
-export interface IInboundSignalMessage extends ISignalMessage {
+export interface IInboundSignalMessage<TContent = unknown> extends ISignalMessage<TContent> {
     // (undocumented)
     readonly type: string;
 }

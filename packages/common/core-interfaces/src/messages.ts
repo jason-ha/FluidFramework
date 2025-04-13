@@ -13,7 +13,7 @@
  *
  * See at `server/routerlicious/packages/lambdas/src/utils/messageGenerator.ts`.
  */
-export interface ISignalEnvelope {
+export interface ISignalEnvelope<TContent = unknown> {
 	/**
 	 * The target for the envelope, undefined for the container
 	 */
@@ -29,6 +29,6 @@ export interface ISignalEnvelope {
 	 */
 	contents: {
 		type: string;
-		content: unknown;
+		content: TContent;
 	};
 }

@@ -40,6 +40,7 @@ import type {
 	IFluidHandleInternal,
 	IProvideFluidHandleContext,
 	ISignalEnvelope,
+	JsonDeserialized,
 } from "@fluidframework/core-interfaces/internal";
 import {
 	assert,
@@ -79,7 +80,6 @@ import type {
 	IGarbageCollectionData,
 	CreateChildSummarizerNodeParam,
 	IDataStore,
-	IEnvelope,
 	IFluidDataStoreContextDetached,
 	IFluidDataStoreRegistry,
 	ISummarizeInternalResult,
@@ -3145,9 +3145,12 @@ export class ContainerRuntime
 		}
 	}
 
-	public processSignal(message: ISignalMessage, local: boolean): void {
-		const envelope = message.content as ISignalEnvelope;
-		const transformed: IInboundSignalMessage = {
+	public processSignal(
+		message: ISignalMessage<ISignalEnvelope<JsonDeserialized<unknown>>>,
+		local: boolean,
+	): void {
+		const envelope = message.content;
+		const transformed = {
 			clientId: message.clientId,
 			content: envelope.contents.content,
 			type: envelope.contents.type,
@@ -3194,7 +3197,7 @@ export class ContainerRuntime
 
 	private routeNonContainerSignal(
 		address: NonContainerAddressInfo,
-		signalMessage: IInboundSignalMessage,
+		signalMessage: IInboundSignalMessage<JsonDeserialized<unknown>>,
 		local: boolean,
 	): void {
 		// channelCollection signals are identified by no top address (use full address) or by the top address of "channels".
@@ -3203,7 +3206,7 @@ export class ContainerRuntime
 			// Due to a mismatch between different layers in terms of
 			// what is the interface of passing signals, we need to adjust
 			// the signal envelope before sending it to the datastores to be processed
-			const envelope: IEnvelope = {
+			const envelope = {
 				address: address.subaddress ?? address.fullAddress,
 				contents: signalMessage.content,
 			};

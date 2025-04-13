@@ -468,14 +468,14 @@ export interface ISignalClient {
 }
 
 // @alpha
-export interface ISignalMessage extends ISignalMessageBase {
+export interface ISignalMessage<TContent = unknown> extends ISignalMessageBase<TContent> {
     clientId: string | null;
 }
 
 // @alpha
-export interface ISignalMessageBase {
+export interface ISignalMessageBase<TContent = unknown> {
     clientConnectionNumber?: number;
-    content: unknown;
+    content: TContent;
     referenceSequenceNumber?: number;
     targetClientId?: string;
     type?: string;
