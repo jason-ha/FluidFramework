@@ -6,8 +6,8 @@
 import type {
 	ContainerExtensionStore,
 	ContainerExtension,
-	ExtensionMessage,
 	ExtensionRuntime,
+	InboundExtensionMessage,
 } from "@fluidframework/container-definitions/internal";
 import type { IContainerExperimental } from "@fluidframework/container-loader/internal";
 import { assert } from "@fluidframework/core-utils/internal";
@@ -36,9 +36,8 @@ class ContainerPresenceManager implements ContainerExtension<never> {
 	public constructor(runtime: ExtensionRuntime) {
 		this.interface = this.manager = createPresenceManager({
 			...runtime,
-			submitSignal: (type, content, targetClientId) => {
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- eslint see content as `any` (IntelliSense claims `JsonSerialized<TContent>` as expected)
-				runtime.submitAddressedSignal("", type, content, targetClientId);
+			submitSignal: (message) => {
+				runtime.submitAddressedSignal<(typeof message)["content"]>("", message);
 			},
 		});
 	}
@@ -49,7 +48,11 @@ class ContainerPresenceManager implements ContainerExtension<never> {
 
 	public static readonly extensionId = "dis:bb89f4c0-80fd-4f0c-8469-4f2848ee7f4a";
 
-	public processSignal(address: string, message: ExtensionMessage, local: boolean): void {
+	public processSignal<TType extends string, TContent>(
+		address: string,
+		message: InboundExtensionMessage<TType, TContent>,
+		local: boolean,
+	): void {
 		this.manager.processSignal(address, message, local);
 	}
 }

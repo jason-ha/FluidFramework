@@ -4,6 +4,7 @@
  */
 
 import type {
+	InternalUtilityTypes,
 	JsonDeserialized,
 	JsonSerializable,
 } from "@fluidframework/core-interfaces/internal/exposedUtilityTypes";
@@ -28,17 +29,41 @@ export namespace InternalTypes {
 	/**
 	 * @system
 	 */
-	export interface ValueOptionalState<TValue> extends ValueStateMetadata {
+	export interface IValueOptionalState<TValue> extends ValueStateMetadata {
 		value?: JsonDeserialized<TValue>;
 	}
+	/**
+	 * @system
+	 */
+	export type ValueOptionalState<TValue> = InternalUtilityTypes.FlattenIntersection<
+		IValueOptionalState<TValue>
+	>;
 
 	/**
 	 * @system
 	 */
-	export interface ValueRequiredState<TValue> extends ValueStateMetadata {
+	export interface IValueRequiredState<TValue> extends ValueStateMetadata {
 		value: JsonDeserialized<TValue>;
 	}
+	/**
+	 * @system
+	 */
+	export type ValueRequiredState<TValue> = InternalUtilityTypes.FlattenIntersection<
+		IValueRequiredState<TValue>
+	>;
 
+	/**
+	 * @system
+	 */
+	export interface IValueDirectory<T> {
+		rev: number;
+		items: {
+			// Caution: any particular item may or may not exist
+			// Typescript does not support absent keys without forcing type to also be undefined.
+			// See https://github.com/microsoft/TypeScript/issues/42810.
+			[name: string | number]: IValueOptionalState<T> | IValueDirectory<T>;
+		};
+	}
 	/**
 	 * @system
 	 */
@@ -55,6 +80,10 @@ export namespace InternalTypes {
 	/**
 	 * @system
 	 */
+	export type IValueDirectoryOrState<T> = IValueRequiredState<T> | IValueDirectory<T>;
+	/**
+	 * @system
+	 */
 	export type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
 
 	/**
@@ -66,14 +95,14 @@ export namespace InternalTypes {
 			// Caution: any particular item may or may not exist
 			// Typescript does not support absent keys without forcing type to also be undefined.
 			// See https://github.com/microsoft/TypeScript/issues/42810.
-			[name in Keys]: ValueOptionalState<T>;
+			[name in Keys]: IValueOptionalState<T>;
 		};
 	}
 
 	/**
 	 * @system
 	 */
-	export declare class StateDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
+	export declare class StateDatastoreHandle<TKey, TValue extends IValueDirectoryOrState<any>> {
 		private readonly StateDatastoreHandle: StateDatastoreHandle<TKey, TValue>;
 	}
 
@@ -106,7 +135,7 @@ export namespace InternalTypes {
 	 */
 	export type ManagerFactory<
 		TKey extends string,
-		TValue extends ValueDirectoryOrState<any>,
+		TValue extends IValueDirectoryOrState<any>,
 		TManager,
 	> = { instanceBase: new (...args: any[]) => any } & ((
 		key: TKey,

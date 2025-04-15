@@ -24,6 +24,8 @@ export type {
 	ExtensionMessage,
 	ExtensionRuntime,
 	ExtensionRuntimeEvents,
+	InboundExtensionMessage,
+	OutboundExtensionMessage,
 } from "./containerExtension.js";
 export type {
 	IConnectionDetails,

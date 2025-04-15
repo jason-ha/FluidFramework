@@ -9,8 +9,9 @@
 
 import { createEmitter } from "@fluid-internal/client-utils";
 import type {
-	ExtensionMessage,
 	ExtensionRuntimeEvents,
+	InboundExtensionMessage,
+	OutboundExtensionMessage,
 } from "@fluidframework/container-definitions/internal";
 import type { IFluidLoadable } from "@fluidframework/core-interfaces";
 import { assert } from "@fluidframework/core-utils/internal";
@@ -22,11 +23,11 @@ import type { IPresence } from "./presence.js";
 import { createPresenceManager } from "./presenceManager.js";
 
 function assertSignalMessageIsValid(
-	message: IInboundSignalMessage | ExtensionMessage,
-): asserts message is ExtensionMessage {
+	message: IInboundSignalMessage | InboundExtensionMessage,
+): asserts message is InboundExtensionMessage {
 	assert(message.clientId !== null, 0xa58 /* Signal must have a client ID */);
 	// The other difference between messages is that `content` for
-	// ExtensionMessage is JsonDeserialized and we are fine assuming that.
+	// InboundExtensionMessage is JsonDeserialized and we are fine assuming that.
 }
 
 /**
@@ -52,7 +53,8 @@ class PresenceManagerDataObject extends LoadableFluidObject {
 				events,
 				getQuorum: runtime.getQuorum.bind(runtime),
 				getAudience: runtime.getAudience.bind(runtime),
-				submitSignal: runtime.submitSignal.bind(runtime),
+				submitSignal: <TContent>(message: OutboundExtensionMessage<string, TContent>) =>
+					runtime.submitSignal(message.type, message.content, message.targetClientId),
 			});
 			this.runtime.on("signal", (message: IInboundSignalMessage, local: boolean) => {
 				assertSignalMessageIsValid(message);

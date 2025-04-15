@@ -16,8 +16,10 @@ import { MockEphemeralRuntime } from "./mockEphemeralRuntime.js";
 import {
 	assertFinalExpectations,
 	assertIdenticalTypes,
+	connectionId2,
 	createInstanceOf,
 	prepareConnectedPresence,
+	sessionId2,
 } from "./testUtils.js";
 
 describe("Presence", () => {
@@ -109,23 +111,25 @@ describe("Presence", () => {
 			clock.tick(10);
 
 			runtime.signalsExpected.push([
-				"Pres:DatastoreUpdate",
 				{
-					"sendTimestamp": 1020,
-					"avgLatency": 10,
-					"data": {
-						"system:presence": {
-							"clientToSessionId": {
-								"client2": { "rev": 0, "timestamp": 1000, "value": "sessionId-2" },
+					type: "Pres:DatastoreUpdate",
+					content: {
+						"sendTimestamp": 1020,
+						"avgLatency": 10,
+						"data": {
+							"system:presence": {
+								"clientToSessionId": {
+									[connectionId2]: { "rev": 0, "timestamp": 1000, "value": sessionId2 },
+								},
 							},
-						},
-						"n:name:testNotificationWorkspace": {
-							"testEvents": {
-								"sessionId-2": {
-									"rev": 0,
-									"timestamp": 0,
-									"value": { "name": "newId", "args": [42] },
-									"ignoreUnmonitored": true,
+							"n:name:testNotificationWorkspace": {
+								"testEvents": {
+									[sessionId2]: {
+										"rev": 0,
+										"timestamp": 0,
+										"value": { "name": "newId", "args": [42] },
+										"ignoreUnmonitored": true,
+									},
 								},
 							},
 						},
@@ -160,30 +164,32 @@ describe("Presence", () => {
 			clock.tick(10);
 
 			runtime.signalsExpected.push([
-				"Pres:DatastoreUpdate",
 				{
-					"sendTimestamp": 1020,
-					"avgLatency": 10,
-					"data": {
-						"system:presence": {
-							"clientToSessionId": {
-								"client2": { "rev": 0, "timestamp": 1000, "value": "sessionId-2" },
+					type: "Pres:DatastoreUpdate",
+					content: {
+						"sendTimestamp": 1020,
+						"avgLatency": 10,
+						"data": {
+							"system:presence": {
+								"clientToSessionId": {
+									[connectionId2]: { "rev": 0, "timestamp": 1000, "value": sessionId2 },
+								},
 							},
-						},
-						"n:name:testNotificationWorkspace": {
-							"testEvents": {
-								"sessionId-2": {
-									"rev": 0,
-									"timestamp": 0,
-									"value": { "name": "newId", "args": [42] },
-									"ignoreUnmonitored": true,
+							"n:name:testNotificationWorkspace": {
+								"testEvents": {
+									[sessionId2]: {
+										"rev": 0,
+										"timestamp": 0,
+										"value": { "name": "newId", "args": [42] },
+										"ignoreUnmonitored": true,
+									},
 								},
 							},
 						},
 					},
+					// Targeting self for simplicity
+					targetClientId: "client2",
 				},
-				// Targeting self for simplicity
-				"client2",
 			]);
 
 			// Act & Verify

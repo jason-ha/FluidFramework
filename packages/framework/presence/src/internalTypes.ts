@@ -4,15 +4,15 @@
  */
 
 import type { ExtensionRuntime } from "@fluidframework/container-definitions/internal";
-import type { JsonSerializable } from "@fluidframework/core-interfaces/internal";
 
 import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { ClientSessionId, ISessionClient } from "./presence.js";
+import type { ClientJoinMessage, DatastoreUpdateMessage } from "./protocol.js";
 
 /**
  * @internal
  */
-export interface ClientRecord<TValue extends InternalTypes.ValueDirectoryOrState<unknown>> {
+export interface ClientRecord<TValue extends InternalTypes.IValueDirectoryOrState<unknown>> {
 	// Caution: any particular item may or may not exist
 	// Typescript does not support absent keys without forcing type to also be undefined.
 	// See https://github.com/microsoft/TypeScript/issues/42810.
@@ -37,10 +37,8 @@ export type IEphemeralRuntime = Omit<ExtensionRuntime, "logger" | "submitAddress
 		 * @param content - Content of the signal. Should be a JSON serializable object or primitive.
 		 * @param targetClientId - When specified, the signal is only sent to the provided client id.
 		 */
-		submitSignal: <TContent>(
-			type: string,
-			content: JsonSerializable<TContent>,
-			targetClientId?: string,
+		submitSignal: (
+			message: Omit<ClientJoinMessage | DatastoreUpdateMessage, "clientId">,
 		) => void;
 	};
 
@@ -50,7 +48,7 @@ export type IEphemeralRuntime = Omit<ExtensionRuntime, "logger" | "submitAddress
 export interface ValueManager<
 	TValue,
 	TValueState extends
-		InternalTypes.ValueDirectoryOrState<TValue> = InternalTypes.ValueDirectoryOrState<TValue>,
+		InternalTypes.IValueDirectoryOrState<TValue> = InternalTypes.IValueDirectoryOrState<TValue>,
 > {
 	// Most value managers should provide value - implement Required<ValueManager<...>>
 	readonly value?: TValueState;

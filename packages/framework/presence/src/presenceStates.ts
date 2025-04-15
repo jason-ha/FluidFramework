@@ -3,6 +3,7 @@
  * Licensed under the MIT License.
  */
 
+import type { InternalUtilityTypes } from "@fluidframework/core-interfaces/internal";
 import { assert } from "@fluidframework/core-utils/internal";
 
 import type { ClientConnectionId } from "./baseTypes.js";
@@ -110,9 +111,11 @@ export interface ValueElementMap<_TSchema extends PresenceStatesSchema> {
 /**
  * @internal
  */
-export type ClientUpdateEntry = InternalTypes.ValueDirectoryOrState<unknown> & {
-	ignoreUnmonitored?: true;
-};
+export type ClientUpdateEntry = InternalUtilityTypes.FlattenIntersection<
+	InternalTypes.ValueDirectoryOrState<unknown> & {
+		ignoreUnmonitored?: true;
+	}
+>;
 
 type ClientUpdateRecord = ClientRecord<ClientUpdateEntry>;
 
@@ -273,7 +276,7 @@ class PresenceStatesImpl<TSchema extends PresenceStatesSchema>
 			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 			const nodes = {} as MapEntries<TSchema>;
 			let anyInitialValues = false;
-			const newValues: { [key: string]: InternalTypes.ValueDirectoryOrState<unknown> } = {};
+			const newValues: { [key: string]: InternalTypes.IValueDirectoryOrState<unknown> } = {};
 			let cumulativeAllowableUpdateLatencyMs: number | undefined;
 			for (const [key, nodeFactory] of Object.entries(initialContent)) {
 				const newNodeData = nodeFactory(key, handleFromDatastore(this));
@@ -352,7 +355,7 @@ class PresenceStatesImpl<TSchema extends PresenceStatesSchema>
 
 	public add<
 		TKey extends string,
-		TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
+		TValue extends InternalTypes.IValueDirectoryOrState<unknown>,
 		TValueManager,
 	>(
 		key: TKey,

@@ -4,6 +4,7 @@
  */
 
 import type {
+	InternalUtilityTypes,
 	ITelemetryBaseLogger,
 	JsonDeserialized,
 	JsonSerializable,
@@ -26,7 +27,11 @@ export type ClientConnectionId = string;
  * @sealed
  * @internal
  */
-export interface ExtensionMessage<TType extends string = string, TContent = unknown> {
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export type ExtensionMessage<
+	TType extends string = string,
+	TJsonContent = JsonSerializable<unknown> | JsonDeserialized<unknown>,
+> = {
 	/**
 	 * Message type
 	 */
@@ -35,21 +40,45 @@ export interface ExtensionMessage<TType extends string = string, TContent = unkn
 	/**
 	 * Message content
 	 */
-	content: JsonDeserialized<TContent>;
-
-	/**
-	 * The client ID that submitted the message.
-	 * For server generated messages the clientId will be null.
-	 */
-	// eslint-disable-next-line @rushstack/no-new-null
-	clientId: ClientConnectionId | null;
+	content: TJsonContent;
 
 	/**
 	 * Client ID of the singular client the message is being (or has been) sent to.
 	 * May only be specified when IConnect.supportedFeatures['submit_signals_v2'] is true, will throw otherwise.
 	 */
 	targetClientId?: ClientConnectionId;
-}
+};
+
+/**
+ * Outgoing extension signals.
+ *
+ * @sealed
+ * @internal
+ */
+export type OutboundExtensionMessage<
+	TType extends string = string,
+	TContent = unknown,
+> = ExtensionMessage<TType, JsonSerializable<TContent>>;
+
+/**
+ * Incoming extension signals.
+ *
+ * @sealed
+ * @internal
+ */
+export type InboundExtensionMessage<
+	TType extends string = string,
+	TContent = unknown,
+> = InternalUtilityTypes.FlattenIntersection<
+	ExtensionMessage<TType, JsonDeserialized<TContent>> & {
+		/**
+		 * The client ID that submitted the message.
+		 * For server generated messages the clientId will be null.
+		 */
+		// eslint-disable-next-line @rushstack/no-new-null
+		clientId: ClientConnectionId | null;
+	}
+>;
 
 /**
  * Defines requirements for a component to register with container as an extension.
@@ -68,10 +97,14 @@ export interface ContainerExtension<TContext extends unknown[]> {
 	 * Callback for signal sent by this extension.
 	 *
 	 * @param address - Address of the signal
-	 * @param signal - Signal content and metadata
+	 * @param signalMessage - Signal content and metadata
 	 * @param local - True if signal was sent by this client
 	 */
-	processSignal?(address: string, signal: ExtensionMessage, local: boolean): void;
+	processSignal?: <TType extends string, TContent>(
+		_address: string,
+		signalMessage: InboundExtensionMessage<TType, TContent>,
+		local: boolean,
+	) => void;
 }
 
 /**
@@ -109,11 +142,15 @@ export interface ExtensionRuntime {
 	 * Upon receipt of signal, {@link ContainerExtension.processSignal} will be called with the same
 	 * address, type, and content (less any non-{@link https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify|JSON.stringify}-able data).
 	 */
-	submitAddressedSignal: <T>(
+	submitAddressedSignal: <
+		TContent,
+		TMessage extends OutboundExtensionMessage<string, TContent> = OutboundExtensionMessage<
+			string,
+			TContent
+		>,
+	>(
 		address: string,
-		type: string,
-		content: JsonSerializable<T>,
-		targetClientId?: ClientConnectionId,
+		message: TMessage,
 	) => void;
 
 	/**

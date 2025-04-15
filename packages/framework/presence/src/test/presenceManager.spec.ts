@@ -10,7 +10,11 @@ import type { SinonFakeTimers } from "sinon";
 import { useFakeTimers } from "sinon";
 
 import type { ClientConnectionId } from "../baseTypes.js";
-import { SessionClientStatus, type ISessionClient } from "../presence.js";
+import {
+	SessionClientStatus,
+	type ClientSessionId,
+	type ISessionClient,
+} from "../presence.js";
 import { createPresenceManager } from "../presenceManager.js";
 
 import { MockEphemeralRuntime } from "./mockEphemeralRuntime.js";
@@ -19,6 +23,8 @@ import {
 	generateBasicClientJoin,
 	prepareConnectedPresence,
 } from "./testUtils.js";
+
+const collateralSessionId = "collateral-id" as ClientSessionId<"collateral-id">;
 
 describe("Presence", () => {
 	describe("PresenceManager", () => {
@@ -263,7 +269,7 @@ describe("Presence", () => {
 								[collateralAttendeeConnectionId]: {
 									rev: 0,
 									timestamp: 0,
-									value: "collateral-id",
+									value: collateralSessionId,
 								},
 							},
 						});
@@ -293,7 +299,7 @@ describe("Presence", () => {
 						// Rejoin signal for the collateral attendee unknown to audience
 						const rejoinSignal = generateBasicClientJoin(clock.now - 10, {
 							averageLatency: 40,
-							clientSessionId: "collateral-id",
+							clientSessionId: collateralSessionId,
 							clientConnectionId: newAttendeeConnectionId,
 							updateProviders: [initialAttendeeConnectionId],
 							connectionOrder: 1,
@@ -301,7 +307,7 @@ describe("Presence", () => {
 								[oldAttendeeConnectionId]: {
 									rev: 0,
 									timestamp: 0,
-									value: "collateral-id",
+									value: collateralSessionId,
 								},
 							},
 						});
@@ -318,7 +324,7 @@ describe("Presence", () => {
 								[oldAttendeeConnectionId]: {
 									rev: 0,
 									timestamp: 0,
-									value: "collateral-id",
+									value: collateralSessionId,
 								},
 							},
 						});
@@ -350,7 +356,7 @@ describe("Presence", () => {
 							"Expected no attendees to be announced",
 						);
 						// Check attendee information remains unchanged
-						verifyAttendee(rejoinAttendees[0], newAttendeeConnectionId, "collateral-id");
+						verifyAttendee(rejoinAttendees[0], newAttendeeConnectionId, collateralSessionId);
 					});
 				});
 

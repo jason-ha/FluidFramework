@@ -32,7 +32,7 @@ export type PresenceWorkspaceAddress = `${string}:${string}`;
  */
 export type PresenceWorkspaceEntry<
 	TKey extends string,
-	TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
+	TValue extends InternalTypes.IValueDirectoryOrState<unknown>,
 	TManager = unknown,
 > = InternalTypes.ManagerFactory<TKey, TValue, TManager>;
 
@@ -46,7 +46,7 @@ export type PresenceWorkspaceEntry<
  * @alpha
  */
 export interface PresenceStatesSchema {
-	[key: string]: PresenceWorkspaceEntry<typeof key, InternalTypes.ValueDirectoryOrState<any>>;
+	[key: string]: PresenceWorkspaceEntry<typeof key, InternalTypes.IValueDirectoryOrState<any>>;
 }
 
 /**
@@ -87,7 +87,7 @@ export interface PresenceStates<
 	 */
 	add<
 		TKey extends string,
-		TValue extends InternalTypes.ValueDirectoryOrState<any>,
+		TValue extends InternalTypes.IValueDirectoryOrState<any>,
 		TManager extends TManagerConstraints,
 	>(
 		key: TKey,
@@ -122,7 +122,7 @@ export interface PresenceStates<
 export interface PresenceNotificationsSchema {
 	[key: string]: InternalTypes.ManagerFactory<
 		typeof key,
-		InternalTypes.ValueRequiredState<InternalTypes.NotificationType>,
+		InternalTypes.IValueRequiredState<InternalTypes.NotificationType>,
 		NotificationsManager<any>
 	>;
 }
@@ -148,7 +148,7 @@ export interface PresenceNotifications<TSchema extends PresenceNotificationsSche
 	 */
 	add<
 		TKey extends string,
-		TValue extends InternalTypes.ValueDirectoryOrState<any>,
+		TValue extends InternalTypes.IValueDirectoryOrState<any>,
 		TManager extends NotificationsManager<any>,
 	>(
 		key: TKey,

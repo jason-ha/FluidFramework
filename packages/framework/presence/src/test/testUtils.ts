@@ -3,13 +3,18 @@
  * Licensed under the MIT License.
  */
 
-import type { ExtensionMessage } from "@fluidframework/container-definitions/internal";
 import type { InternalUtilityTypes } from "@fluidframework/core-interfaces/internal";
 import type { EventAndErrorTrackingLogger } from "@fluidframework/test-utils/internal";
 import { getUnexpectedLogErrorException } from "@fluidframework/test-utils/internal";
 import type { SinonFakeTimers } from "sinon";
 
 import { createPresenceManager } from "../presenceManager.js";
+import type {
+	ClientJoinMessage,
+	GeneralDatastoreMessageContent,
+	SystemDatastore,
+} from "../protocol.js";
+import type { SystemWorkspaceDatastore } from "../systemWorkspace.js";
 
 import type { MockEphemeralRuntime } from "./mockEphemeralRuntime.js";
 
@@ -33,14 +38,22 @@ export function createInstanceOf<T>(): T {
 }
 
 /**
+ * Mock client session id.
+ */
+export const sessionId2 = "sessionId-2" as ClientSessionId<"sessionId-2">;
+/**
+ * Mock client connection id.
+ */
+export const connectionId2 = "client2" as ClientSessionId<"client2">;
+
+/**
  * Generates expected join signal for a client that was initialized while connected.
  */
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/explicit-function-return-type
 export function generateBasicClientJoin(
 	fixedTime: number,
 	{
-		clientSessionId = "sessionId-2",
-		clientConnectionId = "client2",
+		clientSessionId = sessionId2,
+		clientConnectionId = connectionId2,
 		updateProviders = ["client0", "client1", "client3"],
 		connectionOrder = 0,
 		averageLatency = 0,
@@ -51,12 +64,9 @@ export function generateBasicClientJoin(
 		updateProviders?: string[];
 		connectionOrder?: number;
 		averageLatency?: number;
-		priorClientToSessionId?: Record<
-			ClientConnectionId,
-			{ rev: number; timestamp: number; value: string }
-		>;
+		priorClientToSessionId?: SystemWorkspaceDatastore["clientToSessionId"];
 	},
-) {
+): ClientJoinMessage {
 	return {
 		type: "Pres:ClientJoin",
 		content: {
@@ -68,16 +78,16 @@ export function generateBasicClientJoin(
 						[clientConnectionId]: {
 							"rev": connectionOrder,
 							"timestamp": fixedTime,
-							"value": clientSessionId,
+							"value": clientSessionId as ClientSessionId,
 						},
 					},
 				},
-			},
+			} satisfies SystemDatastore as GeneralDatastoreMessageContent & SystemDatastore,
 			"sendTimestamp": fixedTime,
 			updateProviders,
 		},
 		clientId: clientConnectionId,
-	} satisfies ExtensionMessage<"Pres:ClientJoin">;
+	};
 }
 
 /**
@@ -117,7 +127,7 @@ export function prepareConnectedPresence(
 		clientConnectionId,
 		updateProviders: quorumClientIds,
 	});
-	runtime.signalsExpected.push([expectedClientJoin.type, expectedClientJoin.content]);
+	runtime.signalsExpected.push([expectedClientJoin]);
 
 	const presence = createPresenceManager(runtime, clientSessionId as ClientSessionId);
 

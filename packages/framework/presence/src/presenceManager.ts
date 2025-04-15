@@ -6,7 +6,7 @@
 import { createEmitter } from "@fluid-internal/client-utils";
 import type {
 	ContainerExtension,
-	ExtensionMessage,
+	InboundExtensionMessage,
 } from "@fluidframework/container-definitions/internal";
 import type { IEmitter } from "@fluidframework/core-interfaces/internal";
 import { createSessionId } from "@fluidframework/id-compressor/internal";
@@ -139,7 +139,11 @@ class PresenceManager implements IPresence, PresenceExtensionInterface {
 	 * @param message - Message to be processed
 	 * @param local - Whether the message originated locally (`true`) or remotely (`false`)
 	 */
-	public processSignal(address: string, message: ExtensionMessage, local: boolean): void {
+	public processSignal<TType extends string, TContent>(
+		_address: string,
+		message: InboundExtensionMessage<TType, TContent>,
+		local: boolean,
+	): void {
 		this.datastoreManager.processSignal(message, local);
 	}
 }

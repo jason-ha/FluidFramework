@@ -7,11 +7,21 @@ import { EventAndErrorTrackingLogger } from "@fluidframework/test-utils/internal
 import { describe, it, after, afterEach, before, beforeEach } from "mocha";
 import { useFakeTimers, type SinonFakeTimers } from "sinon";
 
-import { Latest, Notifications, type PresenceNotifications } from "../index.js";
+import {
+	type ClientSessionId,
+	Latest,
+	Notifications,
+	type PresenceNotifications,
+} from "../index.js";
 import type { createPresenceManager } from "../presenceManager.js";
 
 import { MockEphemeralRuntime } from "./mockEphemeralRuntime.js";
-import { assertFinalExpectations, prepareConnectedPresence } from "./testUtils.js";
+import {
+	assertFinalExpectations,
+	connectionId2,
+	prepareConnectedPresence,
+	sessionId2,
+} from "./testUtils.js";
 
 describe("Presence", () => {
 	describe("batching", () => {
@@ -34,7 +44,7 @@ describe("Presence", () => {
 			clock.setSystemTime(initialTime);
 
 			// Set up the presence connection.
-			presence = prepareConnectedPresence(runtime, "sessionId-2", "client2", clock, logger);
+			presence = prepareConnectedPresence(runtime, sessionId2, connectionId2, clock, logger);
 		});
 
 		afterEach(() => {
@@ -52,27 +62,29 @@ describe("Presence", () => {
 			it("sends signal immediately when allowable latency is 0", async () => {
 				runtime.signalsExpected.push(
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1010,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1010,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
+											},
 										},
 									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 0,
-											"timestamp": 1010,
-											"value": {
-												"num": 0,
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 0,
+												"timestamp": 1010,
+												"value": {
+													"num": 0,
+												},
 											},
 										},
 									},
@@ -81,27 +93,29 @@ describe("Presence", () => {
 						},
 					],
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1020,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1020,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											["client2" as ClientSessionId]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
+											},
 										},
 									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 1,
-											"timestamp": 1020,
-											"value": {
-												"num": 42,
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 1,
+												"timestamp": 1020,
+												"value": {
+													"num": 42,
+												},
 											},
 										},
 									},
@@ -110,27 +124,29 @@ describe("Presence", () => {
 						},
 					],
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1020,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1020,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
+											},
 										},
 									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 2,
-											"timestamp": 1020,
-											"value": {
-												"num": 84,
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 2,
+												"timestamp": 1020,
+												"value": {
+													"num": 84,
+												},
 											},
 										},
 									},
@@ -161,27 +177,29 @@ describe("Presence", () => {
 
 			it("sets timer for default allowableUpdateLatency", async () => {
 				runtime.signalsExpected.push([
-					"Pres:DatastoreUpdate",
 					{
-						"sendTimestamp": 1070,
-						"avgLatency": 10,
-						"data": {
-							"system:presence": {
-								"clientToSessionId": {
-									"client2": {
-										"rev": 0,
-										"timestamp": 1000,
-										"value": "sessionId-2",
+						type: "Pres:DatastoreUpdate",
+						content: {
+							"sendTimestamp": 1070,
+							"avgLatency": 10,
+							"data": {
+								"system:presence": {
+									"clientToSessionId": {
+										[connectionId2]: {
+											"rev": 0,
+											"timestamp": 1000,
+											"value": sessionId2,
+										},
 									},
 								},
-							},
-							"s:name:testStateWorkspace": {
-								"count": {
-									"sessionId-2": {
-										"rev": 0,
-										"timestamp": 1010,
-										"value": {
-											"num": 0,
+								"s:name:testStateWorkspace": {
+									"count": {
+										[sessionId2]: {
+											"rev": 0,
+											"timestamp": 1010,
+											"value": {
+												"num": 0,
+											},
 										},
 									},
 								},
@@ -205,27 +223,29 @@ describe("Presence", () => {
 			it("batches signals sent within default allowableUpdateLatency", async () => {
 				runtime.signalsExpected.push(
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1070,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1070,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
+											},
 										},
 									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 3,
-											"timestamp": 1060,
-											"value": {
-												"num": 22,
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 3,
+												"timestamp": 1060,
+												"value": {
+													"num": 22,
+												},
 											},
 										},
 									},
@@ -234,27 +254,29 @@ describe("Presence", () => {
 						},
 					],
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1150,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1150,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
+											},
 										},
 									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 6,
-											"timestamp": 1140,
-											"value": {
-												"num": 90,
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 6,
+												"timestamp": 1140,
+												"value": {
+													"num": 90,
+												},
 											},
 										},
 									},
@@ -307,27 +329,29 @@ describe("Presence", () => {
 			it("batches signals sent within a specified allowableUpdateLatency", async () => {
 				runtime.signalsExpected.push(
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1110,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1110,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
+											},
 										},
 									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 2,
-											"timestamp": 1100,
-											"value": {
-												"num": 34,
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 2,
+												"timestamp": 1100,
+												"value": {
+													"num": 34,
+												},
 											},
 										},
 									},
@@ -336,27 +360,29 @@ describe("Presence", () => {
 						},
 					],
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1240,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1240,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
+											},
 										},
 									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 5,
-											"timestamp": 1220,
-											"value": {
-												"num": 90,
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 5,
+												"timestamp": 1220,
+												"value": {
+													"num": 90,
+												},
 											},
 										},
 									},
@@ -406,36 +432,38 @@ describe("Presence", () => {
 			it("queued signal is sent immediately with immediate update message", async () => {
 				runtime.signalsExpected.push(
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1010,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
-										},
-									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 0,
-											"timestamp": 1010,
-											"value": {
-												"num": 0,
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1010,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
 											},
 										},
 									},
-									"immediateUpdate": {
-										"sessionId-2": {
-											"rev": 0,
-											"timestamp": 1010,
-											"value": {
-												"num": 0,
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 0,
+												"timestamp": 1010,
+												"value": {
+													"num": 0,
+												},
+											},
+										},
+										"immediateUpdate": {
+											[sessionId2]: {
+												"rev": 0,
+												"timestamp": 1010,
+												"value": {
+													"num": 0,
+												},
 											},
 										},
 									},
@@ -444,36 +472,38 @@ describe("Presence", () => {
 						},
 					],
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1110,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
-										},
-									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 2,
-											"timestamp": 1100,
-											"value": {
-												"num": 34,
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1110,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
 											},
 										},
 									},
-									"immediateUpdate": {
-										"sessionId-2": {
-											"rev": 1,
-											"timestamp": 1110,
-											"value": {
-												"num": 56,
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 2,
+												"timestamp": 1100,
+												"value": {
+													"num": 34,
+												},
+											},
+										},
+										"immediateUpdate": {
+											[sessionId2]: {
+												"rev": 1,
+												"timestamp": 1110,
+												"value": {
+													"num": 56,
+												},
 											},
 										},
 									},
@@ -510,36 +540,38 @@ describe("Presence", () => {
 			it("batches signals with different allowed latencies", async () => {
 				runtime.signalsExpected.push(
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1060,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
-										},
-									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 2,
-											"timestamp": 1050,
-											"value": {
-												"num": 34,
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1060,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
 											},
 										},
 									},
-									"note": {
-										"sessionId-2": {
-											"rev": 1,
-											"timestamp": 1020,
-											"value": {
-												"message": "will be queued",
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 2,
+												"timestamp": 1050,
+												"value": {
+													"num": 34,
+												},
+											},
+										},
+										"note": {
+											[sessionId2]: {
+												"rev": 1,
+												"timestamp": 1020,
+												"value": {
+													"message": "will be queued",
+												},
 											},
 										},
 									},
@@ -548,22 +580,24 @@ describe("Presence", () => {
 						},
 					],
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1110,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": { "rev": 0, "timestamp": 1000, "value": "sessionId-2" },
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1110,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: { "rev": 0, "timestamp": 1000, "value": sessionId2 },
+										},
 									},
-								},
-								"s:name:testStateWorkspace": {
-									"note": {
-										"sessionId-2": {
-											"rev": 2,
-											"timestamp": 1060,
-											"value": { "message": "final message" },
+									"s:name:testStateWorkspace": {
+										"note": {
+											[sessionId2]: {
+												"rev": 2,
+												"timestamp": 1060,
+												"value": { "message": "final message" },
+											},
 										},
 									},
 								},
@@ -604,38 +638,40 @@ describe("Presence", () => {
 
 			it("batches signals from multiple workspaces", async () => {
 				runtime.signalsExpected.push([
-					"Pres:DatastoreUpdate",
 					{
-						"sendTimestamp": 1070,
-						"avgLatency": 10,
-						"data": {
-							"system:presence": {
-								"clientToSessionId": {
-									"client2": {
-										"rev": 0,
-										"timestamp": 1000,
-										"value": "sessionId-2",
-									},
-								},
-							},
-							"s:name:testStateWorkspace": {
-								"count": {
-									"sessionId-2": {
-										"rev": 2,
-										"timestamp": 1050,
-										"value": {
-											"num": 34,
+						type: "Pres:DatastoreUpdate",
+						content: {
+							"sendTimestamp": 1070,
+							"avgLatency": 10,
+							"data": {
+								"system:presence": {
+									"clientToSessionId": {
+										[connectionId2]: {
+											"rev": 0,
+											"timestamp": 1000,
+											"value": sessionId2,
 										},
 									},
 								},
-							},
-							"s:name:testStateWorkspace2": {
-								"note": {
-									"sessionId-2": {
-										"rev": 2,
-										"timestamp": 1060,
-										"value": {
-											"message": "final message",
+								"s:name:testStateWorkspace": {
+									"count": {
+										[sessionId2]: {
+											"rev": 2,
+											"timestamp": 1050,
+											"value": {
+												"num": 34,
+											},
+										},
+									},
+								},
+								"s:name:testStateWorkspace2": {
+									"note": {
+										[sessionId2]: {
+											"rev": 2,
+											"timestamp": 1060,
+											"value": {
+												"message": "final message",
+											},
 										},
 									},
 								},
@@ -679,23 +715,25 @@ describe("Presence", () => {
 			it("notification signals are sent immediately", async () => {
 				runtime.signalsExpected.push(
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1050,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": { "rev": 0, "timestamp": 1000, "value": "sessionId-2" },
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1050,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: { "rev": 0, "timestamp": 1000, "value": sessionId2 },
+										},
 									},
-								},
-								"n:name:testNotificationWorkspace": {
-									"testEvents": {
-										"sessionId-2": {
-											"rev": 0,
-											"timestamp": 0,
-											"value": { "name": "newId", "args": [77] },
-											"ignoreUnmonitored": true,
+									"n:name:testNotificationWorkspace": {
+										"testEvents": {
+											[sessionId2]: {
+												"rev": 0,
+												"timestamp": 0,
+												"value": { "name": "newId", "args": [77] },
+												"ignoreUnmonitored": true,
+											},
 										},
 									},
 								},
@@ -703,23 +741,25 @@ describe("Presence", () => {
 						},
 					],
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1060,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": { "rev": 0, "timestamp": 1000, "value": "sessionId-2" },
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1060,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: { "rev": 0, "timestamp": 1000, "value": sessionId2 },
+										},
 									},
-								},
-								"n:name:testNotificationWorkspace": {
-									"testEvents": {
-										"sessionId-2": {
-											"rev": 0,
-											"timestamp": 0,
-											"value": { "name": "newId", "args": [88] },
-											"ignoreUnmonitored": true,
+									"n:name:testNotificationWorkspace": {
+										"testEvents": {
+											[sessionId2]: {
+												"rev": 0,
+												"timestamp": 0,
+												"value": { "name": "newId", "args": [88] },
+												"ignoreUnmonitored": true,
+											},
 										},
 									},
 								},
@@ -765,41 +805,43 @@ describe("Presence", () => {
 			it("notification signals cause queued messages to be sent immediately", async () => {
 				runtime.signalsExpected.push(
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1060,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
-										},
-									},
-								},
-								"s:name:testStateWorkspace": {
-									"count": {
-										"sessionId-2": {
-											"rev": 3,
-											"timestamp": 1040,
-											"value": {
-												"num": 56,
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1060,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
 											},
 										},
 									},
-								},
-								"n:name:testNotificationWorkspace": {
-									"testEvents": {
-										"sessionId-2": {
-											"rev": 0,
-											"timestamp": 0,
-											"value": {
-												"name": "newId",
-												"args": [99],
+									"s:name:testStateWorkspace": {
+										"count": {
+											[sessionId2]: {
+												"rev": 3,
+												"timestamp": 1040,
+												"value": {
+													"num": 56,
+												},
 											},
-											"ignoreUnmonitored": true,
+										},
+									},
+									"n:name:testNotificationWorkspace": {
+										"testEvents": {
+											[sessionId2]: {
+												"rev": 0,
+												"timestamp": 0,
+												"value": {
+													"name": "newId",
+													"args": [99],
+												},
+												"ignoreUnmonitored": true,
+											},
 										},
 									},
 								},
@@ -807,30 +849,32 @@ describe("Presence", () => {
 						},
 					],
 					[
-						"Pres:DatastoreUpdate",
 						{
-							"sendTimestamp": 1090,
-							"avgLatency": 10,
-							"data": {
-								"system:presence": {
-									"clientToSessionId": {
-										"client2": {
-											"rev": 0,
-											"timestamp": 1000,
-											"value": "sessionId-2",
+							type: "Pres:DatastoreUpdate",
+							content: {
+								"sendTimestamp": 1090,
+								"avgLatency": 10,
+								"data": {
+									"system:presence": {
+										"clientToSessionId": {
+											[connectionId2]: {
+												"rev": 0,
+												"timestamp": 1000,
+												"value": sessionId2,
+											},
 										},
 									},
-								},
-								"n:name:testNotificationWorkspace": {
-									"testEvents": {
-										"sessionId-2": {
-											"rev": 0,
-											"timestamp": 0,
-											"value": {
-												"name": "newId",
-												"args": [111],
+									"n:name:testNotificationWorkspace": {
+										"testEvents": {
+											[sessionId2]: {
+												"rev": 0,
+												"timestamp": 0,
+												"value": {
+													"name": "newId",
+													"args": [111],
+												},
+												"ignoreUnmonitored": true,
 											},
-											"ignoreUnmonitored": true,
 										},
 									},
 								},

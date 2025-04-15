@@ -28,7 +28,8 @@ import type {
  *
  * @alpha
  */
-export type ClientSessionId = SessionId & { readonly ClientSessionId: "ClientSessionId" };
+export type ClientSessionId<TId extends string = string> = TId &
+	SessionId & { readonly ClientSessionId: "ClientSessionId" };
 
 /**
  * The connection status of the {@link ISessionClient}.

@@ -12,7 +12,12 @@ import { useFakeTimers, spy } from "sinon";
 import { createPresenceManager } from "../presenceManager.js";
 
 import { MockEphemeralRuntime } from "./mockEphemeralRuntime.js";
-import { assertFinalExpectations, prepareConnectedPresence } from "./testUtils.js";
+import {
+	assertFinalExpectations,
+	connectionId2,
+	prepareConnectedPresence,
+	sessionId2,
+} from "./testUtils.js";
 
 describe("Presence", () => {
 	describe("protocol handling", () => {
@@ -76,22 +81,24 @@ describe("Presence", () => {
 					}),
 				});
 				runtime.signalsExpected.push([
-					"Pres:DatastoreUpdate",
 					{
-						"avgLatency": 10,
-						"data": {
-							"system:presence": {
-								"clientToSessionId": {
-									"client2": {
-										"rev": 0,
-										"timestamp": initialTime,
-										"value": "sessionId-2",
+						type: "Pres:DatastoreUpdate",
+						content: {
+							"avgLatency": 10,
+							"data": {
+								"system:presence": {
+									"clientToSessionId": {
+										[connectionId2]: {
+											"rev": 0,
+											"timestamp": initialTime,
+											"value": sessionId2,
+										},
 									},
 								},
 							},
+							"isComplete": true,
+							"sendTimestamp": clock.now,
 						},
-						"isComplete": true,
-						"sendTimestamp": clock.now,
 					},
 				]);
 
@@ -146,22 +153,24 @@ describe("Presence", () => {
 					}),
 				});
 				runtime.signalsExpected.push([
-					"Pres:DatastoreUpdate",
 					{
-						"avgLatency": 10,
-						"data": {
-							"system:presence": {
-								"clientToSessionId": {
-									"client2": {
-										"rev": 0,
-										"timestamp": initialTime,
-										"value": "sessionId-2",
+						type: "Pres:DatastoreUpdate",
+						content: {
+							"avgLatency": 10,
+							"data": {
+								"system:presence": {
+									"clientToSessionId": {
+										[connectionId2]: {
+											"rev": 0,
+											"timestamp": initialTime,
+											"value": sessionId2,
+										},
 									},
 								},
 							},
+							"isComplete": true,
+							"sendTimestamp": clock.now + 180,
 						},
-						"isComplete": true,
-						"sendTimestamp": clock.now + 180,
 					},
 				]);
 
@@ -209,7 +218,7 @@ describe("Presence", () => {
 			};
 
 			beforeEach(() => {
-				presence = prepareConnectedPresence(runtime, "sessionId-2", "client2", clock, logger);
+				presence = prepareConnectedPresence(runtime, sessionId2, connectionId2, clock, logger);
 
 				// Pass a little time (to mimic reality)
 				clock.tick(10);

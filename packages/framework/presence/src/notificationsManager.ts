@@ -163,7 +163,7 @@ class NotificationsManagerImpl<
 		NotificationsManager<T>,
 		ValueManager<
 			InternalTypes.NotificationType,
-			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
+			InternalTypes.IValueRequiredState<InternalTypes.NotificationType>
 		>
 {
 	public readonly events = createEmitter<NotificationsManagerEvents>();
@@ -207,7 +207,7 @@ class NotificationsManagerImpl<
 		private readonly key: Key,
 		private readonly datastore: StateDatastore<
 			Key,
-			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
+			InternalTypes.IValueRequiredState<InternalTypes.NotificationType>
 		>,
 		initialSubscriptions: Partial<NotificationSubscriptions<T>>,
 	) {
@@ -229,7 +229,7 @@ class NotificationsManagerImpl<
 	public update(
 		client: ISessionClient,
 		_received: number,
-		value: InternalTypes.ValueRequiredState<InternalTypes.NotificationType>,
+		value: InternalTypes.IValueRequiredState<InternalTypes.NotificationType>,
 	): PostUpdateAction[] {
 		const postUpdateActions: PostUpdateAction[] = [];
 		const eventName = value.value.name as keyof Listeners<NotificationSubscriptions<T>>;
@@ -270,14 +270,14 @@ export function Notifications<
 	initialSubscriptions: Partial<NotificationSubscriptions<T>>,
 ): InternalTypes.ManagerFactory<
 	Key,
-	InternalTypes.ValueRequiredState<InternalTypes.NotificationType>,
+	InternalTypes.IValueRequiredState<InternalTypes.NotificationType>,
 	NotificationsManager<T>
 > {
 	const factory = (
 		key: Key,
 		datastoreHandle: InternalTypes.StateDatastoreHandle<
 			Key,
-			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
+			InternalTypes.IValueRequiredState<InternalTypes.NotificationType>
 		>,
 	): {
 		manager: InternalTypes.StateValue<NotificationsManager<T>>;
@@ -285,7 +285,7 @@ export function Notifications<
 		manager: brandIVM<
 			NotificationsManagerImpl<T, Key>,
 			InternalTypes.NotificationType,
-			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
+			InternalTypes.IValueRequiredState<InternalTypes.NotificationType>
 		>(
 			new NotificationsManagerImpl(
 				key,

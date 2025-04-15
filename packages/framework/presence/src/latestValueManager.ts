@@ -90,15 +90,15 @@ export interface LatestValueManager<T> {
 class LatestValueManagerImpl<T, Key extends string>
 	implements
 		LatestValueManager<T>,
-		Required<ValueManager<T, InternalTypes.ValueRequiredState<T>>>
+		Required<ValueManager<T, InternalTypes.IValueRequiredState<T>>>
 {
 	public readonly events = createEmitter<LatestValueManagerEvents<T>>();
 	public readonly controls: OptionalBroadcastControl;
 
 	public constructor(
 		private readonly key: Key,
-		private readonly datastore: StateDatastore<Key, InternalTypes.ValueRequiredState<T>>,
-		public readonly value: InternalTypes.ValueRequiredState<T>,
+		private readonly datastore: StateDatastore<Key, InternalTypes.IValueRequiredState<T>>,
+		public readonly value: InternalTypes.IValueRequiredState<T>,
 		controlSettings: BroadcastControlSettings | undefined,
 	) {
 		this.controls = new OptionalBroadcastControl(controlSettings);
@@ -154,7 +154,7 @@ class LatestValueManagerImpl<T, Key extends string>
 	public update(
 		client: ISessionClient,
 		_received: number,
-		value: InternalTypes.ValueRequiredState<T>,
+		value: InternalTypes.IValueRequiredState<T>,
 	): PostUpdateAction[] {
 		const allKnownStates = this.datastore.knownValues(this.key);
 		const clientSessionId = client.sessionId;
@@ -184,12 +184,12 @@ export function Latest<T extends object, Key extends string = string>(
 	controls?: BroadcastControlSettings,
 ): InternalTypes.ManagerFactory<
 	Key,
-	InternalTypes.ValueRequiredState<T>,
+	InternalTypes.IValueRequiredState<T>,
 	LatestValueManager<T>
 > {
 	// LatestValueManager takes ownership of initialValue but makes a shallow
 	// copy for basic protection.
-	const value: InternalTypes.ValueRequiredState<T> = {
+	const value: InternalTypes.IValueRequiredState<T> = {
 		rev: 0,
 		timestamp: Date.now(),
 		value: shallowCloneObject(initialValue),
@@ -198,14 +198,14 @@ export function Latest<T extends object, Key extends string = string>(
 		key: Key,
 		datastoreHandle: InternalTypes.StateDatastoreHandle<
 			Key,
-			InternalTypes.ValueRequiredState<T>
+			InternalTypes.IValueRequiredState<T>
 		>,
 	): {
 		initialData: { value: typeof value; allowableUpdateLatencyMs: number | undefined };
 		manager: InternalTypes.StateValue<LatestValueManager<T>>;
 	} => ({
 		initialData: { value, allowableUpdateLatencyMs: controls?.allowableUpdateLatencyMs },
-		manager: brandIVM<LatestValueManagerImpl<T, Key>, T, InternalTypes.ValueRequiredState<T>>(
+		manager: brandIVM<LatestValueManagerImpl<T, Key>, T, InternalTypes.IValueRequiredState<T>>(
 			new LatestValueManagerImpl(key, datastoreFromHandle(datastoreHandle), value, controls),
 		),
 	});

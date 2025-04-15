@@ -32,10 +32,10 @@ declare function createValueManager<T, Key extends string>(
 	key: Key,
 	datastoreHandle: InternalTypes.StateDatastoreHandle<
 		Key,
-		InternalTypes.ValueRequiredState<T>
+		InternalTypes.IValueRequiredState<T>
 	>,
 ) => {
-	value: InternalTypes.ValueRequiredState<T>;
+	value: InternalTypes.IValueRequiredState<T>;
 	manager: InternalTypes.StateValue<JsonDeserialized<T>>;
 });
 
