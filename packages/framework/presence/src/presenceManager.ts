@@ -4,6 +4,10 @@
  */
 
 import { createEmitter } from "@fluid-internal/client-utils";
+import type {
+	ContainerExtension,
+	ExtensionMessage,
+} from "@fluidframework/container-definitions/internal";
 import type { IEmitter } from "@fluidframework/core-interfaces/internal";
 import { createSessionId } from "@fluidframework/id-compressor/internal";
 import type {
@@ -31,18 +35,13 @@ import type {
 	PresenceStatesSchema,
 } from "./types.js";
 
-import type {
-	IContainerExtension,
-	IExtensionMessage,
-} from "@fluidframework/presence/internal/container-definitions/internal";
-
 /**
- * Portion of the container extension requirements ({@link IContainerExtension}) that are delegated to presence manager.
+ * Portion of the container extension requirements ({@link ContainerExtension}) that are delegated to presence manager.
  *
  * @internal
  */
 export type PresenceExtensionInterface = Required<
-	Pick<IContainerExtension<never>, "processSignal">
+	Pick<ContainerExtension<never>, "processSignal">
 >;
 
 /**
@@ -70,11 +69,12 @@ class PresenceManager implements IPresence, PresenceExtensionInterface {
 			this.mc?.logger,
 		);
 
-		runtime.on("connected", this.onConnect.bind(this));
+		runtime.events.on("connected", this.onConnect.bind(this));
 
-		runtime.on("disconnected", () => {
-			if (runtime.clientId !== undefined) {
-				this.removeClientConnectionId(runtime.clientId);
+		runtime.events.on("disconnected", () => {
+			const currentClientId = runtime.getClientId();
+			if (currentClientId !== undefined) {
+				this.removeClientConnectionId(currentClientId);
 			}
 		});
 
@@ -86,8 +86,8 @@ class PresenceManager implements IPresence, PresenceExtensionInterface {
 		// delayed we expect that "connected" event has passed.
 		// Note: In some manual testing, this does not appear to be enough to
 		// always trigger an initial connect.
-		const clientId = runtime.clientId;
-		if (clientId !== undefined && runtime.connected) {
+		const clientId = runtime.getClientId();
+		if (clientId !== undefined && runtime.isConnected()) {
 			this.onConnect(clientId);
 		}
 	}
@@ -139,7 +139,7 @@ class PresenceManager implements IPresence, PresenceExtensionInterface {
 	 * @param message - Message to be processed
 	 * @param local - Whether the message originated locally (`true`) or remotely (`false`)
 	 */
-	public processSignal(address: string, message: IExtensionMessage, local: boolean): void {
+	public processSignal(address: string, message: ExtensionMessage, local: boolean): void {
 		this.datastoreManager.processSignal(message, local);
 	}
 }
