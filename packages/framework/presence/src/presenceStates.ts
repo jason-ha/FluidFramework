@@ -83,7 +83,7 @@ type MapEntries<TSchema extends PresenceStatesSchema> = PresenceSubSchemaFromWor
  * @internal
  */
 export interface ValueElementMap<_TSchema extends PresenceStatesSchema> {
-	[key: string]: ClientRecord<InternalTypes.IValueDirectoryOrState<unknown>>;
+	[key: string]: ClientRecord<InternalTypes.ValueDirectoryOrState<unknown>>;
 }
 
 // An attempt to make the type more precise, but it is not working.
@@ -92,25 +92,25 @@ export interface ValueElementMap<_TSchema extends PresenceStatesSchema> {
 // type ValueElementMap<TSchema extends PresenceStatesNodeSchema> =
 // 	| {
 // 			[Key in keyof TSchema & string]?: {
-// 				[ClientSessionId: ClientSessionId]: InternalTypes.IValueDirectoryOrState<MapSchemaElement<TSchema,"value",Key>>;
+// 				[ClientSessionId: ClientSessionId]: InternalTypes.ValueDirectoryOrState<MapSchemaElement<TSchema,"value",Key>>;
 // 			};
 // 	  }
 // 	| {
-// 			[key: string]: ClientRecord<InternalTypes.IValueDirectoryOrState<unknown>>;
+// 			[key: string]: ClientRecord<InternalTypes.ValueDirectoryOrState<unknown>>;
 // 	  };
 // interface ValueElementMap<TValue> {
-// 	[Id: string]: ClientRecord<InternalTypes.IValueDirectoryOrState<TValue>>;
+// 	[Id: string]: ClientRecord<InternalTypes.ValueDirectoryOrState<TValue>>;
 // 	// Version with local packed in is convenient for map, but not for join broadcast to serialize simply.
 // 	// [Id: string]: {
-// 	// 	local: InternalTypes.IValueDirectoryOrState<TValue>;
-// 	// 	all: ClientRecord<InternalTypes.IValueDirectoryOrState<TValue>>;
+// 	// 	local: InternalTypes.ValueDirectoryOrState<TValue>;
+// 	// 	all: ClientRecord<InternalTypes.ValueDirectoryOrState<TValue>>;
 // 	// };
 // }
 
 /**
  * @internal
  */
-export type ClientUpdateEntry = InternalTypes.IValueDirectoryOrState<unknown> & {
+export type ClientUpdateEntry = InternalTypes.ValueDirectoryOrState<unknown> & {
 	ignoreUnmonitored?: true;
 };
 
@@ -139,11 +139,11 @@ export interface PresenceStatesInternal {
 function isValueDirectory<
 	T,
 	TValueState extends
-		| InternalTypes.IValueRequiredState<T>
-		| InternalTypes.IValueOptionalState<T>,
+		| InternalTypes.ValueRequiredState<T>
+		| InternalTypes.ValueOptionalState<T>,
 >(
-	value: InternalTypes.IValueDirectory<T> | TValueState,
-): value is InternalTypes.IValueDirectory<T> {
+	value: InternalTypes.ValueDirectory<T> | TValueState,
+): value is InternalTypes.ValueDirectory<T> {
 	return "items" in value;
 }
 
@@ -155,13 +155,13 @@ function isValueDirectory<
 export function mergeValueDirectory<
 	T,
 	TValueState extends
-		| InternalTypes.IValueRequiredState<T>
-		| InternalTypes.IValueOptionalState<T>,
+		| InternalTypes.ValueRequiredState<T>
+		| InternalTypes.ValueOptionalState<T>,
 >(
-	base: TValueState | InternalTypes.IValueDirectory<T> | undefined,
-	update: TValueState | InternalTypes.IValueDirectory<T>,
+	base: TValueState | InternalTypes.ValueDirectory<T> | undefined,
+	update: TValueState | InternalTypes.ValueDirectory<T>,
 	timeDelta: number,
-): TValueState | InternalTypes.IValueDirectory<T> {
+): TValueState | InternalTypes.ValueDirectory<T> {
 	if (!isValueDirectory(update)) {
 		if (base === undefined || update.rev > base.rev) {
 			return { ...update, timestamp: update.timestamp + timeDelta };
@@ -169,7 +169,7 @@ export function mergeValueDirectory<
 		return base;
 	}
 
-	let mergeBase: InternalTypes.IValueDirectory<T>;
+	let mergeBase: InternalTypes.ValueDirectory<T>;
 	if (base === undefined) {
 		mergeBase = { rev: update.rev, items: {} };
 	} else {
@@ -273,7 +273,7 @@ class PresenceStatesImpl<TSchema extends PresenceStatesSchema>
 			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 			const nodes = {} as MapEntries<TSchema>;
 			let anyInitialValues = false;
-			const newValues: { [key: string]: InternalTypes.IValueDirectoryOrState<unknown> } = {};
+			const newValues: { [key: string]: InternalTypes.ValueDirectoryOrState<unknown> } = {};
 			let cumulativeAllowableUpdateLatencyMs: number | undefined;
 			for (const [key, nodeFactory] of Object.entries(initialContent)) {
 				const newNodeData = nodeFactory(key, handleFromDatastore(this));
@@ -352,7 +352,7 @@ class PresenceStatesImpl<TSchema extends PresenceStatesSchema>
 
 	public add<
 		TKey extends string,
-		TValue extends InternalTypes.IValueDirectoryOrState<unknown>,
+		TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
 		TValueManager,
 	>(
 		key: TKey,

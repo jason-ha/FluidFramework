@@ -28,34 +28,34 @@ export namespace InternalTypes {
 	/**
 	 * @system
 	 */
-	export interface IValueOptionalState<TValue> extends ValueStateMetadata {
+	export interface ValueOptionalState<TValue> extends ValueStateMetadata {
 		value?: JsonDeserialized<TValue>;
 	}
 
 	/**
 	 * @system
 	 */
-	export interface IValueRequiredState<TValue> extends ValueStateMetadata {
+	export interface ValueRequiredState<TValue> extends ValueStateMetadata {
 		value: JsonDeserialized<TValue>;
 	}
 
 	/**
 	 * @system
 	 */
-	export interface IValueDirectory<T> {
+	export interface ValueDirectory<T> {
 		rev: number;
 		items: {
 			// Caution: any particular item may or may not exist
 			// Typescript does not support absent keys without forcing type to also be undefined.
 			// See https://github.com/microsoft/TypeScript/issues/42810.
-			[name: string | number]: IValueOptionalState<T> | IValueDirectory<T>;
+			[name: string | number]: ValueOptionalState<T> | ValueDirectory<T>;
 		};
 	}
 
 	/**
 	 * @system
 	 */
-	export type IValueDirectoryOrState<T> = IValueRequiredState<T> | IValueDirectory<T>;
+	export type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
 
 	/**
 	 * @system
@@ -66,14 +66,14 @@ export namespace InternalTypes {
 			// Caution: any particular item may or may not exist
 			// Typescript does not support absent keys without forcing type to also be undefined.
 			// See https://github.com/microsoft/TypeScript/issues/42810.
-			[name in Keys]: IValueOptionalState<T>;
+			[name in Keys]: ValueOptionalState<T>;
 		};
 	}
 
 	/**
 	 * @system
 	 */
-	export declare class StateDatastoreHandle<TKey, TValue extends IValueDirectoryOrState<any>> {
+	export declare class StateDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
 		private readonly StateDatastoreHandle: StateDatastoreHandle<TKey, TValue>;
 	}
 
@@ -106,7 +106,7 @@ export namespace InternalTypes {
 	 */
 	export type ManagerFactory<
 		TKey extends string,
-		TValue extends IValueDirectoryOrState<any>,
+		TValue extends ValueDirectoryOrState<any>,
 		TManager,
 	> = { instanceBase: new (...args: any[]) => any } & ((
 		key: TKey,

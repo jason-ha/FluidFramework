@@ -9,8 +9,8 @@ import type { ClientRecord } from "./internalTypes.js";
 import type { ClientSessionId, ISessionClient } from "./presence.js";
 
 // type StateDatastoreSchemaNode<
-// 	TValue extends InternalTypes.IValueDirectoryOrState<any> = InternalTypes.IValueDirectoryOrState<unknown>,
-// > = TValue extends InternalTypes.IValueDirectoryOrState<infer T> ? InternalTypes.IValueDirectoryOrState<T> : never;
+// 	TValue extends InternalTypes.ValueDirectoryOrState<any> = InternalTypes.ValueDirectoryOrState<unknown>,
+// > = TValue extends InternalTypes.ValueDirectoryOrState<infer T> ? InternalTypes.ValueDirectoryOrState<T> : never;
 
 // /**
 //  * @internal
@@ -19,7 +19,7 @@ import type { ClientSessionId, ISessionClient } from "./presence.js";
 // 	// This type is not precise. It may
 // 	// need to be replaced with PresenceStates schema pattern
 // 	// similar to what is commented out.
-// 	[key: string]: InternalTypes.IValueDirectoryOrState<unknown>;
+// 	[key: string]: InternalTypes.ValueDirectoryOrState<unknown>;
 // 	// [key: string]: StateDatastoreSchemaNode;
 // }
 
@@ -40,7 +40,7 @@ export interface LocalStateUpdateOptions {
  */
 export interface StateDatastore<
 	TKey extends string,
-	TValue extends InternalTypes.IValueDirectoryOrState<any>,
+	TValue extends InternalTypes.ValueDirectoryOrState<any>,
 > {
 	localUpdate(
 		key: TKey,
@@ -67,7 +67,7 @@ export function handleFromDatastore<
 	// TSchema as `unknown` still provides some type safety.
 	// TSchema extends StateDatastoreSchema,
 	TKey extends string /* & keyof TSchema */,
-	TValue extends InternalTypes.IValueDirectoryOrState<unknown>,
+	TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
 >(
 	datastore: StateDatastore<TKey, TValue>,
 ): InternalTypes.StateDatastoreHandle<TKey, Exclude<TValue, undefined>> {
@@ -84,7 +84,7 @@ export function handleFromDatastore<
  */
 export function datastoreFromHandle<
 	TKey extends string,
-	TValue extends InternalTypes.IValueDirectoryOrState<any>,
+	TValue extends InternalTypes.ValueDirectoryOrState<any>,
 >(handle: InternalTypes.StateDatastoreHandle<TKey, TValue>): StateDatastore<TKey, TValue> {
 	return handle as unknown as StateDatastore<TKey, TValue>;
 }

@@ -29,7 +29,7 @@ import type { PresenceStates, PresenceStatesSchema } from "./types.js";
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export type SystemWorkspaceDatastore = {
 	clientToSessionId: {
-		[ConnectionId: ClientConnectionId]: InternalTypes.IValueRequiredState<ClientSessionId>;
+		[ConnectionId: ClientConnectionId]: InternalTypes.ValueRequiredState<ClientSessionId>;
 	};
 };
 
@@ -131,7 +131,7 @@ class SystemWorkspaceImpl implements PresenceStatesInternal, SystemWorkspace {
 			clientToSessionId: {
 				[
 					ConnectionId: ClientConnectionId
-				]: InternalTypes.IValueRequiredState<ClientSessionId> & {
+				]: InternalTypes.ValueRequiredState<ClientSessionId> & {
 					ignoreUnmonitored?: true;
 				};
 			};
@@ -158,7 +158,7 @@ class SystemWorkspaceImpl implements PresenceStatesInternal, SystemWorkspace {
 				postUpdateActions.push(() => this.events.emit("attendeeJoined", attendee));
 			}
 
-			const knownSessionId: InternalTypes.IValueRequiredState<ClientSessionId> | undefined =
+			const knownSessionId: InternalTypes.ValueRequiredState<ClientSessionId> | undefined =
 				this.datastore.clientToSessionId[clientConnectionId];
 			if (knownSessionId === undefined) {
 				this.datastore.clientToSessionId[clientConnectionId] = value;

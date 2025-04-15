@@ -14,7 +14,7 @@ import type { ValueManager } from "./internalTypes.js";
 export function brandIVM<
 	TManagerInterface,
 	TValue,
-	TValueState extends InternalTypes.IValueDirectoryOrState<TValue>,
+	TValueState extends InternalTypes.ValueDirectoryOrState<TValue>,
 >(
 	manager: TManagerInterface & ValueManager<TValue, TValueState>,
 ): InternalTypes.StateValue<TManagerInterface> {
@@ -29,7 +29,7 @@ export function brandIVM<
 export function unbrandIVM<
 	TManagerInterface,
 	TValue,
-	TValueState extends InternalTypes.IValueDirectoryOrState<TValue>,
+	TValueState extends InternalTypes.ValueDirectoryOrState<TValue>,
 >(branded: InternalTypes.StateValue<TManagerInterface>): ValueManager<TValue, TValueState> {
 	return branded as unknown as ValueManager<TValue, TValueState>;
 }

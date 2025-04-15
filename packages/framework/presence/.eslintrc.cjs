@@ -12,7 +12,7 @@ module.exports = {
 		// The clarity of explicit index signatures is helpful in many places with this package.
 		"@typescript-eslint/consistent-indexed-object-style": "off",
 
-		// TODO: Reenable no-explicit-any once need with IValueDirectoryOrState is
+		// TODO: Reenable no-explicit-any once need with ValueDirectoryOrState is
 		// understood. If `any` is still needed disable is on a per line basis.
 		"@typescript-eslint/no-explicit-any": "off",
 		"import/no-internal-modules": [

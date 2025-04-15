@@ -37,28 +37,7 @@ export const ExperimentalPresenceManager: SharedObjectKind<IFluidLoadable & Expe
 
 // @alpha
 export namespace InternalTypes {
-    // (undocumented)
-    export interface IValueDirectory<T> {
-        // (undocumented)
-        items: {
-            [name: string | number]: IValueOptionalState<T> | IValueDirectory<T>;
-        };
-        // (undocumented)
-        rev: number;
-    }
-    // (undocumented)
-    export type IValueDirectoryOrState<T> = IValueRequiredState<T> | IValueDirectory<T>;
-    // (undocumented)
-    export interface IValueOptionalState<TValue> extends ValueStateMetadata {
-        // (undocumented)
-        value?: JsonDeserialized<TValue>;
-    }
-    // (undocumented)
-    export interface IValueRequiredState<TValue> extends ValueStateMetadata {
-        // (undocumented)
-        value: JsonDeserialized<TValue>;
-    }
-    export type ManagerFactory<TKey extends string, TValue extends IValueDirectoryOrState<any>, TManager> = {
+    export type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<any>, TManager> = {
         instanceBase: new (...args: any[]) => any;
     } & ((key: TKey, datastoreHandle: StateDatastoreHandle<TKey, TValue>) => {
         initialData?: {
@@ -71,7 +50,7 @@ export namespace InternalTypes {
     export interface MapValueState<T, Keys extends string | number> {
         // (undocumented)
         items: {
-            [name in Keys]: IValueOptionalState<T>;
+            [name in Keys]: ValueOptionalState<T>;
         };
         // (undocumented)
         rev: number;
@@ -84,10 +63,31 @@ export namespace InternalTypes {
         name: string;
     }
     // (undocumented)
-    export class StateDatastoreHandle<TKey, TValue extends IValueDirectoryOrState<any>> {
+    export class StateDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<any>> {
     }
     export type StateValue<T> = T & StateValueBrand<T>;
     export class StateValueBrand<T> {
+    }
+    // (undocumented)
+    export interface ValueDirectory<T> {
+        // (undocumented)
+        items: {
+            [name: string | number]: ValueOptionalState<T> | ValueDirectory<T>;
+        };
+        // (undocumented)
+        rev: number;
+    }
+    // (undocumented)
+    export type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
+    // (undocumented)
+    export interface ValueOptionalState<TValue> extends ValueStateMetadata {
+        // (undocumented)
+        value?: JsonDeserialized<TValue>;
+    }
+    // (undocumented)
+    export interface ValueRequiredState<TValue> extends ValueStateMetadata {
+        // (undocumented)
+        value: JsonDeserialized<TValue>;
     }
     // (undocumented)
     export interface ValueStateMetadata {
@@ -129,7 +129,7 @@ export interface ISessionClient<SpecificSessionClientId extends ClientSessionId 
 }
 
 // @alpha
-export function Latest<T extends object, Key extends string = string>(initialValue: JsonSerializable<T> & JsonDeserialized<T> & object, controls?: BroadcastControlSettings): InternalTypes.ManagerFactory<Key, InternalTypes.IValueRequiredState<T>, LatestValueManager<T>>;
+export function Latest<T extends object, Key extends string = string>(initialValue: JsonSerializable<T> & JsonDeserialized<T> & object, controls?: BroadcastControlSettings): InternalTypes.ManagerFactory<Key, InternalTypes.ValueRequiredState<T>, LatestValueManager<T>>;
 
 // @alpha
 export function LatestMap<T extends object, Keys extends string | number = string | number, RegistrationKey extends string = string>(initialValues?: {
@@ -242,7 +242,7 @@ export interface NotificationListenable<TListeners extends InternalUtilityTypes.
 }
 
 // @alpha
-export function Notifications<T extends InternalUtilityTypes.NotificationListeners<T>, Key extends string = string>(initialSubscriptions: Partial<NotificationSubscriptions<T>>): InternalTypes.ManagerFactory<Key, InternalTypes.IValueRequiredState<InternalTypes.NotificationType>, NotificationsManager<T>>;
+export function Notifications<T extends InternalUtilityTypes.NotificationListeners<T>, Key extends string = string>(initialSubscriptions: Partial<NotificationSubscriptions<T>>): InternalTypes.ManagerFactory<Key, InternalTypes.ValueRequiredState<InternalTypes.NotificationType>, NotificationsManager<T>>;
 
 // @alpha @sealed
 export interface NotificationsManager<T extends InternalUtilityTypes.NotificationListeners<T>> {
@@ -273,19 +273,19 @@ export interface PresenceEvents {
 
 // @alpha @sealed
 export interface PresenceNotifications<TSchema extends PresenceNotificationsSchema> {
-    add<TKey extends string, TValue extends InternalTypes.IValueDirectoryOrState<any>, TManager extends NotificationsManager<any>>(key: TKey, manager: InternalTypes.ManagerFactory<TKey, TValue, TManager>): asserts this is PresenceNotifications<TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>>;
+    add<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<any>, TManager extends NotificationsManager<any>>(key: TKey, manager: InternalTypes.ManagerFactory<TKey, TValue, TManager>): asserts this is PresenceNotifications<TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>>;
     readonly props: PresenceStatesEntries<TSchema>;
 }
 
 // @alpha
 export interface PresenceNotificationsSchema {
     // (undocumented)
-    [key: string]: InternalTypes.ManagerFactory<typeof key, InternalTypes.IValueRequiredState<InternalTypes.NotificationType>, NotificationsManager<any>>;
+    [key: string]: InternalTypes.ManagerFactory<typeof key, InternalTypes.ValueRequiredState<InternalTypes.NotificationType>, NotificationsManager<any>>;
 }
 
 // @alpha @sealed
 export interface PresenceStates<TSchema extends PresenceStatesSchema, TManagerConstraints = unknown> {
-    add<TKey extends string, TValue extends InternalTypes.IValueDirectoryOrState<any>, TManager extends TManagerConstraints>(key: TKey, manager: InternalTypes.ManagerFactory<TKey, TValue, TManager>): asserts this is PresenceStates<TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>, TManagerConstraints>;
+    add<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<any>, TManager extends TManagerConstraints>(key: TKey, manager: InternalTypes.ManagerFactory<TKey, TValue, TManager>): asserts this is PresenceStates<TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>, TManagerConstraints>;
     readonly controls: BroadcastControls;
     readonly props: PresenceStatesEntries<TSchema>;
 }
@@ -301,14 +301,14 @@ export type PresenceStatesEntries<TSchema extends PresenceStatesSchema> = {
 // @alpha
 export interface PresenceStatesSchema {
     // (undocumented)
-    [key: string]: PresenceWorkspaceEntry<typeof key, InternalTypes.IValueDirectoryOrState<any>>;
+    [key: string]: PresenceWorkspaceEntry<typeof key, InternalTypes.ValueDirectoryOrState<any>>;
 }
 
 // @alpha
 export type PresenceWorkspaceAddress = `${string}:${string}`;
 
 // @alpha
-export type PresenceWorkspaceEntry<TKey extends string, TValue extends InternalTypes.IValueDirectoryOrState<unknown>, TManager = unknown> = InternalTypes.ManagerFactory<TKey, TValue, TManager>;
+export type PresenceWorkspaceEntry<TKey extends string, TValue extends InternalTypes.ValueDirectoryOrState<unknown>, TManager = unknown> = InternalTypes.ManagerFactory<TKey, TValue, TManager>;
 
 // @alpha
 export const SessionClientStatus: {

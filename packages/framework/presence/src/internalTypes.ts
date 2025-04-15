@@ -12,7 +12,7 @@ import type { ClientJoinMessage, DatastoreUpdateMessage } from "./protocol.js";
 /**
  * @internal
  */
-export interface ClientRecord<TValue extends InternalTypes.IValueDirectoryOrState<unknown>> {
+export interface ClientRecord<TValue extends InternalTypes.ValueDirectoryOrState<unknown>> {
 	// Caution: any particular item may or may not exist
 	// Typescript does not support absent keys without forcing type to also be undefined.
 	// See https://github.com/microsoft/TypeScript/issues/42810.
@@ -48,7 +48,7 @@ export type IEphemeralRuntime = Omit<ExtensionRuntime, "logger" | "submitAddress
 export interface ValueManager<
 	TValue,
 	TValueState extends
-		InternalTypes.IValueDirectoryOrState<TValue> = InternalTypes.IValueDirectoryOrState<TValue>,
+		InternalTypes.ValueDirectoryOrState<TValue> = InternalTypes.ValueDirectoryOrState<TValue>,
 > {
 	// Most value managers should provide value - implement Required<ValueManager<...>>
 	readonly value?: TValueState;
