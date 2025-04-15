@@ -90,21 +90,6 @@ export namespace InternalTypes {
     export class StateValueBrand<T> {
     }
     // (undocumented)
-    export interface ValueDirectory<T> {
-        // (undocumented)
-        items: {
-            [name: string | number]: ValueOptionalState<T> | ValueDirectory<T>;
-        };
-        // (undocumented)
-        rev: number;
-    }
-    // (undocumented)
-    export type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
-    // (undocumented)
-    export type ValueOptionalState<TValue> = InternalUtilityTypes_2.FlattenIntersection<IValueOptionalState<TValue>>;
-    // (undocumented)
-    export type ValueRequiredState<TValue> = InternalUtilityTypes_2.FlattenIntersection<IValueRequiredState<TValue>>;
-    // (undocumented)
     export interface ValueStateMetadata {
         // (undocumented)
         rev: number;

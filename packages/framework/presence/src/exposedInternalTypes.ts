@@ -4,7 +4,6 @@
  */
 
 import type {
-	InternalUtilityTypes,
 	JsonDeserialized,
 	JsonSerializable,
 } from "@fluidframework/core-interfaces/internal/exposedUtilityTypes";
@@ -32,12 +31,6 @@ export namespace InternalTypes {
 	export interface IValueOptionalState<TValue> extends ValueStateMetadata {
 		value?: JsonDeserialized<TValue>;
 	}
-	/**
-	 * @system
-	 */
-	export type ValueOptionalState<TValue> = InternalUtilityTypes.FlattenIntersection<
-		IValueOptionalState<TValue>
-	>;
 
 	/**
 	 * @system
@@ -45,12 +38,6 @@ export namespace InternalTypes {
 	export interface IValueRequiredState<TValue> extends ValueStateMetadata {
 		value: JsonDeserialized<TValue>;
 	}
-	/**
-	 * @system
-	 */
-	export type ValueRequiredState<TValue> = InternalUtilityTypes.FlattenIntersection<
-		IValueRequiredState<TValue>
-	>;
 
 	/**
 	 * @system
@@ -64,27 +51,11 @@ export namespace InternalTypes {
 			[name: string | number]: IValueOptionalState<T> | IValueDirectory<T>;
 		};
 	}
-	/**
-	 * @system
-	 */
-	export interface ValueDirectory<T> {
-		rev: number;
-		items: {
-			// Caution: any particular item may or may not exist
-			// Typescript does not support absent keys without forcing type to also be undefined.
-			// See https://github.com/microsoft/TypeScript/issues/42810.
-			[name: string | number]: ValueOptionalState<T> | ValueDirectory<T>;
-		};
-	}
 
 	/**
 	 * @system
 	 */
 	export type IValueDirectoryOrState<T> = IValueRequiredState<T> | IValueDirectory<T>;
-	/**
-	 * @system
-	 */
-	export type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
 
 	/**
 	 * @system

@@ -3,7 +3,6 @@
  * Licensed under the MIT License.
  */
 
-import type { InternalUtilityTypes } from "@fluidframework/core-interfaces/internal";
 import { assert } from "@fluidframework/core-utils/internal";
 
 import type { ClientConnectionId } from "./baseTypes.js";
@@ -84,7 +83,7 @@ type MapEntries<TSchema extends PresenceStatesSchema> = PresenceSubSchemaFromWor
  * @internal
  */
 export interface ValueElementMap<_TSchema extends PresenceStatesSchema> {
-	[key: string]: ClientRecord<InternalTypes.ValueDirectoryOrState<unknown>>;
+	[key: string]: ClientRecord<InternalTypes.IValueDirectoryOrState<unknown>>;
 }
 
 // An attempt to make the type more precise, but it is not working.
@@ -93,29 +92,27 @@ export interface ValueElementMap<_TSchema extends PresenceStatesSchema> {
 // type ValueElementMap<TSchema extends PresenceStatesNodeSchema> =
 // 	| {
 // 			[Key in keyof TSchema & string]?: {
-// 				[ClientSessionId: ClientSessionId]: InternalTypes.ValueDirectoryOrState<MapSchemaElement<TSchema,"value",Key>>;
+// 				[ClientSessionId: ClientSessionId]: InternalTypes.IValueDirectoryOrState<MapSchemaElement<TSchema,"value",Key>>;
 // 			};
 // 	  }
 // 	| {
-// 			[key: string]: ClientRecord<InternalTypes.ValueDirectoryOrState<unknown>>;
+// 			[key: string]: ClientRecord<InternalTypes.IValueDirectoryOrState<unknown>>;
 // 	  };
 // interface ValueElementMap<TValue> {
-// 	[Id: string]: ClientRecord<InternalTypes.ValueDirectoryOrState<TValue>>;
+// 	[Id: string]: ClientRecord<InternalTypes.IValueDirectoryOrState<TValue>>;
 // 	// Version with local packed in is convenient for map, but not for join broadcast to serialize simply.
 // 	// [Id: string]: {
-// 	// 	local: InternalTypes.ValueDirectoryOrState<TValue>;
-// 	// 	all: ClientRecord<InternalTypes.ValueDirectoryOrState<TValue>>;
+// 	// 	local: InternalTypes.IValueDirectoryOrState<TValue>;
+// 	// 	all: ClientRecord<InternalTypes.IValueDirectoryOrState<TValue>>;
 // 	// };
 // }
 
 /**
  * @internal
  */
-export type ClientUpdateEntry = InternalUtilityTypes.FlattenIntersection<
-	InternalTypes.ValueDirectoryOrState<unknown> & {
-		ignoreUnmonitored?: true;
-	}
->;
+export type ClientUpdateEntry = InternalTypes.IValueDirectoryOrState<unknown> & {
+	ignoreUnmonitored?: true;
+};
 
 type ClientUpdateRecord = ClientRecord<ClientUpdateEntry>;
 
@@ -142,11 +139,11 @@ export interface PresenceStatesInternal {
 function isValueDirectory<
 	T,
 	TValueState extends
-		| InternalTypes.ValueRequiredState<T>
-		| InternalTypes.ValueOptionalState<T>,
+		| InternalTypes.IValueRequiredState<T>
+		| InternalTypes.IValueOptionalState<T>,
 >(
-	value: InternalTypes.ValueDirectory<T> | TValueState,
-): value is InternalTypes.ValueDirectory<T> {
+	value: InternalTypes.IValueDirectory<T> | TValueState,
+): value is InternalTypes.IValueDirectory<T> {
 	return "items" in value;
 }
 
@@ -158,13 +155,13 @@ function isValueDirectory<
 export function mergeValueDirectory<
 	T,
 	TValueState extends
-		| InternalTypes.ValueRequiredState<T>
-		| InternalTypes.ValueOptionalState<T>,
+		| InternalTypes.IValueRequiredState<T>
+		| InternalTypes.IValueOptionalState<T>,
 >(
-	base: TValueState | InternalTypes.ValueDirectory<T> | undefined,
-	update: TValueState | InternalTypes.ValueDirectory<T>,
+	base: TValueState | InternalTypes.IValueDirectory<T> | undefined,
+	update: TValueState | InternalTypes.IValueDirectory<T>,
 	timeDelta: number,
-): TValueState | InternalTypes.ValueDirectory<T> {
+): TValueState | InternalTypes.IValueDirectory<T> {
 	if (!isValueDirectory(update)) {
 		if (base === undefined || update.rev > base.rev) {
 			return { ...update, timestamp: update.timestamp + timeDelta };
@@ -172,7 +169,7 @@ export function mergeValueDirectory<
 		return base;
 	}
 
-	let mergeBase: InternalTypes.ValueDirectory<T>;
+	let mergeBase: InternalTypes.IValueDirectory<T>;
 	if (base === undefined) {
 		mergeBase = { rev: update.rev, items: {} };
 	} else {

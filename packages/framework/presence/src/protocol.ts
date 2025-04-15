@@ -3,7 +3,6 @@
  * Licensed under the MIT License.
  */
 
-import type { InternalUtilityTypes } from "@fluidframework/core-interfaces/internal/exposedUtilityTypes";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions/internal";
 
 import type { ClientConnectionId } from "./baseTypes.js";
@@ -29,9 +28,7 @@ export interface GeneralDatastoreMessageContent {
 	};
 }
 
-type DatastoreMessageContent = InternalUtilityTypes.FlattenIntersection<
-	GeneralDatastoreMessageContent & SystemDatastore
->;
+type DatastoreMessageContent = GeneralDatastoreMessageContent & SystemDatastore;
 
 /**
  * @internal

@@ -29,7 +29,7 @@ import type { PresenceStates, PresenceStatesSchema } from "./types.js";
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export type SystemWorkspaceDatastore = {
 	clientToSessionId: {
-		[ConnectionId: ClientConnectionId]: InternalTypes.ValueRequiredState<ClientSessionId>;
+		[ConnectionId: ClientConnectionId]: InternalTypes.IValueRequiredState<ClientSessionId>;
 	};
 };
 
