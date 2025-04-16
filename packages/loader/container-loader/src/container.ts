@@ -15,7 +15,10 @@ import {
 	IAudience,
 	ICriticalContainerError,
 } from "@fluidframework/container-definitions";
-import {
+import type {
+	ContainerExtensionFactory,
+	ContainerExtensionId,
+	ContainerExtensionStore,
 	ContainerWarning,
 	IBatchMessage,
 	ICodeDetailsLoader,
@@ -30,11 +33,12 @@ import {
 	IProvideFluidCodeDetailsComparer,
 	IProvideRuntimeFactory,
 	IRuntime,
-	isFluidCodeDetails,
+	IRuntimeInternal,
 	ReadOnlyInfo,
-	type ILoader,
-	type ILoaderOptions,
+	ILoader,
+	ILoaderOptions,
 } from "@fluidframework/container-definitions/internal";
+import { isFluidCodeDetails } from "@fluidframework/container-definitions/internal";
 import {
 	FluidObject,
 	IEvent,
@@ -1221,6 +1225,18 @@ export class Container
 	 */
 	public async getPendingLocalState(): Promise<string> {
 		return this.getPendingLocalStateCore({ notifyImminentClosure: false });
+	}
+
+	public acquireExtension<T, TContext extends unknown[]>(
+		id: ContainerExtensionId,
+		factory: ContainerExtensionFactory<T, TContext>,
+		...context: TContext
+	): T {
+		const runtime = this.runtime as Partial<IRuntimeInternal>;
+		if (runtime.acquireExtension === undefined) {
+			throw new Error("Runtime does not support container extensions feature");
+		}
+		return runtime.acquireExtension(id, factory, ...context);
 	}
 
 	private async getPendingLocalStateCore(props: IGetPendingLocalStateProps): Promise<string> {
@@ -2562,7 +2578,7 @@ export class Container
  * IContainer interface that includes experimental features still under development.
  * @internal
  */
-export interface IContainerExperimental extends IContainer {
+export interface IContainerExperimental extends IContainer, Partial<ContainerExtensionStore> {
 	/**
 	 * Get pending state from container. WARNING: misuse of this API can result in duplicate op
 	 * submission and potential document corruption. The blob returned MUST be deleted if and when this

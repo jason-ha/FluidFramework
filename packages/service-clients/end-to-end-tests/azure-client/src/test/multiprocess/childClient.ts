@@ -15,9 +15,8 @@ import { AttachState } from "@fluidframework/container-definitions";
 import { ConnectionState } from "@fluidframework/container-loader";
 import { ContainerSchema, type IFluidContainer } from "@fluidframework/fluid-static";
 import {
-	acquirePresenceViaDataObject,
+	acquirePresence,
 	ExperimentalPresenceManager,
-	type ExperimentalPresenceDO,
 	type IPresence,
 	type ISessionClient,
 	// eslint-disable-next-line import/no-internal-modules
@@ -83,7 +82,8 @@ const getOrCreatePresenceContainer = async (
 	const client = new AzureClient({ connection: connectionProps });
 	const schema: ContainerSchema = {
 		initialObjects: {
-			presence: ExperimentalPresenceManager,
+			// A DataObject is added as otherwise fluid-static complains "Container cannot be initialized without any DataTypes"
+			_unused: ExperimentalPresenceManager,
 		},
 	};
 	let services: AzureContainerServices;
@@ -107,9 +107,7 @@ const getOrCreatePresenceContainer = async (
 		"Container is not attached after attach is called",
 	);
 
-	const presence = acquirePresenceViaDataObject(
-		container.initialObjects.presence as ExperimentalPresenceDO,
-	);
+	const presence = acquirePresence(container);
 	return {
 		client,
 		container,

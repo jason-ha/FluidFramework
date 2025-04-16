@@ -7,7 +7,7 @@ import type {
 	ILayerCompatDetails,
 	IProvideLayerCompatDetails,
 } from "@fluid-internal/client-utils";
-import { Trace, TypedEventEmitter } from "@fluid-internal/client-utils";
+import { createEmitter, Trace, TypedEventEmitter } from "@fluid-internal/client-utils";
 import type {
 	IAudience,
 	ISelf,
@@ -16,9 +16,14 @@ import type {
 } from "@fluidframework/container-definitions";
 import { AttachState } from "@fluidframework/container-definitions";
 import type {
+	ContainerExtensionFactory,
+	ContainerExtensionId,
 	IContainerContext,
+	ExtensionRuntime,
+	ExtensionRuntimeEvents,
 	IGetPendingLocalStateProps,
 	IRuntime,
+	IRuntimeInternal,
 	IDeltaManager,
 	IDeltaManagerFull,
 } from "@fluidframework/container-definitions/internal";
@@ -33,6 +38,7 @@ import type {
 	IRequest,
 	IResponse,
 	ITelemetryBaseLogger,
+	Listenable,
 } from "@fluidframework/core-interfaces";
 import type {
 	IErrorBase,
@@ -45,6 +51,7 @@ import type {
 import {
 	assert,
 	Deferred,
+	Lazy,
 	LazyPromise,
 	PromiseCache,
 	delay,
@@ -261,6 +268,12 @@ import {
 	isSummariesDisabled,
 } from "./summary/index.js";
 import { Throttler, formExponentialFn } from "./throttler.js";
+
+type ExtensionEntry = ContainerExtensionFactory<unknown, unknown[]> extends new (
+	...args: any[]
+) => infer T
+	? T
+	: never;
 
 /**
  * Creates an error object to be thrown / passed to Container's close fn in case of an unknown message type.
@@ -789,7 +802,7 @@ export class ContainerRuntime
 	implements
 		IContainerRuntime,
 		Omit<IFluidRootParentContext, "submitSignal">,
-		IRuntime,
+		IRuntimeInternal,
 		ISummarizerRuntime,
 		ISummarizerInternalsProvider,
 		IProvideFluidHandleContext,
@@ -1399,6 +1412,8 @@ export class ContainerRuntime
 	 */
 	private readonly skipSafetyFlushDuringProcessStack: boolean;
 
+	private readonly extensions = new Map<ContainerExtensionId, ExtensionEntry>();
+
 	/***/
 	protected constructor(
 		context: IContainerContext,
@@ -1492,11 +1507,24 @@ export class ContainerRuntime
 		this.submitSummaryFn =
 			submitSummaryFn ??
 			((summaryOp, refseq) => submitFn(MessageType.Summarize, summaryOp, false));
-		this.submitSignalFn = (
-			runtimeOptions.enablePathBasedAddressing
-				? submitWithPathBasedSignalAddress
-				: assertLegacySignalAddressing
-		)(submitSignalFn);
+		const submitPathAddressedSignal = submitWithPathBasedSignalAddress(submitSignalFn);
+		this.submitSignalFn = runtimeOptions.enablePathBasedAddressing
+			? submitPathAddressedSignal
+			: assertLegacySignalAddressing(submitSignalFn);
+		this.submitExtensionSignal = (
+			id: string,
+			subaddress: string,
+			type: string,
+			content: unknown,
+			targetClientId?: string,
+		): void => {
+			this.verifyNotClosed();
+			const envelope = createNewSignalEnvelope(`/ext/${id}/${subaddress}`, type, content);
+			if (targetClientId === undefined) {
+				this.signalTelemetryManager.applyTrackingToBroadcastSignalEnvelope(envelope);
+			}
+			submitPathAddressedSignal(envelope, targetClientId);
+		};
 
 		// TODO: After IContainerContext.options is removed, we'll just create a new blank object {} here.
 		// Values are generally expected to be set from the runtime side.
@@ -3216,6 +3244,20 @@ export class ContainerRuntime
 			return;
 		}
 
+		if (address.top === "ext") {
+			const idAndSubaddress = address.subaddress.match(
+				/^(?<id>[^/]*:[^/]*)\/(?<subaddress>.*)$/,
+			);
+			const { id, subaddress } = idAndSubaddress?.groups ?? {};
+			if (id !== undefined && subaddress !== undefined) {
+				const entry = this.extensions.get(id as ContainerExtensionId);
+				if (entry !== undefined) {
+					entry.extension.processSignal?.(subaddress, signalMessage, local);
+					return;
+				}
+			}
+		}
+
 		if (address.critical) {
 			assert(!local, "No recipient found for critical local signal");
 			this.mc.logger.sendTelemetryEvent({
@@ -4830,6 +4872,56 @@ export class ContainerRuntime
 		} else {
 			return this.summaryManager.enqueueSummarize(options);
 		}
+	}
+
+	private readonly lazyEventsForExtensions = new Lazy<Listenable<ExtensionRuntimeEvents>>(
+		() => {
+			const eventEmitter = createEmitter<ExtensionRuntimeEvents>();
+			this.on("connected", (clientId) => eventEmitter.emit("connected", clientId));
+			this.on("disconnected", () => eventEmitter.emit("disconnected"));
+			return eventEmitter;
+		},
+	);
+
+	private readonly submitExtensionSignal: (
+		id: string,
+		subaddress: string,
+		type: string,
+		content: unknown,
+		targetClientId?: string,
+	) => void;
+
+	public acquireExtension<T, TContext extends unknown[]>(
+		id: ContainerExtensionId,
+		factory: ContainerExtensionFactory<T, TContext>,
+		...context: TContext
+	): T {
+		let entry = this.extensions.get(id);
+		if (entry === undefined) {
+			const runtime = {
+				isConnected: () => this.connected,
+				getClientId: () => this.clientId,
+				events: this.lazyEventsForExtensions.value,
+				logger: this.baseLogger,
+				submitAddressedSignal: (address, message) => {
+					this.submitExtensionSignal(
+						id,
+						address,
+						message.type,
+						message.content,
+						message.targetClientId,
+					);
+				},
+				getQuorum: this.getQuorum.bind(this),
+				getAudience: this.getAudience.bind(this),
+			} satisfies ExtensionRuntime;
+			entry = new factory(runtime, ...context);
+			this.extensions.set(id, entry);
+		} else {
+			assert(entry instanceof factory, "Extension entry is not of the expected type");
+			entry.extension.onNewContext(...context);
+		}
+		return entry.interface as T;
 	}
 
 	private get groupedBatchingEnabled(): boolean {
