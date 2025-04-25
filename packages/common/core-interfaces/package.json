@@ -46,6 +46,12 @@
 		"./internal/exposedUtilityTypes": {
 			"import": "./lib/exposedUtilityTypes.js",
 			"require": "./dist/exposedUtilityTypes.js"
+		},
+		"./internal/test-utils": {
+			"allow-ff-test-exports": {
+				"import": "./lib/test-utils/testUtils.js",
+				"require": "./dist/test-utils/testUtils.js"
+			}
 		}
 	},
 	"main": "lib/index.js",

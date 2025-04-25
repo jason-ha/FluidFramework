@@ -5,7 +5,6 @@
 
 import { strict as assert } from "node:assert";
 
-import { assertIdenticalTypes, createInstanceOf } from "./testUtils.js";
 import type {
 	ClassWithPublicData,
 	Point,
@@ -161,6 +160,10 @@ import type {
 	ReadonlySupportedGenerics,
 	ShallowReadonly,
 } from "@fluidframework/core-interfaces/internal/exposedUtilityTypes";
+import {
+	assertIdenticalTypes,
+	createInstanceOf,
+} from "@fluidframework/core-interfaces/internal/test-utils";
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 

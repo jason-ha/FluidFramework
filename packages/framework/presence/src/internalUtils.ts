@@ -10,6 +10,8 @@ import type { DeepReadonly } from "@fluidframework/core-interfaces/internal";
  */
 export type RecordEntryTypes<T> = T[keyof T];
 
+// TODO: use objectEntries from core-utils
+
 type MapNumberIndicesToStrings<T> = {
 	[K in keyof T as K extends number ? `${K}` : K]: T[K];
 };
@@ -18,37 +20,12 @@ type KeyValuePairs<T> = {
 	[K in keyof MapNumberIndicesToStrings<Required<T>>]: [K, Required<T>[K]];
 }[keyof MapNumberIndicesToStrings<Required<T>>][];
 
-type RequiredAndNotUndefined<T> = {
-	[K in keyof T]-?: Exclude<T[K], undefined>;
-};
-
 /**
  * Object.entries retyped to preserve known keys and their types.
  *
  * @internal
  */
 export const objectEntries = Object.entries as <T>(o: T) => KeyValuePairs<T>;
-
-/**
- * Object.entries retyped to preserve known keys and their types.
- *
- * @remarks
- * Given `T` should not contain `undefined` values. If it does, use
- * {@link objectEntries} instead. Without `undefined` values, this
- * typing provides best handling of objects with optional properties.
- *
- * @internal
- */
-export const objectEntriesWithoutUndefined = Object.entries as <T>(
-	o: T,
-) => KeyValuePairs<RequiredAndNotUndefined<T>>;
-
-/**
- * Object.keys retyped to preserve known keys and their types.
- *
- * @internal
- */
-export const objectKeys = Object.keys as <T>(o: T) => (keyof MapNumberIndicesToStrings<T>)[];
 
 /**
  * Retrieve a value from a record with the given key, or create a new entry if

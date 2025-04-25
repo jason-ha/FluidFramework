@@ -77,6 +77,11 @@ export type ReadonlyNonNullJsonObjectWith<T> = ExposedReadonlyNonNullJsonObjectW
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace InternalUtilityTypes {
 	/* eslint-disable jsdoc/require-jsdoc */
+	export type IfIndexKey<T, IfIndex, IfLiteral> = ExposedInternalUtilityTypes.IfIndexKey<
+		T,
+		IfIndex,
+		IfLiteral
+	>;
 	export type IfSameType<
 		X,
 		Y,

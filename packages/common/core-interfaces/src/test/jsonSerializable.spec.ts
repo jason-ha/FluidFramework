@@ -7,12 +7,7 @@
 
 import { strict as assert } from "node:assert";
 
-import {
-	assertIdenticalTypes,
-	createInstanceOf,
-	replaceBigInt,
-	reviveBigInt,
-} from "./testUtils.js";
+import { replaceBigInt, reviveBigInt } from "./testUtils.js";
 import type {
 	ObjectWithOptionalRecursion,
 	ObjectWithSymbolOrRecursion,
@@ -184,6 +179,10 @@ import type {
 	SerializationErrorPerNonPublicProperties,
 	SerializationErrorPerUndefinedArrayElement,
 } from "@fluidframework/core-interfaces/internal/exposedUtilityTypes";
+import {
+	assertIdenticalTypes,
+	createInstanceOf,
+} from "@fluidframework/core-interfaces/internal/test-utils";
 
 /**
  * Defined using `JsonSerializable` type filter tests `JsonSerializable` at call site.

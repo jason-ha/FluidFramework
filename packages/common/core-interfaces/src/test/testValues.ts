@@ -3,8 +3,6 @@
  * Licensed under the MIT License.
  */
 
-import { assertIdenticalTypes } from "./testUtils.js";
-
 import type {
 	ErasedType,
 	IFluidHandle,
@@ -18,6 +16,7 @@ import type {
 	ReadonlyJsonTypeWith,
 	NonNullJsonObjectWith,
 } from "@fluidframework/core-interfaces/internal/exposedUtilityTypes";
+import { assertIdenticalTypes } from "@fluidframework/core-interfaces/internal/test-utils";
 
 /* eslint-disable jsdoc/require-jsdoc */
 /* eslint-disable unicorn/no-null */

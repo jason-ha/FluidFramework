@@ -7,12 +7,7 @@
 
 import { strict as assert } from "node:assert";
 
-import {
-	assertIdenticalTypes,
-	createInstanceOf,
-	replaceBigInt,
-	reviveBigInt,
-} from "./testUtils.js";
+import { replaceBigInt, reviveBigInt } from "./testUtils.js";
 import type { ObjectWithOptionalRecursion } from "./testValues.js";
 import {
 	boolean,
@@ -181,6 +176,10 @@ import type {
 	JsonTypeWith,
 	NonNullJsonObjectWith,
 } from "@fluidframework/core-interfaces/internal/exposedUtilityTypes";
+import {
+	assertIdenticalTypes,
+	createInstanceOf,
+} from "@fluidframework/core-interfaces/internal/test-utils";
 
 /**
  * Defined using `JsonDeserialized` type filter tests `JsonDeserialized` at call site.

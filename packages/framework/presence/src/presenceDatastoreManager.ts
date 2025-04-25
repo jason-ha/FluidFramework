@@ -4,14 +4,13 @@
  */
 
 import type { IEmitter } from "@fluidframework/core-interfaces/internal";
-import { assert } from "@fluidframework/core-utils/internal";
+import { assert, objectEntries } from "@fluidframework/core-utils/internal";
 import type { IInboundSignalMessage } from "@fluidframework/runtime-definitions/internal";
 import type { ITelemetryLoggerExt } from "@fluidframework/telemetry-utils/internal";
 
 import type { ClientConnectionId } from "./baseTypes.js";
 import type { BroadcastControlSettings } from "./broadcastControls.js";
 import type { IEphemeralRuntime, PostUpdateAction } from "./internalTypes.js";
-import { objectEntries } from "./internalUtils.js";
 import type { AttendeeId, Attendee, Presence, PresenceEvents } from "./presence.js";
 import type {
 	ClientUpdateEntry,

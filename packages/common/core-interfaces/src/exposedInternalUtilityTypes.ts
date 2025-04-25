@@ -55,10 +55,13 @@ export type DeepReadonlyRecursionLimit = "NoLimit" | 0 | `+${string}`;
  * directly outside of this package.
  *
  * @privateRemarks
- * There are ony three intentional exports from this module:
- * - {@link InternalUtilityTypes.IfSameType | IfSameType}
+ * There are ony select intentional exports from this namespace:
+ * - {@link InternalUtilityTypes.DeepReadonlyImpl | DeepReadonlyImpl }
+ * - {@link InternalUtilityTypes.IfIndexKey | IfIndexKey }
+ * - {@link InternalUtilityTypes.IfSameType | IfSameType }
  * - {@link InternalUtilityTypes.JsonDeserializedImpl | JsonDeserializedImpl }
  * - {@link InternalUtilityTypes.JsonSerializableImpl | JsonSerializableImpl }
+ * - {@link InternalUtilityTypes.ShallowReadonlyImpl | ShallowReadonlyImpl }
  *
  * api-extractor will allow `export` to be removed from others but generates
  * api-report a little oddly with a rogue `{};` floating at end of namespace
@@ -819,25 +822,28 @@ export namespace InternalUtilityTypes {
 		: never /* unreachable else for infer */;
 
 	/**
-	 * Essentially a check for a template literal that has $\{string\} or
-	 * $\{number\} in the pattern. Just `string` and/or `number` also match.
+	 * Essentially a check for a template literal that has $\{string\},
+	 * $\{number\}, or $\{bigint\} in the pattern. Just `string` and/or
+	 * `number` also match.
 	 *
 	 * @remarks This works recursively looking at first elements when not
 	 * `string` or `number`. `first` will just be a single character if
-	 * not $\{string\} or $\{number\}.
+	 * not $\{string\}, $\{number\}, or $\{bigint\}.
 	 *
 	 * @system
 	 */
-	export type IfIndexKey<T, IfIndex, IfLiteral> = `${string}` extends T
+	export type IfIndexKey<Key, IfIndex, IfLiteral> = `${string}` extends Key
 		? IfIndex
-		: number extends T
+		: number extends Key
 			? IfIndex
-			: T extends `${infer first}${infer rest}`
+			: Key extends `${infer first}${infer rest}`
 				? string extends first
 					? IfIndex
 					: `${number}` extends first
 						? IfIndex
-						: IfIndexKey<rest, IfIndex, IfLiteral>
+						: `${bigint}` extends first
+							? IfIndex
+							: IfIndexKey<rest, IfIndex, IfLiteral>
 				: IfLiteral;
 
 	/**

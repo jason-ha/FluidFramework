@@ -4,8 +4,12 @@
  */
 
 import { passThru } from "./jsonSerializable.spec.js";
-import { assertIdenticalTypes, createInstanceOf } from "./testUtils.js";
 import { objectWithOptionalUndefined } from "./testValues.js";
+
+import {
+	assertIdenticalTypes,
+	createInstanceOf,
+} from "@fluidframework/core-interfaces/internal/test-utils";
 
 describe("JsonSerializable under exactOptionalPropertyTypes=true", () => {
 	describe("negative compilation tests", () => {
