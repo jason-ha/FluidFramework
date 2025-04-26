@@ -65,7 +65,9 @@ export type MapNumberIndicesToStrings<
 			: `${K}`
 		: K extends string
 			? InternalUtilityTypes.IfIndexKey<K, `${PrefixForIndexKey}${K}`, K>
-			: K]: T[K];
+			: K extends symbol
+				? never
+				: K]: T[K];
 };
 
 /**
