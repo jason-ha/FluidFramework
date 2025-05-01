@@ -51,6 +51,10 @@ export namespace InternalTypedObjectUtils {
  * @typeparam T - The key to be transformed.
  * @typeparam PrefixForIndexKey - Optional prefix to be added to the key when
  * it appears to be an index key (not a literal).
+ * @typeparam IntersectionForRemappedKey - Optional type to be intersected
+ * with a remapped key. If the intersection result is `never`, the intersection
+ * type is ignored, which will likely produce a key that is incompatible with
+ * `T`.
  *
  * @internal
  * @system
@@ -58,13 +62,22 @@ export namespace InternalTypedObjectUtils {
 export type MapNumberIndicesToStrings<
 	T,
 	PrefixForIndexKey extends string | number | bigint = "",
+	IntersectionForRemappedKey = unknown,
 > = {
 	[K in keyof T as K extends number
 		? number extends K
-			? `${PrefixForIndexKey}${K}`
-			: `${K}`
+			? `${PrefixForIndexKey}${K}` & IntersectionForRemappedKey
+			: never extends `${K}` & IntersectionForRemappedKey
+				? `${K}`
+				: `${K}` & IntersectionForRemappedKey
 		: K extends string
-			? InternalUtilityTypes.IfIndexKey<K, `${PrefixForIndexKey}${K}`, K>
+			? "" extends PrefixForIndexKey
+				? K
+				: InternalUtilityTypes.IfIndexKey<
+						K,
+						`${PrefixForIndexKey}${K}` & IntersectionForRemappedKey,
+						K
+					>
 			: K extends symbol
 				? never
 				: K]: T[K];
@@ -92,7 +105,7 @@ export type KeyValuePairs<T> =
 					K
 				>]: // generate a key and value property set to allow FlattenIntersection
 				// handle `& [string, ...]` that may pollute the space.
-				{ key: K; value: Required<T>[K] };
+				{ key: K & keyof T; value: Required<T>[K] };
 				// keyof must match `as` prefix above and is given directly to transform helper.
 			}[keyof MapNumberIndicesToStrings<Required<T>, "_IsIndex_">]
 		>
@@ -113,7 +126,8 @@ export type RequiredAndNotUndefined<T> = {
  *
  * @internal
  */
-export const objectEntries = Object.entries as <T>(o: T) => KeyValuePairs<T>;
+// eslint-disable-next-line @typescript-eslint/ban-types
+export const objectEntries = Object.entries as <const T extends {}>(o: T) => KeyValuePairs<T>;
 
 /**
  * Object.entries retyped to preserve known keys and their types.
@@ -125,13 +139,39 @@ export const objectEntries = Object.entries as <T>(o: T) => KeyValuePairs<T>;
  *
  * @internal
  */
-export const objectEntriesWithoutUndefined = Object.entries as <T>(
+// eslint-disable-next-line @typescript-eslint/ban-types
+export const objectEntriesWithoutUndefined = Object.entries as <const T extends {}>(
 	o: T,
 ) => KeyValuePairs<RequiredAndNotUndefined<T>>;
 
 /**
- * Object.keys retyped to preserve known keys and their types.
+ * Object.keys retyped to preserve known keys (when possible).
+ *
+ * @remarks
+ * Numeric keys become strings and will not be readily accepted as
+ * possible index for `T`.
  *
  * @internal
  */
-export const objectKeys = Object.keys as <T>(o: T) => (keyof MapNumberIndicesToStrings<T>)[];
+export const objectKeys = Object.keys as <const T extends object>(
+	o: T,
+) => (keyof (T extends readonly (infer U)[]
+	? { [K in `${bigint}`]: U }
+	: MapNumberIndicesToStrings<T, "", keyof T>))[];
+
+/**
+ * Object.entries retyped to acknowledge that `key`s in result are `keyof T` too.
+ *
+ * @remarks
+ * Prefer using {@link objectEntries} or {@link objectEntriesWithoutUndefined} when
+ * `T` is fully known. This version is imprecise as the unresolvable aspect of a
+ * generic `T` are not helpful in further processing.
+ *
+ * @internal
+ */
+export const genericObjectEntries = Object.entries as <
+	const T extends Record<K, unknown>,
+	K extends string & keyof T = string & keyof T,
+>(
+	o: T,
+) => [K, Required<T>[keyof T]][];

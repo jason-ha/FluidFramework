@@ -30,6 +30,7 @@ export type {
 	RequiredAndNotUndefined,
 } from "./typedObject.js";
 export {
+	genericObjectEntries,
 	objectEntries,
 	objectEntriesWithoutUndefined,
 	objectKeys,
