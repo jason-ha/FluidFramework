@@ -10,23 +10,6 @@ import type { DeepReadonly } from "@fluidframework/core-interfaces/internal";
  */
 export type RecordEntryTypes<T> = T[keyof T];
 
-// TODO: use objectEntries from core-utils
-
-type MapNumberIndicesToStrings<T> = {
-	[K in keyof T as K extends number ? `${K}` : K]: T[K];
-};
-
-type KeyValuePairs<T> = {
-	[K in keyof MapNumberIndicesToStrings<Required<T>>]: [K, Required<T>[K]];
-}[keyof MapNumberIndicesToStrings<Required<T>>][];
-
-/**
- * Object.entries retyped to preserve known keys and their types.
- *
- * @internal
- */
-export const objectEntries = Object.entries as <T>(o: T) => KeyValuePairs<T>;
-
 /**
  * Retrieve a value from a record with the given key, or create a new entry if
  * the key is not in the record.

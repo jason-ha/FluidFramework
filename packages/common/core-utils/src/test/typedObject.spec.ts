@@ -34,12 +34,16 @@ interface VeryIndexedTypeWithNumberIndex extends VeryIndexedType {
 }
 
 // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
-interface VeryIndexedTypeWithStringIndex extends VeryIndexedTypeWithNumberIndex {
+interface VeryIndexedTypeWithStringIndex extends VeryIndexedType {
 	[string: string]: string | undefined;
 }
 
+interface VeryIndexedTypeWithNumberAndStringIndices
+	extends VeryIndexedTypeWithNumberIndex,
+		VeryIndexedTypeWithStringIndex {}
+
 // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
-interface VeryIndexedTypeWithSymbolIndex extends VeryIndexedTypeWithNumberIndex {
+interface VeryIndexedTypeWithNumberAndSymbolIndices extends VeryIndexedTypeWithNumberIndex {
 	[symbol: symbol]: "symbol";
 }
 
@@ -71,18 +75,24 @@ const testObject = {
 } as const;
 
 const veryIndexedObjectWithoutNumberStringOrSymbol: VeryIndexedType = testObject;
-const veryIndexedObjectWithoutStringOrSymbol: VeryIndexedTypeWithNumberIndex = testObject;
+const veryIndexedObjectWithNumberIndex: VeryIndexedTypeWithNumberIndex = testObject;
 const veryIndexedObjectWithStringIndex: VeryIndexedTypeWithStringIndex = testObject;
-const veryIndexedObjectWithSymbolIndex: VeryIndexedTypeWithSymbolIndex = testObject;
-
-const testObjectWithNumberAndSymbolKeys = {
-	[testSymbol]: "symbol_value",
-	0: "zero",
-	1: "one",
-	"2": "two",
-};
+const veryIndexedObjectWithNumberAndStringIndices: VeryIndexedTypeWithNumberAndStringIndices =
+	testObject;
+const veryIndexedObjectWithNumberAndSymbolIndices: VeryIndexedTypeWithNumberAndSymbolIndices =
+	testObject;
 
 const basicPropertyBag: {
+	known: "known_value";
+	optional?: "optional_value";
+	[symbol: symbol]: "symbol_value";
+} = {
+	known: "known_value",
+	optional: "optional_value",
+	[testSymbol]: "symbol_value",
+};
+
+const basicPropertyBagWithNumericKey: {
 	known: "known_value";
 	optional?: "optional_value";
 	0: "zero";
@@ -98,104 +108,198 @@ const basicPropertyBag: {
 const arrayLength5Without4thIndex = [1, "undefined", 3];
 arrayLength5Without4thIndex[4] = 5;
 
-function acceptObjectAndKey<TObj>(obj: TObj, key: keyof TObj): void {}
+function acceptObjectAndKey<TObj>(_obj: TObj, _key: keyof TObj): void {}
+function acceptAnyValue<T>(_v: T): void {}
 
 describe.only("Typed Object helpers", () => {
 	describe("assumptions", () => {
 		it("Object.keys returns strings skipping symbols and array gaps", () => {
-			const keys = Object.keys(testObjectWithNumberAndSymbolKeys);
-			assert.deepStrictEqual(keys, ["0", "1", "2"]);
+			const keys = Object.keys(basicPropertyBagWithNumericKey);
+			assert.deepStrictEqual(keys, ["0", "known"]);
 			const arrKeys = Object.keys(arrayLength5Without4thIndex);
 			assert.deepStrictEqual(arrKeys, ["0", "1", "2", "4"]);
 		});
 	});
 
 	describe("objectEntries", () => {
-		it("over object without `string` index returns array of object's known keys and value types as tuple", () => {
-			type keyofVeryIndexedTypeWithSymbolIndex = keyof VeryIndexedTypeWithSymbolIndex;
-			const expectedEntriesTypes =
-				createInstanceOf<
-					(
-						| [number: `${number}` & keyofVeryIndexedTypeWithSymbolIndex, `${number}`]
-						| [
-								templateWithNumber: `number_${number}` & keyofVeryIndexedTypeWithSymbolIndex,
-								`number_${number}`,
-						  ]
-						| [
-								templateWithString: `string_${string}` & keyofVeryIndexedTypeWithSymbolIndex,
-								`string_${string}`,
-						  ]
-						| [
-								templateWithBigint: `bigint_${bigint}` & keyofVeryIndexedTypeWithSymbolIndex,
-								`bigint_${bigint}`,
-						  ]
-						| ["known", "known"]
-						| ["optional", "optional"]
-						| ["0" & keyofVeryIndexedTypeWithSymbolIndex, "0"]
-						| ["undefined", undefined]
-						| ["optionalUndefined", undefined]
-					)[]
-				>();
-			const expectedEntriesRuntime = [
-				["0", "0"],
-				["known", "known"],
-				["undefined", undefined],
-			];
+		describe("returns array of object's known keys and value types as tuple omitting `symbol` keys", () => {
+			it("over object with literal string (known names) properties", () => {
+				type ExpectedEntriesTypes = (
+					| ["known", "known_value"]
+					| ["optional", "optional_value"]
+				)[];
+				const expectedEntries: ExpectedEntriesTypes = [
+					["known", "known_value"],
+					["optional", "optional_value"],
+				];
 
-			const entriesNoSymbol = objectEntries(veryIndexedObjectWithoutStringOrSymbol);
-			assertIdenticalTypes(entriesNoSymbol, expectedEntriesTypes);
-			assert.deepStrictEqual(entriesNoSymbol, expectedEntriesRuntime);
+				// Act
+				const entries = objectEntries(basicPropertyBag);
+				// Verify
+				assertIdenticalTypes(entries, expectedEntries);
+				assert.deepStrictEqual(entries, expectedEntries);
+				for (const [key, value] of entries) {
+					assert.deepStrictEqual(value, basicPropertyBag[key]);
+					acceptObjectAndKey(basicPropertyBag, key);
+				}
+			});
 
-			for (const [key, value] of entriesNoSymbol) {
-				assert.deepStrictEqual(value, veryIndexedObjectWithoutStringOrSymbol[key]);
-				acceptObjectAndKey(veryIndexedObjectWithoutStringOrSymbol, key);
-			}
+			it("over object with literal string and number (known names/numbers) properties", () => {
+				const expectedEntriesTypes =
+					createInstanceOf<
+						(["known", "known_value"] | ["optional", "optional_value"] | ["0", "zero"])[]
+					>();
+				const expectedEntriesRuntime = [
+					["0", "zero"],
+					["known", "known_value"],
+					// `optional` has been omitted at runtime
+					// ["optional", "optional_value"],
+				] as const satisfies typeof expectedEntriesTypes;
 
-			const entriesMightHaveSymbol = objectEntries(veryIndexedObjectWithSymbolIndex);
-			assertIdenticalTypes(entriesMightHaveSymbol, expectedEntriesTypes);
-			assert.deepStrictEqual(entriesMightHaveSymbol, expectedEntriesRuntime);
+				// Act
+				const entries = objectEntries(basicPropertyBagWithNumericKey);
+				// Verify
+				assertIdenticalTypes(entries, expectedEntriesTypes);
+				for (const [key, value] of entries) {
+					assert.deepStrictEqual(value, basicPropertyBagWithNumericKey[key]);
+					acceptObjectAndKey(basicPropertyBagWithNumericKey, key);
+				}
+				// Keep this last as it asserts type equality
+				assert.deepStrictEqual(entries, expectedEntriesRuntime);
+			});
 
-			for (const [key, value] of entriesMightHaveSymbol) {
-				assert.deepStrictEqual(value, veryIndexedObjectWithSymbolIndex[key]);
-				acceptObjectAndKey(veryIndexedObjectWithSymbolIndex, key);
-			}
-		});
+			it("over object with `number` index", () => {
+				type keyofVeryIndexedTypeWithNumberIndex = keyof VeryIndexedTypeWithNumberIndex;
+				const expectedEntriesTypes =
+					createInstanceOf<
+						(
+							| [number: `${number}` & keyofVeryIndexedTypeWithNumberIndex, `${number}`]
+							| [
+									templateWithNumber: `number_${number}` & keyofVeryIndexedTypeWithNumberIndex,
+									`number_${number}`,
+							  ]
+							| [
+									templateWithString: `string_${string}` & keyofVeryIndexedTypeWithNumberIndex,
+									`string_${string}`,
+							  ]
+							| [
+									templateWithBigint: `bigint_${bigint}` & keyofVeryIndexedTypeWithNumberIndex,
+									`bigint_${bigint}`,
+							  ]
+							| ["known", "known"]
+							| ["optional", "optional"]
+							| ["0", "0"]
+							| ["undefined", undefined]
+							| ["optionalUndefined", undefined]
+						)[]
+					>();
+				const expectedEntriesRuntime = [
+					["0", "0"],
+					["known", "known"],
+					["undefined", undefined],
+				] as const satisfies typeof expectedEntriesTypes;
 
-		it("over object with `string` index returns array of object's known keys and value types as tuple", () => {
-			// Don't need `& keyofVeryIndexedTypeWithStringIndex` below because any `string` is a keyof
-			// type keyofVeryIndexedTypeWithStringIndex = keyof VeryIndexedTypeWithStringIndex;
-			const expectedEntriesTypes =
-				createInstanceOf<
-					(
-						| [number: `${number}`, `${number}`]
-						| [string: string, string | undefined]
-						| [templateWithNumber: `number_${number}`, `number_${number}`]
-						| [templateWithString: `string_${string}`, `string_${string}`]
-						| [templateWithBigint: `bigint_${bigint}`, `bigint_${bigint}`]
-						| ["known", "known"]
-						| ["optional", "optional"]
-						| ["0", "0"]
-						| ["undefined", undefined]
-						| ["optionalUndefined", undefined]
-					)[]
-				>();
-			const expectedEntriesRuntime = [
-				["0", "0"],
-				["known", "known"],
-				["undefined", undefined],
-			];
+				// Act
+				const entriesNoSymbol = objectEntries(veryIndexedObjectWithNumberIndex);
+				// Verify
+				assertIdenticalTypes(entriesNoSymbol, expectedEntriesTypes);
+				for (const [key, value] of entriesNoSymbol) {
+					assert.deepStrictEqual(value, veryIndexedObjectWithNumberIndex[key]);
+					acceptObjectAndKey(veryIndexedObjectWithNumberIndex, key);
+				}
+				// Keep this last as it asserts type equality
+				assert.deepStrictEqual(entriesNoSymbol, expectedEntriesRuntime);
 
-			const entries = objectEntries(veryIndexedObjectWithStringIndex);
-			assertIdenticalTypes(entries, expectedEntriesTypes);
-			assert.deepStrictEqual(entries, expectedEntriesRuntime);
+				// Act
+				const entriesMightHaveSymbol = objectEntries(
+					veryIndexedObjectWithNumberAndSymbolIndices,
+				);
+				// Verify
+				assertIdenticalTypes(entriesMightHaveSymbol, expectedEntriesTypes);
+				for (const [key, value] of entriesMightHaveSymbol) {
+					assert.deepStrictEqual(value, veryIndexedObjectWithNumberAndSymbolIndices[key]);
+					acceptObjectAndKey(veryIndexedObjectWithNumberAndSymbolIndices, key);
+				}
+				// Keep this last as it asserts type equality
+				assert.deepStrictEqual(entriesMightHaveSymbol, expectedEntriesRuntime);
+			});
 
-			// Note that if `kvp` were split into `[key,value]`, the type of `key` would be `string`
-			// as the string index covers all key types.
-			for (const kvp of entries) {
-				assertIdenticalTypes(kvp[0], createInstanceOf<string>());
-				assert.deepStrictEqual(kvp[1], veryIndexedObjectWithStringIndex[kvp[0]]);
-				acceptObjectAndKey(veryIndexedObjectWithStringIndex, kvp[0]);
-			}
+			it("over object with `string` index", () => {
+				// Don't need `& keyofVeryIndexedTypeWithStringIndex` below because any `string` is a keyof
+				// type keyofVeryIndexedTypeWithStringIndex = keyof VeryIndexedTypeWithStringIndex;
+				const expectedEntriesTypes =
+					createInstanceOf<
+						(
+							| [string: string, string | undefined]
+							| [templateWithNumber: `number_${number}`, `number_${number}`]
+							| [templateWithString: `string_${string}`, `string_${string}`]
+							| [templateWithBigint: `bigint_${bigint}`, `bigint_${bigint}`]
+							| ["known", "known"]
+							| ["optional", "optional"]
+							| ["0", "0"]
+							| ["undefined", undefined]
+							| ["optionalUndefined", undefined]
+						)[]
+					>();
+				const expectedEntriesRuntime = [
+					["0", "0"],
+					["known", "known"],
+					["undefined", undefined],
+				] as const satisfies typeof expectedEntriesTypes;
+
+				// Act
+				const entries = objectEntries(veryIndexedObjectWithStringIndex);
+				// Verify
+				assertIdenticalTypes(entries, expectedEntriesTypes);
+				// Note that if `kvp` were split into `[key,value]`, the type of `key` would be `string`
+				// as the string index covers all key types.
+				for (const kvp of entries) {
+					assertIdenticalTypes(kvp[0], createInstanceOf<string>());
+					assert.deepStrictEqual(kvp[1], veryIndexedObjectWithStringIndex[kvp[0]]);
+					acceptObjectAndKey(veryIndexedObjectWithStringIndex, kvp[0]);
+				}
+				// Keep this last as it asserts type equality
+				assert.deepStrictEqual(entries, expectedEntriesRuntime);
+			});
+
+			it("over object with `number` and `string` indices", () => {
+				// Don't need `& keyofVeryIndexedTypeWithNumberAndStringIndices` below because any `string` is a keyof
+				// type keyofVeryIndexedTypeWithNumberAndStringIndices = keyof VeryIndexedTypeWithNumberAndStringIndices;
+				const expectedEntriesTypes =
+					createInstanceOf<
+						(
+							| [number: `${number}`, `${number}`]
+							| [string: string, string | undefined]
+							| [templateWithNumber: `number_${number}`, `number_${number}`]
+							| [templateWithString: `string_${string}`, `string_${string}`]
+							| [templateWithBigint: `bigint_${bigint}`, `bigint_${bigint}`]
+							| ["known", "known"]
+							| ["optional", "optional"]
+							| ["0", "0"]
+							| ["undefined", undefined]
+							| ["optionalUndefined", undefined]
+						)[]
+					>();
+				const expectedEntriesRuntime = [
+					["0", "0"],
+					["known", "known"],
+					["undefined", undefined],
+				] as const satisfies typeof expectedEntriesTypes;
+
+				// Act
+				const entries = objectEntries(veryIndexedObjectWithNumberAndStringIndices);
+				// Verify
+				assertIdenticalTypes(entries, expectedEntriesTypes);
+				// Note that if `kvp` were split into `[key,value]`, the type of `key` would be `string`
+				// as the string index covers all key types.
+				for (const kvp of entries) {
+					assertIdenticalTypes(kvp[0], createInstanceOf<string>());
+					assert.deepStrictEqual(kvp[1], veryIndexedObjectWithNumberAndStringIndices[kvp[0]]);
+					acceptObjectAndKey(veryIndexedObjectWithNumberAndStringIndices, kvp[0]);
+				}
+				// Keep this last as it asserts type equality
+				assert.deepStrictEqual(entries, expectedEntriesRuntime);
+			});
 		});
 
 		describe("known limitations", () => {
@@ -207,8 +311,11 @@ describe.only("Typed Object helpers", () => {
 					rev: 0,
 					items: { ["item_key-foo" as `item_key-${Keys}`]: undefined as unknown as T },
 				} as MapValueState<T, Keys>;
+
+				// Act
 				const entries = objectEntries(s.items);
 
+				// Verify
 				assertIdenticalTypes(
 					// @ts-expect-error result cannot even be matched to alternatively generated type
 					// that matches what IntelliSense shows.
@@ -231,26 +338,26 @@ describe.only("Typed Object helpers", () => {
 
 	describe("objectEntriesWithoutUndefined", () => {
 		it("over object returns array of object's known keys and value types as tuple omitting undefined values and entries where value is only undefined", () => {
-			type keyofVeryIndexedTypeWithSymbolIndex = keyof VeryIndexedTypeWithSymbolIndex;
+			type keyofVeryIndexedTypeWithNumberIndex = keyof typeof veryIndexedObjectWithNumberIndex;
 			const expectedEntriesTypes =
 				createInstanceOf<
 					(
-						| [number: `${number}` & keyofVeryIndexedTypeWithSymbolIndex, `${number}`]
+						| [number: `${number}` & keyofVeryIndexedTypeWithNumberIndex, `${number}`]
 						| [
-								templateWithNumber: `number_${number}` & keyofVeryIndexedTypeWithSymbolIndex,
+								templateWithNumber: `number_${number}` & keyofVeryIndexedTypeWithNumberIndex,
 								`number_${number}`,
 						  ]
 						| [
-								templateWithString: `string_${string}` & keyofVeryIndexedTypeWithSymbolIndex,
+								templateWithString: `string_${string}` & keyofVeryIndexedTypeWithNumberIndex,
 								`string_${string}`,
 						  ]
 						| [
-								templateWithBigint: `bigint_${bigint}` & keyofVeryIndexedTypeWithSymbolIndex,
+								templateWithBigint: `bigint_${bigint}` & keyofVeryIndexedTypeWithNumberIndex,
 								`bigint_${bigint}`,
 						  ]
 						| ["known", "known"]
 						| ["optional", "optional"]
-						| ["0" & keyofVeryIndexedTypeWithSymbolIndex, "0"]
+						| ["0" & keyofVeryIndexedTypeWithNumberIndex, "0"]
 					)[]
 				>();
 			const expectedEntriesRuntime = [
@@ -259,32 +366,37 @@ describe.only("Typed Object helpers", () => {
 				["undefined", undefined],
 			];
 
+			// Act
 			const entriesWithoutStringOrSymbol = objectEntriesWithoutUndefined(
-				veryIndexedObjectWithoutStringOrSymbol,
+				veryIndexedObjectWithNumberIndex,
 			);
+			// Verify
 			assertIdenticalTypes(entriesWithoutStringOrSymbol, expectedEntriesTypes);
+			for (const [key, value] of entriesWithoutStringOrSymbol) {
+				assert.deepStrictEqual(value, veryIndexedObjectWithNumberIndex[key]);
+				acceptObjectAndKey(veryIndexedObjectWithNumberIndex, key);
+			}
+			// Keep this last as it asserts type equality
 			assert.deepStrictEqual(entriesWithoutStringOrSymbol, expectedEntriesRuntime);
 
-			for (const [key, value] of entriesWithoutStringOrSymbol) {
-				assert.deepStrictEqual(value, veryIndexedObjectWithoutStringOrSymbol[key]);
-				acceptObjectAndKey(veryIndexedObjectWithoutStringOrSymbol, key);
-			}
-
+			// Act
+			// Same results expected for object that also has `symbol` index
 			const entriesWithSymbolIndex = objectEntriesWithoutUndefined(
-				veryIndexedObjectWithSymbolIndex,
+				veryIndexedObjectWithNumberAndSymbolIndices,
 			);
+			// Verify
 			assertIdenticalTypes(entriesWithSymbolIndex, expectedEntriesTypes);
-			assert.deepStrictEqual(entriesWithSymbolIndex, expectedEntriesRuntime);
-
 			for (const [key, value] of entriesWithSymbolIndex) {
-				assert.deepStrictEqual(value, veryIndexedObjectWithSymbolIndex[key]);
-				acceptObjectAndKey(veryIndexedObjectWithSymbolIndex, key);
+				assert.deepStrictEqual(value, veryIndexedObjectWithNumberAndSymbolIndices[key]);
+				acceptObjectAndKey(veryIndexedObjectWithNumberAndSymbolIndices, key);
 			}
+			// Keep this last as it asserts type equality
+			assert.deepStrictEqual(entriesWithSymbolIndex, expectedEntriesRuntime);
 		});
 	});
 
 	describe("objectKeys", () => {
-		it("over object without number or string index returns array of object's known keys as string", () => {
+		it("over object without `number` or `string` index returns array of object's known keys as string", () => {
 			const noStringOrSymbolKeys = objectKeys(veryIndexedObjectWithoutNumberStringOrSymbol);
 			assertIdenticalTypes(
 				noStringOrSymbolKeys,
@@ -303,23 +415,37 @@ describe.only("Typed Object helpers", () => {
 			);
 			assert.deepStrictEqual(noStringOrSymbolKeys, ["0", "known", "undefined"]);
 			for (const key of noStringOrSymbolKeys) {
-				if (key !== "0") {
-					acceptObjectAndKey(veryIndexedObjectWithoutStringOrSymbol, key);
+				// Verify tsc doesn't complain about `key` possibly being `"0"`
+				const value = veryIndexedObjectWithoutNumberStringOrSymbol[key];
+
+				if (key === "0") {
+					// @ts-expect-error Argument of type '"0"' is not assignable to parameter of type 'keyof VeryIndexedTypeWithNumberIndex'
+					acceptObjectAndKey(veryIndexedObjectWithoutNumberStringOrSymbol, key);
+					assert.deepStrictEqual(value, veryIndexedObjectWithoutNumberStringOrSymbol[0]);
+				} else {
+					acceptObjectAndKey(veryIndexedObjectWithoutNumberStringOrSymbol, key);
 				}
 			}
 
-			const keys = objectKeys(basicPropertyBag);
+			const keys = objectKeys(basicPropertyBagWithNumericKey);
 			assertIdenticalTypes(keys, createInstanceOf<("known" | "optional" | "0")[]>());
 			assert.deepStrictEqual(keys, ["0", "known"]);
 			for (const key of keys) {
-				if (key !== "0") {
-					acceptObjectAndKey(basicPropertyBag, key);
+				// Verify tsc doesn't complain about `key` possibly being `"0"`
+				const value = basicPropertyBagWithNumericKey[key];
+
+				if (key === "0") {
+					// @ts-expect-error Argument of type '"0"' is not assignable to parameter of type 'keyof VeryIndexedTypeWithNumberIndex'
+					acceptObjectAndKey(basicPropertyBagWithNumericKey, key);
+					assert.deepStrictEqual(value, basicPropertyBagWithNumericKey[0]);
+				} else {
+					acceptObjectAndKey(basicPropertyBagWithNumericKey, key);
 				}
 			}
 		});
 
-		it("over object without string index returns array of object's known keys as string", () => {
-			const noStringOrSymbolKeys = objectKeys(veryIndexedObjectWithoutStringOrSymbol);
+		it("over object without `string` index returns array of object's known keys as string", () => {
+			const noStringOrSymbolKeys = objectKeys(veryIndexedObjectWithNumberIndex);
 			assertIdenticalTypes(
 				noStringOrSymbolKeys,
 				createInstanceOf<
@@ -338,24 +464,32 @@ describe.only("Typed Object helpers", () => {
 			);
 			assert.deepStrictEqual(noStringOrSymbolKeys, ["0", "known", "undefined"]);
 			for (const key of noStringOrSymbolKeys) {
-				if (key !== "0") {
-					acceptObjectAndKey(veryIndexedObjectWithoutStringOrSymbol, key);
-				}
-			}
+				// Verify tsc doesn't complain about `key` possibly being `"0"`
+				const value = veryIndexedObjectWithNumberIndex[key];
 
-			const keys = objectKeys(basicPropertyBag);
-			assertIdenticalTypes(keys, createInstanceOf<("known" | "optional" | "0")[]>());
-			assert.deepStrictEqual(keys, ["0", "known"]);
-			for (const key of keys) {
-				if (key !== "0") {
-					acceptObjectAndKey(basicPropertyBag, key);
+				if (key === "0") {
+					// @ts-expect-error Argument of type '"0"' is not assignable to parameter of type 'keyof VeryIndexedTypeWithNumberIndex'
+					acceptObjectAndKey(veryIndexedObjectWithNumberIndex, key);
+					assert.deepStrictEqual(value, veryIndexedObjectWithNumberIndex[0]);
+				} else {
+					acceptObjectAndKey(veryIndexedObjectWithNumberIndex, key);
 				}
 			}
 		});
 
-		it("over object with string index returns array of keyof object type", () => {
-			const stringIndexKeys = objectKeys(veryIndexedObjectWithStringIndex);
+		it("over object with `string` index returns array of keyof object type", () => {
+			// Act
+			const stringIndexKeys = objectKeys(veryIndexedObjectWithNumberAndStringIndices);
+
+			// Verify
 			assertIdenticalTypes(stringIndexKeys, createInstanceOf<(string | number)[]>());
+			for (const key of stringIndexKeys) {
+				acceptObjectAndKey(veryIndexedObjectWithNumberAndStringIndices, key);
+				// Verify tsc doesn't complain about `key`
+				acceptAnyValue(veryIndexedObjectWithNumberAndStringIndices[key]);
+			}
+			// Keep this last as it asserts type equality
+			assert.deepStrictEqual(stringIndexKeys, ["0", "known", "undefined"]);
 		});
 
 		// eslint-disable-next-line no-template-curly-in-string

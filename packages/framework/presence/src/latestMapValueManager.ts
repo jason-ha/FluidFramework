@@ -11,14 +11,17 @@ import type {
 	JsonDeserialized,
 	JsonSerializable,
 } from "@fluidframework/core-interfaces/internal/exposedUtilityTypes";
-import { objectKeys } from "@fluidframework/core-utils/internal";
+import {
+	genericObjectEntries,
+	objectEntries,
+	objectKeys,
+} from "@fluidframework/core-utils/internal";
 
 import type { BroadcastControls, BroadcastControlSettings } from "./broadcastControls.js";
 import { OptionalBroadcastControl } from "./broadcastControls.js";
 import type { InternalTypes } from "./exposedInternalTypes.js";
 import type { PostUpdateAction, ValueManager } from "./internalTypes.js";
-// TODO: Use objectEntries from `@fluidframework/core-utils`
-import { asDeeplyReadonly, objectEntries } from "./internalUtils.js";
+import { asDeeplyReadonly } from "./internalUtils.js";
 import type { LatestClientData, LatestData, LatestMetadata } from "./latestValueTypes.js";
 import type { AttendeeId, Attendee, Presence, SpecificAttendee } from "./presence.js";
 import { datastoreFromHandle, type StateDatastore } from "./stateDatastore.js";
@@ -266,7 +269,7 @@ class ValueMapImpl<T, K extends string | number> implements StateMap<K, T> {
 		) => void,
 		thisArg?: unknown,
 	): void {
-		for (const [key, item] of objectEntries(this.value.items)) {
+		for (const [key, item] of genericObjectEntries(this.value.items)) {
 			if (item.value !== undefined) {
 				callbackfn(asDeeplyReadonly(item.value), key, this);
 			}
@@ -292,7 +295,7 @@ class ValueMapImpl<T, K extends string | number> implements StateMap<K, T> {
 	}
 	public keys(): IterableIterator<K> {
 		const keys: K[] = [];
-		for (const [key, item] of objectEntries(this.value.items)) {
+		for (const [key, item] of genericObjectEntries(this.value.items)) {
 			if (item.value !== undefined) {
 				keys.push(key);
 			}
@@ -411,7 +414,7 @@ class LatestMapRawValueManagerImpl<
 			throw new Error("No entry for attendee");
 		}
 		const items = new Map<Keys, LatestData<T>>();
-		for (const [key, item] of objectEntries(clientStateMap.items)) {
+		for (const [key, item] of genericObjectEntries(clientStateMap.items)) {
 			const value = item.value;
 			if (value !== undefined) {
 				items.set(key, {

@@ -28,7 +28,7 @@ export namespace InternalTypedObjectUtils {
 
 	/**
 	 * Expects a type with `key` and `value` properties, and returns a tuple
-	 * of the key and value types.
+	 * of the `key` and `value` types.
 	 *
 	 * @internal
 	 * @system
@@ -44,11 +44,10 @@ export namespace InternalTypedObjectUtils {
 }
 
 /**
- * Given a key type (keyof Foo), transform numerical keys to strings (as
- * Object.entries and Object.keys does). When PrefixForIndexKey is given,
- * an indexed key will also pick up the prefix.
+ * Given a record type, transform numerical keys to strings and omit
+ * symbol keys (as Object.entries and Object.keys does).
  *
- * @typeparam T - The key to be transformed.
+ * @typeparam T - The object to be transformed.
  * @typeparam PrefixForIndexKey - Optional prefix to be added to the key when
  * it appears to be an index key (not a literal).
  * @typeparam IntersectionForRemappedKey - Optional type to be intersected
@@ -85,7 +84,8 @@ export type MapNumberIndicesToStrings<
 
 /**
  * Given a type `T`, returns an array of tuples, where each tuple
- * contains a key and its corresponding value type.
+ * contains a key and its corresponding value type as would be
+ * returned by {@link Object.entries}.
  *
  * @internal
  */
@@ -124,6 +124,15 @@ export type RequiredAndNotUndefined<T> = {
 /**
  * Object.entries retyped to preserve known keys and their types.
  *
+ * @remarks
+ * Should this be given an object with more properties than are listed in type
+ * `T`, the extra properties will be returned, but won't conform to the returned
+ * types.
+ *
+ * In a generic context where `T` is not fully known, this typing will result in
+ * an unresolved expression and won't likely be helpful in further processing.
+ * In a generic context, prefer using {@link genericObjectEntries} instead.
+ *
  * @internal
  */
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -134,8 +143,12 @@ export const objectEntries = Object.entries as <const T extends {}>(o: T) => Key
  *
  * @remarks
  * Given `T` should not contain `undefined` values. If it does, use
- * {@link objectEntries} instead. Without `undefined` values, this
- * typing provides best handling of objects with optional properties.
+ * {@link objectEntries} instead. Without `undefined` values, this typing
+ * provides best handling of objects with optional properties.
+ *
+ * Should this be given an object with more properties than are listed in type
+ * `T`, the extra properties will be returned, but won't conform to the returned
+ * types.
  *
  * @internal
  */
@@ -148,16 +161,25 @@ export const objectEntriesWithoutUndefined = Object.entries as <const T extends 
  * Object.keys retyped to preserve known keys (when possible).
  *
  * @remarks
- * Numeric keys become strings and will not be readily accepted as
- * possible index for `T`.
+ * Numeric keys become strings and will not be readily accepted as possible index
+ * for `T`.
+ *
+ * Should this be given an object with more properties than are listed in type
+ * `T`, the extra properties will be returned, but won't conform to the returned
+ * types.
  *
  * @internal
  */
-export const objectKeys = Object.keys as <const T extends object>(
-	o: T,
-) => (keyof (T extends readonly (infer U)[]
-	? { [K in `${bigint}`]: U }
-	: MapNumberIndicesToStrings<T, "", keyof T>))[];
+export const objectKeys = Object.keys as {
+	<const T extends Record<string | number, unknown>>(
+		o: T,
+	): (keyof MapNumberIndicesToStrings<T, "", keyof T>)[];
+	<const T extends object>(
+		o: T,
+	): (keyof (T extends readonly (infer U)[]
+		? { [K in `${bigint}`]: U }
+		: MapNumberIndicesToStrings<T, "", keyof T>))[];
+};
 
 /**
  * Object.entries retyped to acknowledge that `key`s in result are `keyof T` too.
@@ -166,6 +188,10 @@ export const objectKeys = Object.keys as <const T extends object>(
  * Prefer using {@link objectEntries} or {@link objectEntriesWithoutUndefined} when
  * `T` is fully known. This version is imprecise as the unresolvable aspect of a
  * generic `T` are not helpful in further processing.
+ *
+ * Should this be given an object with more properties than are listed in type
+ * `T`, the extra properties will be returned, but won't conform to the returned
+ * types.
  *
  * @internal
  */
