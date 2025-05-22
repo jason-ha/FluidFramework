@@ -24,13 +24,15 @@ export { shallowCloneObject } from "./shallowClone.js";
 export type { IPromiseTimer, IPromiseTimerResult, ITimer } from "./timer.js";
 export { PromiseTimer, setLongTimeout, Timer } from "./timer.js";
 export type {
+	BrandedIndex,
 	InternalTypedObjectUtils,
 	KeyValuePairs,
-	MapNumberIndicesToStrings,
+	RecordKeyValuePairs,
 	RequiredAndNotUndefined,
 } from "./typedObject.js";
 export {
 	genericObjectEntries,
+	genericObjectKeys,
 	objectEntries,
 	objectEntriesWithoutUndefined,
 	objectKeys,
