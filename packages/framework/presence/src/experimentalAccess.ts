@@ -3,12 +3,12 @@
  * Licensed under the MIT License.
  */
 
+import type { IContainerExperimental } from "@fluidframework/container-loader/internal";
 import type {
 	ContainerExtensionStore,
 	ContainerExtension,
 	InboundExtensionMessage,
-} from "@fluidframework/container-definitions/internal";
-import type { IContainerExperimental } from "@fluidframework/container-loader/internal";
+} from "@fluidframework/container-runtime-definitions/internal";
 import { assert } from "@fluidframework/core-utils/internal";
 import type { IFluidContainer } from "@fluidframework/fluid-static";
 import { isInternalFluidContainer } from "@fluidframework/fluid-static/internal";

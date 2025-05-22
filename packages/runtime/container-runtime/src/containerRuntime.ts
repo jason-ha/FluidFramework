@@ -16,24 +16,24 @@ import type {
 } from "@fluidframework/container-definitions";
 import { AttachState } from "@fluidframework/container-definitions";
 import type {
-	ContainerExtensionFactory,
-	ContainerExtensionId,
 	IContainerContext,
-	ExtensionRuntime,
-	ExtensionRuntimeEvents,
-	ExtensionRuntimeProperties,
 	IGetPendingLocalStateProps,
 	IRuntime,
-	IRuntimeInternal,
 	IDeltaManager,
 	IDeltaManagerFull,
 	ILoader,
-	OutboundExtensionMessage,
 } from "@fluidframework/container-definitions/internal";
 import { isIDeltaManagerFull } from "@fluidframework/container-definitions/internal";
 import type {
+	ContainerExtensionFactory,
+	ContainerExtensionId,
+	ContainerExtensionStore,
+	ExtensionRuntime,
+	ExtensionRuntimeEvents,
+	ExtensionRuntimeProperties,
 	IContainerRuntime,
 	IContainerRuntimeEvents,
+	OutboundExtensionMessage,
 } from "@fluidframework/container-runtime-definitions/internal";
 import type {
 	FluidObject,
@@ -856,11 +856,12 @@ const defaultMaxConsecutiveReconnects = 7;
 export class ContainerRuntime
 	extends TypedEventEmitter<IContainerRuntimeEvents>
 	implements
+		ContainerExtensionStore,
 		IContainerRuntime,
 		// eslint-disable-next-line import/no-deprecated
 		IContainerRuntimeBaseExperimental,
 		IGarbageCollectionRuntime,
-		IRuntimeInternal,
+		IRuntime,
 		ISummarizerRuntime,
 		ISummarizerInternalsProvider,
 		IFluidParentContext,
