@@ -16,6 +16,8 @@ import { datastoreFromHandle, type StateDatastore } from "./stateDatastore.js";
 import { brandIVM } from "./valueManager.js";
 
 /**
+ * Events for {@link NotificationsManager}.
+ *
  * @sealed
  * @alpha
  */

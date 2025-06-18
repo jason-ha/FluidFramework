@@ -291,7 +291,7 @@ export interface NotificationsManager<T extends InternalUtilityTypes.Notificatio
     readonly presence: PresenceWithNotifications;
 }
 
-// @alpha @sealed (undocumented)
+// @alpha @sealed
 export interface NotificationsManagerEvents {
     // @eventProperty
     unattendedNotification: (name: string, sender: Attendee, ...content: unknown[]) => void;
