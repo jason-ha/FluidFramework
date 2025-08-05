@@ -160,16 +160,42 @@ function mergeGeneralDatastoreMessageContent(
 }
 
 /**
+ * Delays used for broadcasting join responses to clients.
+ *
+ * @remarks
+ * Exported for test coordination.
+ * These could be made customizable in the future to accommodate different
+ * session configurations.
+ */
+export const broadcastJoinResponseDelaysMs = {
+	/**
+	 * The delay in milliseconds before a join response is sent to any client.
+	 * This is used to accumulate other join response requests and reduce
+	 * network traffic.
+	 */
+	namedResponder: 200,
+	/**
+	 * The additional delay in milliseconds a backup responder waits before sending
+	 * a join response to allow others to respond first.
+	 */
+	backupResponderIncrement: 40,
+} as const;
+
+/**
  * Manages singleton datastore for all Presence.
  */
 export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 	private readonly datastore: PresenceDatastore;
 	private averageLatency = 0;
 	private returnedMessages = 0;
-	private refreshBroadcastRequested = false;
-	private readonly timer = new TimerManager();
+	private readonly sendMessageTimer = new TimerManager();
 	private readonly workspaces = new Map<string, AnyWorkspaceEntry<StatesWorkspaceSchema>>();
 	private readonly targetedSignalSupport: boolean;
+	private readonly broadcastRequests = new Map<
+		ClientConnectionId,
+		{ deadlineTime: number; responseOrder?: number }
+	>();
+	private readonly broadcastRequestsTimer = new TimerManager();
 
 	public constructor(
 		private readonly attendeeId: AttendeeId,
@@ -261,21 +287,27 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 	}
 
 	/**
-	 * The combined contents of all queued updates. Will be undefined when no messages are queued.
+	 * The combined contents of all queued updates. Will be `"sendAll"` when a
+	 * full broadcast is pending or `undefined` when no messages are queued.
 	 */
-	private queuedData: GeneralDatastoreMessageContent | undefined;
+	private queuedData: GeneralDatastoreMessageContent | "sendAll" | undefined;
 
 	/**
 	 * Enqueues a new message to be sent. The message may be queued or may be sent immediately depending on the state of
 	 * the send timer, other messages in the queue, the configured allowed latency, etc.
 	 */
 	private enqueueMessage(
-		data: GeneralDatastoreMessageContent,
+		data: GeneralDatastoreMessageContent | "sendAll",
 		options: RuntimeLocalUpdateOptions,
 	): void {
-		// Merging the message with any queued messages effectively queues the message.
-		// It is OK to queue all incoming messages as long as when we send, we send the queued data.
-		this.queuedData = mergeGeneralDatastoreMessageContent(this.queuedData, data);
+		if (this.queuedData !== "sendAll") {
+			this.queuedData =
+				data === "sendAll"
+					? "sendAll"
+					: // Merging the message with any queued messages effectively queues the message.
+						// It is OK to queue all incoming messages as long as when we send, we send the queued data.
+						mergeGeneralDatastoreMessageContent(this.queuedData, data);
+		}
 
 		const { allowableUpdateLatencyMs } = options;
 		const now = Date.now();
@@ -285,10 +317,10 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			// If the timer has not expired, we can short-circuit because the timer will fire
 			// and cover this update. In other words, queuing this will be fast enough to
 			// meet its deadline, because a timer is already scheduled to fire before its deadline.
-			!this.timer.hasExpired() &&
+			!this.sendMessageTimer.hasExpired() &&
 			// If the deadline for this message is later than the overall send deadline, then
 			// we can exit early since a timer will take care of sending it.
-			thisMessageDeadline >= this.timer.expireTime
+			thisMessageDeadline >= this.sendMessageTimer.expireTime
 		) {
 			return;
 		}
@@ -302,7 +334,7 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 
 		if (scheduleForLater) {
 			// Schedule the queued messages to be sent at the updateDeadline
-			this.timer.setTimeout(this.sendQueuedMessage.bind(this), timeoutInMs);
+			this.sendMessageTimer.setTimeout(this.sendQueuedMessage.bind(this), timeoutInMs);
 		} else {
 			this.sendQueuedMessage();
 		}
@@ -312,7 +344,7 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 	 * Send any queued signal immediately. Does nothing if no message is queued.
 	 */
 	private sendQueuedMessage(): void {
-		this.timer.clearTimeout();
+		this.sendMessageTimer.clearTimeout();
 
 		if (this.queuedData === undefined) {
 			return;
@@ -323,6 +355,11 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			// Clear the queued data since we're disconnected. We don't want messages
 			// to queue infinitely while disconnected.
 			this.queuedData = undefined;
+			return;
+		}
+
+		if (this.queuedData === "sendAll") {
+			this.broadcastAllKnownState();
 			return;
 		}
 
@@ -425,16 +462,51 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 	}
 
 	private broadcastAllKnownState(): void {
+		const content: OutboundDatastoreUpdateMessage["content"] = {
+			sendTimestamp: Date.now(),
+			avgLatency: this.averageLatency,
+			isComplete: true,
+			data: this.stripValidationMetadata(this.datastore),
+		};
+
+		const primaryRequestors: ClientConnectionId[] = [];
+		const secondaryRequestors: [ClientConnectionId, number][] = [];
+		if (this.broadcastRequests.size > 0) {
+			content.joinResponseFor = [...this.broadcastRequests.keys()];
+			if (this.logger) {
+				// Build telemetry data
+				for (const [requestor, { responseOrder }] of this.broadcastRequests.entries()) {
+					if (responseOrder === undefined) {
+						primaryRequestors.push(requestor);
+					} else {
+						secondaryRequestors.push([requestor, responseOrder]);
+					}
+				}
+			}
+			this.broadcastRequests.clear();
+		}
+
+		// This broadcast will satisfy all requests; clear any remaining timer.
+		this.broadcastRequestsTimer.clearTimeout();
+		this.sendMessageTimer.clearTimeout();
+
 		this.runtime.submitSignal({
 			type: datastoreUpdateMessageType,
-			content: {
-				sendTimestamp: Date.now(),
-				avgLatency: this.averageLatency,
-				isComplete: true,
-				data: this.stripValidationMetadata(this.datastore),
-			},
+			content,
 		});
-		this.refreshBroadcastRequested = false;
+		if (content.joinResponseFor) {
+			this.logger?.sendTelemetryEvent({
+				eventName: "JoinResponse",
+				details: {
+					type: "broadcastAll",
+					primaryResponses: JSON.stringify(primaryRequestors),
+					secondaryResponses: JSON.stringify(secondaryRequestors),
+				},
+			});
+		}
+
+		// Sending all must account for anything queued before.
+		this.queuedData = undefined;
 	}
 
 	public processSignal(
@@ -476,9 +548,17 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 			// It is okay to continue processing the contained updates even if we are not
 			// connected.
 		} else {
-			if (message.content.isComplete) {
-				this.refreshBroadcastRequested = false;
+			// Update join response requests that are now satisfied.
+			if (message.content.joinResponseFor && this.broadcastRequests.size > 0) {
+				for (const responseFor of message.content.joinResponseFor) {
+					this.broadcastRequests.delete(responseFor);
+				}
+				if (this.broadcastRequests.size === 0) {
+					// If no more requests are pending, clear any timer.
+					this.broadcastRequestsTimer.clearTimeout();
+				}
 			}
+
 			// If the message requests an acknowledgement, we will send a targeted acknowledgement message back to just the requestor.
 			if (message.content.acknowledgementId !== undefined) {
 				assert(
@@ -553,6 +633,32 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 	}
 
 	/**
+	 * Broadcasts a join response (complete datastore update message)
+	 * if there is an outstanding join response request.
+	 */
+	private readonly sendJoinResponseIfStillNeeded = (): void => {
+		// Make sure we are currently connected and a broadcast is still needed.
+		// If not connected, nothing we can do.
+		if (this.runtime.getJoinedStatus() !== "disconnected" && this.broadcastRequests.size > 0) {
+			// Confirm that of remaining requests, now is the time to respond.
+			const now = Date.now();
+			let minResponseTime = Number.POSITIVE_INFINITY;
+			for (const { deadlineTime } of this.broadcastRequests.values()) {
+				minResponseTime = Math.min(minResponseTime, deadlineTime);
+			}
+			if (minResponseTime <= now) {
+				this.broadcastAllKnownState();
+			} else {
+				// No response needed yet - schedule a later attempt
+				this.broadcastRequestsTimer.setTimeout(
+					this.sendJoinResponseIfStillNeeded,
+					minResponseTime - now,
+				);
+			}
+		}
+	};
+
+	/**
 	 * Handles responding to another client joining the session.
 	 *
 	 * @param updateProviders - list of client connection id's that requestor selected
@@ -567,29 +673,29 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 		updateProviders: ClientConnectionId[],
 		requestor: ClientConnectionId,
 	): void {
-		this.refreshBroadcastRequested = true;
 		// We must be connected to receive this message, so clientId should be defined.
 		// If it isn't then, not really a problem; just won't be in provider or quorum list.
 		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 		const clientId = this.runtime.getClientId()!;
-		// const requestor = message.clientId;
+		let joinResponseDelayMs = broadcastJoinResponseDelaysMs.namedResponder;
 		if (updateProviders.includes(clientId)) {
-			// Send all current state to the new client
-			this.broadcastAllKnownState();
-			this.logger?.sendTelemetryEvent({
-				eventName: "JoinResponse",
-				details: {
-					type: "broadcastAll",
-					requestor,
-					role: "primary",
-				},
+			// Add the requestor to the list of clients that will receive the broadcast.
+			// Then use regular message queue to handle timing of the broadcast.
+			// Any more immediate broadcasts will accelerate the response time.
+			// As a primary responder, it is expected that broadcast will happen and
+			// using the regular queue allows other updates to avoid merge work.
+			this.broadcastRequests.set(requestor, {
+				deadlineTime: Date.now() + joinResponseDelayMs,
+			});
+			this.enqueueMessage("sendAll", {
+				allowableUpdateLatencyMs: joinResponseDelayMs,
 			});
 		} else {
 			// Schedule a broadcast to the new client after a delay only to send if
-			// another broadcast hasn't been seen in the meantime. The delay is based
-			// on the position in the quorum list. It doesn't have to be a stable
-			// list across all clients. We need something to provide suggested order
-			// to prevent a flood of broadcasts.
+			// another broadcast satisfying the request hasn't been seen in the
+			// meantime. The delay is based on the position in the quorum list. It
+			// doesn't have to be a stable list across all clients. We need
+			// something to provide suggested order to prevent a flood of broadcasts.
 			let relativeResponseOrder;
 			const quorumMembers = this.runtime.getQuorum().getMembers();
 			const self = quorumMembers.get(clientId);
@@ -605,29 +711,29 @@ export class PresenceDatastoreManagerImpl implements PresenceDatastoreManager {
 				// Order past quorum members + arbitrary additional offset up to 10
 				relativeResponseOrder = quorumMembers.size + Math.random() * 10;
 			}
-			// These numbers have been chosen arbitrarily to start with.
-			// 20 is minimum wait time, 20 is the additional wait time per provider
-			// given an chance before us with named providers given more time.
-			const waitTime = 20 + 20 * (3 * updateProviders.length + relativeResponseOrder);
-			setTimeout(() => {
-				// Make sure a broadcast is still needed and we are currently connected.
-				// If not connected, nothing we can do.
-				if (
-					this.refreshBroadcastRequested &&
-					this.runtime.getJoinedStatus() !== "disconnected"
-				) {
-					this.broadcastAllKnownState();
-					this.logger?.sendTelemetryEvent({
-						eventName: "JoinResponse",
-						details: {
-							type: "broadcastAll",
-							requestor,
-							role: "secondary",
-							order: relativeResponseOrder,
-						},
-					});
-				}
-			}, waitTime);
+			// When not named to provide update, wait an additional amount
+			// of time for those named or others to respond.
+			joinResponseDelayMs +=
+				broadcastJoinResponseDelaysMs.backupResponderIncrement *
+				(3 * updateProviders.length + relativeResponseOrder);
+			const deadlineTime = Date.now() + joinResponseDelayMs;
+			this.broadcastRequests.set(requestor, {
+				deadlineTime,
+				responseOrder: relativeResponseOrder,
+			});
+
+			// Check if there isn't already a timer scheduled to send a join
+			// response with in this request's deadline.
+			if (
+				this.broadcastRequestsTimer.hasExpired() ||
+				deadlineTime < this.broadcastRequestsTimer.expireTime
+			) {
+				// Set or update the timer.
+				this.broadcastRequestsTimer.setTimeout(
+					this.sendJoinResponseIfStillNeeded,
+					joinResponseDelayMs,
+				);
+			}
 		}
 	}
 }

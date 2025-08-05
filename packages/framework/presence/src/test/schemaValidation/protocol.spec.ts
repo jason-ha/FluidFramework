@@ -9,6 +9,7 @@ import { useFakeTimers, type SinonFakeTimers } from "sinon";
 
 import type { PresenceWithNotifications } from "../../index.js";
 import { toOpaqueJson } from "../../internalUtils.js";
+import { broadcastJoinResponseDelaysMs } from "../../presenceDatastoreManager.js";
 import type { OutboundDatastoreUpdateMessage } from "../../protocol.js";
 import { MockEphemeralRuntime } from "../mockEphemeralRuntime.js";
 import type { ProcessSignalFunction } from "../testUtils.js";
@@ -174,9 +175,6 @@ describe("Presence", () => {
 						"avgLatency": 10,
 						"data": {
 							"system:presence": {
-								// Original response does not contain the requestor (attendeeId-4)
-								// information (for efficiency). Note that the efficiency might be
-								// compromising robust data and may change.
 								"clientToSessionId": {
 									[connectionId2]: {
 										"rev": 0,
@@ -187,6 +185,11 @@ describe("Presence", () => {
 										"rev": 0,
 										"timestamp": 0,
 										"value": attendeeId1,
+									},
+									[connectionId4]: {
+										"rev": 0,
+										"timestamp": initialTime - 20,
+										"value": attendeeId4,
 									},
 								},
 							},
@@ -218,12 +221,14 @@ describe("Presence", () => {
 							},
 						},
 						"isComplete": true,
-						"sendTimestamp": clock.now,
+						"joinResponseFor": [connectionId4],
+						"sendTimestamp": clock.now + broadcastJoinResponseDelaysMs.namedResponder,
 					},
 				} as const satisfies OutboundDatastoreUpdateMessage;
 				{
 					runtime.signalsExpected.push([expectedSetupJoinResponse]);
 					processSignal([], newAttendeeSignal, false);
+					clock.tick(broadcastJoinResponseDelaysMs.namedResponder);
 				}
 				// Pass a little time (to distinguish between signals)
 				clock.tick(10);
@@ -237,6 +242,12 @@ describe("Presence", () => {
 					latest: StateFactory.latest({
 						local: { x: 0, y: 0, z: 0 },
 						validator: point3DValidatorFunction,
+						settings: {
+							// To prevent sending messages ahead of full broadcast from
+							// join below, set the allowable latency to twice expected
+							// join response time.
+							allowableUpdateLatencyMs: 2 * broadcastJoinResponseDelaysMs.namedResponder,
+						},
 					}),
 				});
 				const latest = statesWorkspace.states.latest;
@@ -252,15 +263,6 @@ describe("Presence", () => {
 							"system:presence": {
 								"clientToSessionId": {
 									...originalJoinResponseData["system:presence"].clientToSessionId,
-									// Original response does not contain the requestor information
-									// (for efficiency), but this secondary request will have that
-									// connection data. Note the the efficiency might be compromising
-									// robust data and may change.
-									[connectionId4]: {
-										"rev": 0,
-										"timestamp": initialTime - 20,
-										"value": attendeeId4,
-									},
 								},
 							},
 							"s:name:testWorkspace": {
@@ -278,13 +280,15 @@ describe("Presence", () => {
 							},
 						},
 						"isComplete": true,
-						"sendTimestamp": clock.now,
+						"joinResponseFor": [connectionId4],
+						"sendTimestamp": clock.now + broadcastJoinResponseDelaysMs.namedResponder,
 					},
 				} as const satisfies OutboundDatastoreUpdateMessage;
 				runtime.signalsExpected.push([expectedJoinResponse]);
 
 				// Act & Verify - resend new attendee Join signal
 				processSignal([], newAttendeeSignal, false);
+				clock.tick(broadcastJoinResponseDelaysMs.namedResponder);
 			});
 		});
 	});
