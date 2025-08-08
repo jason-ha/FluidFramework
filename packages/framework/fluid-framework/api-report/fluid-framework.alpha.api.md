@@ -348,9 +348,10 @@ export interface ICodecOptions {
     readonly jsonValidator: JsonValidator;
 }
 
-// @public
-export interface IConnection {
+// @public @sealed
+export interface IConnection<M extends IMember = IMember> {
     readonly id: string;
+    readonly member: M;
     readonly mode: "write" | "read";
 }
 
@@ -597,7 +598,7 @@ export interface IFluidLoadable extends IProvideFluidLoadable {
     readonly handle: IFluidHandle;
 }
 
-// @public
+// @public @sealed
 export interface IMember {
     readonly connections: IConnection[];
     readonly id: string;
@@ -702,13 +703,13 @@ export interface IProvideFluidLoadable {
     readonly IFluidLoadable: IFluidLoadable;
 }
 
-// @public
+// @public @sealed
 export interface IServiceAudience<M extends IMember> extends IEventProvider<IServiceAudienceEvents<M>> {
     getMembers(): ReadonlyMap<string, M>;
     getMyself(): Myself<M> | undefined;
 }
 
-// @public
+// @public @sealed
 export interface IServiceAudienceEvents<M extends IMember> extends IEvent {
     // @eventProperty
     (event: "membersChanged", listener: () => void): void;
@@ -775,7 +776,7 @@ export namespace JsonAsTree {
     }
     const // @system
     _APIExtractorWorkaroundObjectBase: TreeNodeSchemaClass<"com.fluidframework.json.object", NodeKind.Record, TreeRecordNodeUnsafe_2<readonly [LeafSchema<"null", null>, LeafSchema<"number", number>, LeafSchema<"string", string>, LeafSchema<"boolean", boolean>, () => typeof JsonObject, () => typeof Array]> & WithType<"com.fluidframework.json.object", NodeKind.Record, unknown>, {
-        readonly [x: string]: string | number | JsonObject | Array | System_Unsafe.InsertableTypedNodeUnsafe<LeafSchema<"boolean", boolean>, LeafSchema<"boolean", boolean>> | null;
+        readonly [x: string]: string | number | System_Unsafe.InsertableTypedNodeUnsafe<LeafSchema<"boolean", boolean>, LeafSchema<"boolean", boolean>> | JsonObject | Array | null;
     }, false, readonly [LeafSchema<"null", null>, LeafSchema<"number", number>, LeafSchema<"string", string>, LeafSchema<"boolean", boolean>, () => typeof JsonObject, () => typeof Array], undefined>;
     // (undocumented)
     export type Primitive = TreeNodeFromImplicitAllowedTypes<typeof Primitive>;

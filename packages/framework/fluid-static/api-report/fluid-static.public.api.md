@@ -16,9 +16,10 @@ export interface ContainerSchema {
     readonly initialObjects: Record<string, SharedObjectKind>;
 }
 
-// @public
-export interface IConnection {
+// @public @sealed
+export interface IConnection<M extends IMember = IMember> {
     readonly id: string;
+    readonly member: M;
     readonly mode: "write" | "read";
 }
 
@@ -45,7 +46,7 @@ export interface IFluidContainerEvents extends IEvent {
     (event: "disposed", listener: (error?: ICriticalContainerError) => void): any;
 }
 
-// @public
+// @public @sealed
 export interface IMember {
     readonly connections: IConnection[];
     readonly id: string;
@@ -56,13 +57,13 @@ export type InitialObjects<T extends ContainerSchema> = {
     [K in keyof T["initialObjects"]]: T["initialObjects"][K] extends SharedObjectKind<infer TChannel> ? TChannel : never;
 };
 
-// @public
+// @public @sealed
 export interface IServiceAudience<M extends IMember> extends IEventProvider<IServiceAudienceEvents<M>> {
     getMembers(): ReadonlyMap<string, M>;
     getMyself(): Myself<M> | undefined;
 }
 
-// @public
+// @public @sealed
 export interface IServiceAudienceEvents<M extends IMember> extends IEvent {
     // @eventProperty
     (event: "membersChanged", listener: () => void): void;

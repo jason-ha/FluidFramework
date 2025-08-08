@@ -61,9 +61,10 @@ export interface AzureLocalConnectionConfig extends AzureConnectionConfig {
     type: "local";
 }
 
-// @public
+// @public @sealed
 export interface AzureMember<T = any> extends IMember {
     additionalDetails?: T;
+    readonly connections: IConnection<AzureMember>[];
     name: string;
 }
 

@@ -40,6 +40,7 @@ declare type current_as_old_for_Interface_ContainerSchema = requireAssignableTo<
  * typeValidation.broken:
  * "Interface_IConnection": {"forwardCompat": false}
  */
+// @ts-expect-error compatibility expected to be broken
 declare type old_as_current_for_Interface_IConnection = requireAssignableTo<TypeOnly<old.IConnection>, TypeOnly<current.IConnection>>
 
 /*
@@ -76,6 +77,7 @@ declare type current_as_old_for_Interface_IFluidContainerEvents = requireAssigna
  * typeValidation.broken:
  * "Interface_IMember": {"forwardCompat": false}
  */
+// @ts-expect-error compatibility expected to be broken
 declare type old_as_current_for_Interface_IMember = requireAssignableTo<TypeOnly<old.IMember>, TypeOnly<current.IMember>>
 
 /*
@@ -202,6 +204,7 @@ declare type current_as_old_for_TypeAlias_MemberChangedListener = requireAssigna
  * typeValidation.broken:
  * "TypeAlias_Myself": {"forwardCompat": false}
  */
+// @ts-expect-error compatibility expected to be broken
 declare type old_as_current_for_TypeAlias_Myself = requireAssignableTo<TypeOnly<old.Myself>, TypeOnly<current.Myself>>
 
 /*

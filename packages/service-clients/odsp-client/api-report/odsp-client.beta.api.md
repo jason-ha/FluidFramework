@@ -48,8 +48,9 @@ export interface OdspContainerServices {
     audience: IOdspAudience;
 }
 
-// @beta
+// @beta @sealed
 export interface OdspMember extends IMember {
+    readonly connections: IConnection<OdspMember>[];
     email: string;
     id: string;
     name: string;

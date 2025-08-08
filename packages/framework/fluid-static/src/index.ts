@@ -24,12 +24,14 @@ export type {
 	CompatibilityMode,
 	ContainerSchema,
 	ContainerAttachProps,
+	CreateServiceMember,
 	IConnection,
 	IMember,
 	IServiceAudience,
 	IServiceAudienceEvents,
 	MemberChangedListener,
 	Myself,
+	ServiceMember,
 	TreeContainerSchema,
 } from "./types.js";
 export { isTreeContainerSchema } from "./utils.js";

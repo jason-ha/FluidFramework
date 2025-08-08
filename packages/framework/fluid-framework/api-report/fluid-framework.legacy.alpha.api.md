@@ -153,9 +153,10 @@ export interface IBranchOrigin {
     sequenceNumber: number;
 }
 
-// @public
-export interface IConnection {
+// @public @sealed
+export interface IConnection<M extends IMember = IMember> {
     readonly id: string;
+    readonly member: M;
     readonly mode: "write" | "read";
 }
 
@@ -442,7 +443,7 @@ export interface IInterval {
     union(b: IInterval): IInterval;
 }
 
-// @public
+// @public @sealed
 export interface IMember {
     readonly connections: IConnection[];
     readonly id: string;
@@ -639,13 +640,13 @@ export interface ISerializedInterval {
     stickiness?: IntervalStickiness;
 }
 
-// @public
+// @public @sealed
 export interface IServiceAudience<M extends IMember> extends IEventProvider<IServiceAudienceEvents<M>> {
     getMembers(): ReadonlyMap<string, M>;
     getMyself(): Myself<M> | undefined;
 }
 
-// @public
+// @public @sealed
 export interface IServiceAudienceEvents<M extends IMember> extends IEvent {
     // @eventProperty
     (event: "membersChanged", listener: () => void): void;

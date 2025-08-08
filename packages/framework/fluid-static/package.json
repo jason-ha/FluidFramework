@@ -156,7 +156,17 @@
 		"typescript": "~5.4.5"
 	},
 	"typeValidation": {
-		"broken": {},
+		"broken": {
+			"Interface_IConnection": {
+				"forwardCompat": false
+			},
+			"Interface_IMember": {
+				"forwardCompat": false
+			},
+			"TypeAlias_Myself": {
+				"forwardCompat": false
+			}
+		},
 		"entrypoint": "public"
 	}
 }

@@ -7,7 +7,7 @@ import type {
 	IConfigProviderBase,
 	ITelemetryBaseLogger,
 } from "@fluidframework/core-interfaces";
-import type { IMember, IServiceAudience } from "@fluidframework/fluid-static";
+import type { IConnection, IMember, IServiceAudience } from "@fluidframework/fluid-static";
 
 import type { IOdspTokenProvider } from "./token.js";
 
@@ -93,6 +93,8 @@ export interface OdspContainerServices {
  * Since ODSP provides user names and email for all of its members, we extend the
  * {@link @fluidframework/fluid-static#IMember} interface to include this service-specific value.
  * It will be returned for all audience members connected.
+ *
+ * @sealed
  * @beta
  */
 export interface OdspMember extends IMember {
@@ -100,6 +102,10 @@ export interface OdspMember extends IMember {
 	 * The object ID (oid) for the user, unique among each individual user connecting to the session.
 	 */
 	id: string;
+	/**
+	 * The set of connections the user has made, e.g. from multiple tabs or devices.
+	 */
+	readonly connections: IConnection<OdspMember>[];
 	/**
 	 * The user's name
 	 */

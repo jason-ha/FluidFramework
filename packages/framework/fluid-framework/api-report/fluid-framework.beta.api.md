@@ -165,9 +165,10 @@ export type FluidObject<T = unknown> = {
 // @public
 export type FluidObjectProviderKeys<T, TProp extends keyof T = keyof T> = string extends TProp ? never : number extends TProp ? never : TProp extends keyof Required<T>[TProp] ? Required<T>[TProp] extends Required<Required<T>[TProp]>[TProp] ? TProp : never : never;
 
-// @public
-export interface IConnection {
+// @public @sealed
+export interface IConnection<M extends IMember = IMember> {
     readonly id: string;
+    readonly member: M;
     readonly mode: "write" | "read";
 }
 
@@ -411,7 +412,7 @@ export interface IFluidLoadable extends IProvideFluidLoadable {
     readonly handle: IFluidHandle;
 }
 
-// @public
+// @public @sealed
 export interface IMember {
     readonly connections: IConnection[];
     readonly id: string;
@@ -488,13 +489,13 @@ export interface IProvideFluidLoadable {
     readonly IFluidLoadable: IFluidLoadable;
 }
 
-// @public
+// @public @sealed
 export interface IServiceAudience<M extends IMember> extends IEventProvider<IServiceAudienceEvents<M>> {
     getMembers(): ReadonlyMap<string, M>;
     getMyself(): Myself<M> | undefined;
 }
 
-// @public
+// @public @sealed
 export interface IServiceAudienceEvents<M extends IMember> extends IEvent {
     // @eventProperty
     (event: "membersChanged", listener: () => void): void;

@@ -13,6 +13,7 @@ import type { ICompressionStorageConfig } from "@fluidframework/driver-utils";
 import type {
 	CompatibilityMode,
 	ContainerSchema,
+	IConnection,
 	IMember,
 	IServiceAudience,
 } from "@fluidframework/fluid-static";
@@ -192,11 +193,18 @@ export interface AzureUser<T = any> extends IUser {
  * @typeParam T - See {@link AzureMember.additionalDetails}.
  * Note: must be JSON-serializable.
  * Passing a non-serializable object (e.g. a `class`) will result in undefined behavior.
+ *
+ * @sealed
  * @public
  */
 // TODO: this should be updated to use something other than `any` (unknown)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface AzureMember<T = any> extends IMember {
+	/**
+	 * The set of connections the user has made, e.g. from multiple tabs or devices.
+	 */
+	readonly connections: IConnection<AzureMember>[];
+
 	/**
 	 * The user's name
 	 */

@@ -11,6 +11,7 @@ import type {
 	IFluidHandle,
 	IFluidLoadable,
 } from "@fluidframework/core-interfaces";
+import type { IClient } from "@fluidframework/driver-definitions";
 import type {
 	ISharedObjectKind,
 	SharedObjectKind,
@@ -182,6 +183,8 @@ export type MemberChangedListener<M extends IMember> = (clientId: string, member
  * {@link IServiceAudience.getMembers} method will emit events.
  *
  * @typeParam M - A service-specific {@link IMember} implementation.
+ *
+ * @sealed
  * @public
  */
 export interface IServiceAudienceEvents<M extends IMember> extends IEvent {
@@ -216,6 +219,8 @@ export interface IServiceAudienceEvents<M extends IMember> extends IEvent {
  * details about the connecting client, such as device information, environment, or a username.
  *
  * @typeParam M - A service-specific {@link IMember} type.
+ *
+ * @sealed
  * @public
  */
 export interface IServiceAudience<M extends IMember>
@@ -237,9 +242,11 @@ export interface IServiceAudience<M extends IMember>
  * Base interface for information for each connection made to the Fluid session.
  *
  * @remarks This interface can be extended to provide additional information specific to each service.
+ *
+ * @sealed
  * @public
  */
-export interface IConnection {
+export interface IConnection<M extends IMember = IMember> {
 	/**
 	 * A unique ID for the connection.  A single user may have multiple connections, each with a different ID.
 	 */
@@ -249,12 +256,22 @@ export interface IConnection {
 	 * Whether the connection is in read or read/write mode.
 	 */
 	readonly mode: "write" | "read";
+
+	/**
+	 * The specific member this connection belongs to.
+	 *
+	 * @remarks
+	 * This maybe used to access member information that is connection specific.
+	 */
+	readonly member: M;
 }
 
 /**
  * Base interface to be implemented to fetch each service's member.
  *
  * @remarks This interface can be extended by each service to provide additional service-specific user metadata.
+ *
+ * @sealed
  * @public
  */
 export interface IMember {
@@ -270,7 +287,28 @@ export interface IMember {
 }
 
 /**
+ * Templated {@link IMember} to carry-thru `connections` member type specifics.
+ *
+ * @remarks Specific service members should extend `IMember` and override the `connections` member type as shown here.
+ *
+ * @internal
+ */
+export interface ServiceMember<M extends IMember> extends IMember {
+	readonly connections: IConnection<M>[];
+}
+
+/**
  * An extended member object that includes currentConnection
  * @public
  */
 export type Myself<M extends IMember = IMember> = M & { readonly currentConnection: string };
+
+/**
+ * A function that creates a service-specific member from client and shared user connections.
+ *
+ * @internal
+ */
+export type CreateServiceMember<TMember extends ServiceMember<IMember>> = (
+	audienceMember: IClient,
+	connections: IConnection<TMember>[],
+) => TMember;

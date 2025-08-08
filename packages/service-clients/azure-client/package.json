@@ -129,7 +129,11 @@
 		"uuid": "^11.1.0"
 	},
 	"typeValidation": {
-		"broken": {},
+		"broken": {
+			"Interface_AzureMember": {
+				"forwardCompat": false
+			}
+		},
 		"entrypoint": "legacy"
 	}
 }

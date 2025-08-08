@@ -157,6 +157,7 @@ declare type current_as_old_for_Interface_AzureLocalConnectionConfig = requireAs
  * typeValidation.broken:
  * "Interface_AzureMember": {"forwardCompat": false}
  */
+// @ts-expect-error compatibility expected to be broken
 declare type old_as_current_for_Interface_AzureMember = requireAssignableTo<TypeOnly<old.AzureMember>, TypeOnly<current.AzureMember>>
 
 /*

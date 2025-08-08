@@ -4,6 +4,7 @@
  */
 
 import type { IClient, IUser } from "@fluidframework/driver-definitions";
+import type { IConnection } from "@fluidframework/fluid-static";
 
 import type { AzureMember, AzureUser } from "./interfaces.js";
 
@@ -13,14 +14,17 @@ import type { AzureMember, AzureUser } from "./interfaces.js";
  * @remarks
  * The provided `audienceMember`'s {@link @fluidframework/protocol-definitions#IClient.user} must be an {@link AzureUser}.
  */
-export function createAzureAudienceMember(audienceMember: IClient): AzureMember {
+export function createAzureAudienceMember(
+	audienceMember: IClient,
+	connections: IConnection<AzureMember>[],
+): AzureMember {
 	const user = audienceMember.user;
 	assertIsAzureUser(user);
 
 	return {
 		id: user.id,
 		name: user.name,
-		connections: [],
+		connections,
 		additionalDetails: user.additionalDetails,
 	};
 }

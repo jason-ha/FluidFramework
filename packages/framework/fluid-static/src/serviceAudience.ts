@@ -8,7 +8,15 @@ import type { IAudience } from "@fluidframework/container-definitions";
 import type { IContainer } from "@fluidframework/container-definitions/internal";
 import type { IClient } from "@fluidframework/driver-definitions";
 
-import type { IMember, IServiceAudience, IServiceAudienceEvents, Myself } from "./types.js";
+import type {
+	CreateServiceMember,
+	IConnection,
+	IMember,
+	IServiceAudience,
+	IServiceAudienceEvents,
+	Myself,
+	ServiceMember,
+} from "./types.js";
 
 /**
  * Creates a service audience for the provided container.
@@ -22,7 +30,7 @@ import type { IMember, IServiceAudience, IServiceAudienceEvents, Myself } from "
  */
 export function createServiceAudience<TMember extends IMember = IMember>(props: {
 	container: IContainer;
-	createServiceMember: (audienceMember: IClient) => TMember;
+	createServiceMember: CreateServiceMember<TMember>;
 }): IServiceAudience<TMember> {
 	return new ServiceAudience(props.container, props.createServiceMember);
 }
@@ -37,7 +45,7 @@ export function createServiceAudience<TMember extends IMember = IMember>(props: 
  *
  * @typeParam TMember - A service-specific {@link IMember} implementation.
  */
-class ServiceAudience<TMember extends IMember = IMember>
+class ServiceAudience<TMember extends ServiceMember<IMember>>
 	extends TypedEventEmitter<IServiceAudienceEvents<TMember>>
 	implements IServiceAudience<TMember>
 {
@@ -70,7 +78,7 @@ class ServiceAudience<TMember extends IMember = IMember>
 		 * Fluid Container to read the audience from.
 		 */
 		private readonly container: IContainer,
-		private readonly createServiceMember: (audienceMember: IClient) => TMember,
+		private readonly createServiceMember: CreateServiceMember<TMember>,
 	) {
 		super();
 		this.audience = container.audience;
@@ -97,10 +105,10 @@ class ServiceAudience<TMember extends IMember = IMember>
 		this.container.on("connected", () => this.emit("membersChanged"));
 	}
 
-	/**
-	 * {@inheritDoc IServiceAudience.getMembers}
-	 */
 	public getMembers(): Map<string, TMember> {
+		// TODO: update tracking to be of connections per user...
+		//   A random member can be chose for the user-id to member map, but when
+		//   looking for a client id, be sure to get the specific member.
 		const users = new Map<string, TMember>();
 		const clientMemberMap = new Map<string, TMember>();
 		// Iterate through the members and get the user specifics.
@@ -109,13 +117,16 @@ class ServiceAudience<TMember extends IMember = IMember>
 				const userId = member.user.id;
 				// Ensure we're tracking the user
 				let user = users.get(userId);
+				// Reuse existing connections if it exist
+				const connections = (user?.connections as IConnection<TMember>[] | undefined) ?? [];
+				const serviceMember = this.createServiceMember(member, connections);
 				if (user === undefined) {
-					user = this.createServiceMember(member);
+					user = serviceMember;
 					users.set(userId, user);
 				}
 
 				// Add this connection to their collection
-				user.connections.push({ id: clientId, mode: member.mode });
+				user.connections.push({ id: clientId, mode: member.mode, member: serviceMember });
 				clientMemberMap.set(clientId, user);
 			}
 		}
@@ -123,9 +134,6 @@ class ServiceAudience<TMember extends IMember = IMember>
 		return users;
 	}
 
-	/**
-	 * {@inheritDoc IServiceAudience.getMyself}
-	 */
 	public getMyself(): Myself<TMember> | undefined {
 		const clientId = this.container.clientId;
 		if (clientId === undefined) {
@@ -150,7 +158,7 @@ class ServiceAudience<TMember extends IMember = IMember>
 		}
 		// Return the member object with any other clients associated for this user
 		const allMembers = this.getMembers();
-		const member = allMembers.get(internalAudienceMember?.user.id);
+		const member = allMembers.get(internalAudienceMember.user.id);
 		if (member === undefined) {
 			throw new Error(
 				`Attempted to fetch client ${clientId} that is not part of the current member list`,

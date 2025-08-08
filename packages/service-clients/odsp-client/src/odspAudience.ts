@@ -5,6 +5,7 @@
 
 import { assert } from "@fluidframework/core-utils/internal";
 import type { IClient } from "@fluidframework/driver-definitions";
+import type { IConnection } from "@fluidframework/fluid-static";
 
 import type { OdspMember } from "./interfaces.js";
 
@@ -33,7 +34,10 @@ interface OdspUser {
  *
  * @param audienceMember - the client instance/
  */
-export function createOdspAudienceMember(audienceMember: IClient): OdspMember {
+export function createOdspAudienceMember(
+	audienceMember: IClient,
+	connections: IConnection<OdspMember>[],
+): OdspMember {
 	const user = audienceMember.user as unknown as OdspUser;
 	assert(
 		user.name !== undefined || user.email !== undefined || user.oid !== undefined,
@@ -44,6 +48,6 @@ export function createOdspAudienceMember(audienceMember: IClient): OdspMember {
 		id: user.oid,
 		name: user.name,
 		email: user.email,
-		connections: [],
+		connections,
 	};
 }
