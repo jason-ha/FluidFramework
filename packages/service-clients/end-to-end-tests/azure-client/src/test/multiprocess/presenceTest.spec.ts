@@ -98,9 +98,9 @@ describe(`Presence with AzureClient`, () => {
 	});
 
 	// Note that on slower systems 50+ clients may take too long to join.
-	const numClientsForAttendeeTests = [5, 20, 50, 100];
-	// TODO: AB#45620: "Presence: perf: update Join pattern for scale" may help, then remove .slice.
-	for (const numClients of numClientsForAttendeeTests.slice(0, 2)) {
+	// TODO: limit higher client test counts to certain automation jobs.
+	const numClientsForAttendeeTests = [5, 40, 100];
+	for (const numClients of numClientsForAttendeeTests) {
 		assert(numClients > 1, "Must have at least two clients");
 		/**
 		 * Timeout for child processes to connect to container ({@link ConnectedEvent})
@@ -135,13 +135,6 @@ describe(`Presence with AzureClient`, () => {
 			});
 
 			it(`announces 'attendeeDisconnected' when remote client disconnects [${numClients} clients, ${writeClients} writers]`, async function () {
-				// TODO: AB#45620: "Presence: perf: update Join pattern for scale" can handle
-				// larger counts of read-only attendees. Without protocol changes tests with
-				// 20+ attendees exceed current limits.
-				if (numClients >= 20 && writeClients === 1) {
-					this.skip();
-				}
-
 				const childDisconnectTimeoutMs = 10_000 * timeoutMultiplier;
 
 				setTimeout(
