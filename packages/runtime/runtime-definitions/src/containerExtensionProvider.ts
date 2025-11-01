@@ -26,6 +26,17 @@ export interface ExtensionCompatibilityDetails {
 }
 
 /**
+ * Information about an instantiation of an extension.
+ *
+ * @internal
+ */
+export interface UnknownExtensionInstantiation {
+	compatibility: ExtensionCompatibilityDetails;
+	interface: unknown;
+	extension: unknown;
+}
+
+/**
  * Description of expectations for an extension instance.
  *
  * Provided to {@link ContainerExtensionProvider.getExtension} and used to
@@ -33,9 +44,26 @@ export interface ExtensionCompatibilityDetails {
  *
  * @internal
  */
-export interface ContainerExtensionRequirements {
+export interface ContainerExtensionExpectations {
+	/**
+	 * Requirements imposed on the host/container for the extension.
+	 */
 	readonly hostRequirements: ILayerCompatSupportRequirements;
-	readonly instanceRequirements: ExtensionCompatibilityDetails;
+
+	/**
+	 * Expectations for an existing extension instance.
+	 */
+	readonly instanceExpectations: ExtensionCompatibilityDetails;
+
+	/**
+	 * Called when an existing extension instantiation appears unable to meet
+	 * expectations. Allows for custom resolution with the prior instantiation
+	 * including more sophisticated acceptance logic.
+	 * @param priorInstantiation - The prior instantiation of the extension.
+	 */
+	resolvePriorInstantiation(
+		priorInstantiation: UnknownExtensionInstantiation,
+	): Readonly<UnknownExtensionInstantiation>;
 }
 
 /* eslint-disable @fluid-internal/fluid/no-hyphen-after-jsdoc-tag -- false positive AB#50920 */
@@ -67,13 +95,13 @@ export interface ContainerExtensionProvider {
 	 * Gets an extension from store.
 	 *
 	 * @param id - Identifier for the requested extension
-	 * @param requirements - Extension compatibility requirements
+	 * @param expectations - Extension compatibility requirements
 	 * @param context - Custom use context for extension
 	 * @returns The extension
 	 */
 	getExtension<TInterface, TUseContext extends unknown[] = []>(
 		id: ContainerExtensionId,
-		requirements: ContainerExtensionRequirements,
+		expectations: ContainerExtensionExpectations,
 		...context: TUseContext
 	): TInterface;
 }

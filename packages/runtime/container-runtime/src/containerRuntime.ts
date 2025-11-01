@@ -39,6 +39,7 @@ import type {
 	ContainerExtensionId,
 	ExtensionHost,
 	ExtensionHostEvents,
+	ExtensionInstantiationResult,
 	ExtensionRuntimeProperties,
 	IContainerRuntime,
 	IContainerRuntimeEvents,
@@ -129,7 +130,7 @@ import type {
 	StageControlsInternal,
 	IContainerRuntimeBaseInternal,
 	MinimumVersionForCollab,
-	ContainerExtensionRequirements,
+	ContainerExtensionExpectations,
 } from "@fluidframework/runtime-definitions/internal";
 import {
 	addBlobToSummary,
@@ -323,11 +324,7 @@ import { Throttler, formExponentialFn } from "./throttler.js";
  * A {@link ContainerExtension}'s factory function as stored in extension map.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- `any` required to allow typed factory to be assignable per ContainerExtension.processSignal
-type ExtensionEntry = ContainerExtensionFactory<unknown, any, unknown[]> extends new (
-	...args: any[]
-) => infer T
-	? T
-	: never;
+type ExtensionEntry = ExtensionInstantiationResult<unknown, any, unknown[]>;
 
 /**
  * ContainerRuntime's compatibility details that is exposed to Container Extensions.
@@ -5359,7 +5356,7 @@ export class ContainerRuntime
 		TUseContext extends unknown[],
 	>(
 		id: ContainerExtensionId,
-		requirements: ContainerExtensionRequirements,
+		requirements: ContainerExtensionExpectations,
 		...useContext: TUseContext
 	): T {
 		// Temporarily allow injection for extensions.
@@ -5422,7 +5419,7 @@ export class ContainerRuntime
 				getAudience: audience ? () => audience : this.getAudience.bind(this),
 				supportedFeatures: this.ILayerCompatDetails.supportedFeatures,
 			} satisfies ExtensionHost<TRuntimeProperties>;
-			entry = new factory(runtime, ...useContext);
+			entry = factory.instantiateExtension(runtime, ...useContext);
 			this.extensions.set(id, entry);
 		} else {
 			const { extension, compatibility } = entry;
@@ -5433,28 +5430,28 @@ export class ContainerRuntime
 				// Check version and capabilities if different instance. If
 				// version matches and existing has all capabilities of
 				// requested, then allow direct reuse.
-				(compatibility.version !== factory.instanceRequirements.version ||
-					[...factory.instanceRequirements.capabilities].some(
+				(compatibility.version !== factory.instanceExpectations.version ||
+					[...factory.instanceExpectations.capabilities].some(
 						(cap) => !compatibility.capabilities.has(cap),
 					))
 			) {
 				// eslint-disable-next-line unicorn/prefer-ternary -- operations are significant and deserve own blocks
 				if (
 					!injectionPermitted ||
-					gt(compatibility.version, factory.instanceRequirements.version)
+					gt(compatibility.version, factory.instanceExpectations.version)
 				) {
 					// This is an attempt to acquire an older version of an
 					// extension that is already acquired OR updating (form of
 					// injection) is not permitted.
 					entry = extension.handleVersionOrCapabilitiesMismatch(
 						entry,
-						factory.instanceRequirements,
+						factory.instanceExpectations,
 					);
 				} else {
 					// This is an attempt to acquire a newer or more capable
 					// version of an extension that is already acquired. Replace
 					// existing with new.
-					entry = factory.upgradeVersionOrCapabilities(entry);
+					entry = factory.resolvePriorInstantiation(entry);
 				}
 			}
 			// eslint-disable-next-line unicorn/consistent-destructuring -- 'entry' may have been update and thus use of 'extension' would be incorrect

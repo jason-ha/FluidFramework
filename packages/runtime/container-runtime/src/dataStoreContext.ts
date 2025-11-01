@@ -69,7 +69,7 @@ import type {
 	IRuntimeStorageService,
 	MinimumVersionForCollab,
 	ContainerExtensionId,
-	ContainerExtensionRequirements,
+	ContainerExtensionExpectations,
 } from "@fluidframework/runtime-definitions/internal";
 import { channelsTreeName } from "@fluidframework/runtime-definitions/internal";
 import {
@@ -1223,7 +1223,7 @@ export abstract class FluidDataStoreContext
 
 	public getExtension<TInterface, TUseContext extends unknown[] = []>(
 		id: ContainerExtensionId,
-		requirements: ContainerExtensionRequirements,
+		requirements: ContainerExtensionExpectations,
 		...context: TUseContext
 	): TInterface {
 		return this.parentContext.getExtension(id, requirements, ...context);

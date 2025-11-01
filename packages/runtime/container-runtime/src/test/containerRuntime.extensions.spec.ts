@@ -77,18 +77,20 @@ class TestExtension implements ContainerExtension<TestExtensionRuntimeProperties
 	}
 }
 
-const TestExtensionFactory = class extends TestExtension {
-	public static readonly hostRequirements = {
+class TestExtensionFactoryClass
+	implements
+		ContainerExtensionFactory<
+			{ connectedToService: boolean; events: Listenable<ExtensionHostEvents> },
+			TestExtensionRuntimeProperties
+		>
+{
+	public readonly hostRequirements = {
 		minSupportedGeneration: 1,
 		requiredFeatures: [],
 	};
-	public static readonly instanceRequirements = extensionCompatibilityDetails;
+	public readonly instanceExpectations = extensionCompatibilityDetails;
 
-	constructor(host: ExtensionHost<TestExtensionRuntimeProperties>) {
-		super(host);
-	}
-
-	public static upgradeVersionOrCapabilities(
+	public resolvePriorInstantiation(
 		existingEntry: ExtensionInstantiationResult<
 			unknown,
 			ExtensionRuntimeProperties,
@@ -101,10 +103,28 @@ const TestExtensionFactory = class extends TestExtension {
 	> {
 		throw new Error("compat mismatch with TestExtension is not expected");
 	}
-} satisfies ContainerExtensionFactory<
-	{ connectedToService: boolean; events: Listenable<ExtensionHostEvents> },
-	TestExtensionRuntimeProperties
->;
+
+	public instantiateExtension(
+		host: ExtensionHost<TestExtensionRuntimeProperties>,
+	): ExtensionInstantiationResult<
+		{ connectedToService: boolean; events: Listenable<ExtensionHostEvents> },
+		TestExtensionRuntimeProperties,
+		[]
+	> {
+		return new TestExtension(host);
+	}
+
+	[Symbol.hasInstance](
+		instance: unknown,
+	): instance is ExtensionInstantiationResult<
+		{ connectedToService: boolean; events: Listenable<ExtensionHostEvents> },
+		TestExtensionRuntimeProperties,
+		[]
+	> {
+		return instance instanceof TestExtension;
+	}
+}
+const TestExtensionFactory = new TestExtensionFactoryClass();
 
 class MockContext implements IContainerContext {
 	public readonly deltaManager = new MockDeltaManager();

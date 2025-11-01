@@ -19,8 +19,9 @@ import type {
 import type { IQuorumClients } from "@fluidframework/driver-definitions/internal";
 import type {
 	ContainerExtensionId,
-	ContainerExtensionRequirements,
+	ContainerExtensionExpectations,
 	ExtensionCompatibilityDetails,
+	UnknownExtensionInstantiation,
 } from "@fluidframework/runtime-definitions/internal";
 
 /**
@@ -200,8 +201,7 @@ export interface ExtensionInstantiationResult<
 	TInterface,
 	TRuntimeProperties extends ExtensionRuntimeProperties,
 	TUseContext extends unknown[],
-> {
-	compatibility: ExtensionCompatibilityDetails;
+> extends UnknownExtensionInstantiation {
 	interface: TInterface;
 	extension: ContainerExtension<TRuntimeProperties, TUseContext>;
 }
@@ -384,7 +384,11 @@ export interface ContainerExtensionFactory<
 	TInterface,
 	TRuntimeProperties extends ExtensionRuntimeProperties,
 	TUseContext extends unknown[] = [],
-> extends ContainerExtensionRequirements {
+> extends ContainerExtensionExpectations {
+	resolvePriorInstantiation(
+		priorInstantiation: UnknownExtensionInstantiation,
+	): Readonly<ExtensionInstantiationResult<TInterface, TRuntimeProperties, TUseContext>>;
+
 	/**
 	 * @param host - Host runtime for extension to work against
 	 * @param useContext - Custom use context for extension.
@@ -393,24 +397,18 @@ export interface ContainerExtensionFactory<
 	 * {@link ContainerExtensionStore.acquireExtension} and
 	 * `extension` store/runtime uses to interact with extension.
 	 */
-	new (
+	instantiateExtension(
 		host: ExtensionHost<TRuntimeProperties>,
 		...useContext: TUseContext
 	): ExtensionInstantiationResult<TInterface, TRuntimeProperties, TUseContext>;
 
 	/**
-	 * Called when there is request with this factory and the existing
-	 * extension instance has different version or capabilities.
-	 *
-	 * @param existingInstantiation - The existing extension registration
+	 * Determines if an `ExtensionInstantiationResult` came from `instantiateExtension`.
+	 * Called by the semantics of the instanceof operator.
 	 */
-	upgradeVersionOrCapabilities(
-		existingInstantiation: ExtensionInstantiationResult<
-			unknown,
-			ExtensionRuntimeProperties,
-			unknown[]
-		>,
-	): Readonly<ExtensionInstantiationResult<TInterface, TRuntimeProperties, TUseContext>>;
+	[Symbol.hasInstance]: (
+		instance: unknown,
+	) => instance is ExtensionInstantiationResult<TInterface, TRuntimeProperties, TUseContext>;
 }
 
 /**
