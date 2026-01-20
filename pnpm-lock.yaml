@@ -11743,9 +11743,173 @@ importers:
 
   packages/framework/presence:
     dependencies:
+      '@fluid-internal/presence-definitions':
+        specifier: workspace:~
+        version: link:../presence-definitions
+      '@fluid-internal/presence-runtime':
+        specifier: workspace:~
+        version: link:../presence-runtime
+      '@fluid-internal/presence-states':
+        specifier: workspace:~
+        version: link:../presence-states
+      '@fluidframework/core-utils':
+        specifier: workspace:~
+        version: link:../../common/core-utils
+      '@fluidframework/fluid-static':
+        specifier: workspace:~
+        version: link:../fluid-static
+      '@fluidframework/runtime-definitions':
+        specifier: workspace:~
+        version: link:../../runtime/runtime-definitions
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.2
+        version: 0.18.2
+      '@biomejs/biome':
+        specifier: ~2.3.11
+        version: 2.3.11
+      '@fluid-internal/mocha-test-setup':
+        specifier: workspace:~
+        version: link:../../test/mocha-test-setup
+      '@fluid-tools/build-cli':
+        specifier: ^0.63.0
+        version: 0.63.0(@types/node@20.19.30)(encoding@0.1.13)(webpack-cli@5.1.4)
+      '@fluidframework/build-common':
+        specifier: ^2.0.3
+        version: 2.0.3
+      '@fluidframework/build-tools':
+        specifier: ^0.63.0
+        version: 0.63.0(@types/node@20.19.30)
+      '@fluidframework/eslint-config-fluid':
+        specifier: workspace:~
+        version: link:../../../common/build/eslint-config-fluid
+      '@microsoft/api-extractor':
+        specifier: 7.52.11
+        version: 7.52.11(patch_hash=c85b3a060bd0e2928f5892cfe09e062ab940a339dbd9de3a7cafbd309b724069)(@types/node@20.19.30)
+      '@types/mocha':
+        specifier: ^10.0.10
+        version: 10.0.10
+      '@types/node':
+        specifier: ~20.19.30
+        version: 20.19.30
+      c8:
+        specifier: ^10.1.3
+        version: 10.1.3
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
+      copyfiles:
+        specifier: ^2.4.1
+        version: 2.4.1
+      cross-env:
+        specifier: ^10.1.0
+        version: 10.1.0
+      eslint:
+        specifier: ~9.39.1
+        version: 9.39.1(jiti@2.6.1)
+      jiti:
+        specifier: ^2.6.1
+        version: 2.6.1
+      mocha:
+        specifier: ^10.8.2
+        version: 10.8.2
+      mocha-multi-reporters:
+        specifier: ^1.5.1
+        version: 1.5.1(mocha@10.8.2)
+      rimraf:
+        specifier: ^6.1.2
+        version: 6.1.2
+      typescript:
+        specifier: ~5.4.5
+        version: 5.4.5
+
+  packages/framework/presence-definitions:
+    dependencies:
+      '@fluidframework/core-interfaces':
+        specifier: workspace:~
+        version: link:../../common/core-interfaces
+      '@fluidframework/id-compressor':
+        specifier: workspace:~
+        version: link:../../runtime/id-compressor
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.2
+        version: 0.18.2
+      '@biomejs/biome':
+        specifier: ~2.3.11
+        version: 2.3.11
+      '@fluid-internal/mocha-test-setup':
+        specifier: workspace:~
+        version: link:../../test/mocha-test-setup
+      '@fluid-internal/presence-definitions-previous':
+        specifier: npm:@fluidframework/presence@2.82.0
+        version: '@fluidframework/presence@2.82.0'
+      '@fluid-tools/build-cli':
+        specifier: ^0.63.0
+        version: 0.63.0(@types/node@20.19.30)(encoding@0.1.13)(webpack-cli@5.1.4)
+      '@fluidframework/build-common':
+        specifier: ^2.0.3
+        version: 2.0.3
+      '@fluidframework/build-tools':
+        specifier: ^0.63.0
+        version: 0.63.0(@types/node@20.19.30)
+      '@fluidframework/eslint-config-fluid':
+        specifier: workspace:~
+        version: link:../../../common/build/eslint-config-fluid
+      '@microsoft/api-extractor':
+        specifier: 7.52.11
+        version: 7.52.11(patch_hash=c85b3a060bd0e2928f5892cfe09e062ab940a339dbd9de3a7cafbd309b724069)(@types/node@20.19.30)
+      '@types/mocha':
+        specifier: ^10.0.10
+        version: 10.0.10
+      '@types/node':
+        specifier: ~20.19.30
+        version: 20.19.30
+      c8:
+        specifier: ^10.1.3
+        version: 10.1.3
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
+      copyfiles:
+        specifier: ^2.4.1
+        version: 2.4.1
+      cross-env:
+        specifier: ^10.1.0
+        version: 10.1.0
+      eslint:
+        specifier: ~9.39.1
+        version: 9.39.1(jiti@2.6.1)
+      jiti:
+        specifier: ^2.6.1
+        version: 2.6.1
+      mocha:
+        specifier: ^10.8.2
+        version: 10.8.2
+      mocha-multi-reporters:
+        specifier: ^1.5.1
+        version: 1.5.1(mocha@10.8.2)
+      rimraf:
+        specifier: ^6.1.2
+        version: 6.1.2
+      typescript:
+        specifier: ~5.4.5
+        version: 5.4.5
+
+  packages/framework/presence-runtime:
+    dependencies:
       '@fluid-internal/client-utils':
         specifier: workspace:~
         version: link:../../common/client-utils
+      '@fluid-internal/presence-definitions':
+        specifier: workspace:~
+        version: link:../presence-definitions
+      '@fluid-internal/presence-utils':
+        specifier: workspace:~
+        version: link:../presence-utils
+      '@fluid-internal/presence-workspace':
+        specifier: workspace:~
+        version: link:../presence-workspace
       '@fluidframework/container-definitions':
         specifier: workspace:~
         version: link:../../common/container-definitions
@@ -11758,9 +11922,6 @@ importers:
       '@fluidframework/core-utils':
         specifier: workspace:~
         version: link:../../common/core-utils
-      '@fluidframework/fluid-static':
-        specifier: workspace:~
-        version: link:../fluid-static
       '@fluidframework/id-compressor':
         specifier: workspace:~
         version: link:../../runtime/id-compressor
@@ -11801,9 +11962,249 @@ importers:
       '@fluidframework/test-utils':
         specifier: workspace:~
         version: link:../../test/test-utils
+      '@types/mocha':
+        specifier: ^10.0.10
+        version: 10.0.10
+      '@types/node':
+        specifier: ~20.19.30
+        version: 20.19.30
+      '@types/sinon':
+        specifier: ^17.0.3
+        version: 17.0.3
+      c8:
+        specifier: ^10.1.3
+        version: 10.1.3
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
+      copyfiles:
+        specifier: ^2.4.1
+        version: 2.4.1
+      cross-env:
+        specifier: ^10.1.0
+        version: 10.1.0
+      eslint:
+        specifier: ~9.39.1
+        version: 9.39.1(jiti@2.6.1)
+      jiti:
+        specifier: ^2.6.1
+        version: 2.6.1
+      mocha:
+        specifier: ^10.8.2
+        version: 10.8.2
+      mocha-multi-reporters:
+        specifier: ^1.5.1
+        version: 1.5.1(mocha@10.8.2)
+      rimraf:
+        specifier: ^6.1.2
+        version: 6.1.2
+      sinon:
+        specifier: ^18.0.1
+        version: 18.0.1
+      typescript:
+        specifier: ~5.4.5
+        version: 5.4.5
+
+  packages/framework/presence-states:
+    dependencies:
+      '@fluid-internal/client-utils':
+        specifier: workspace:~
+        version: link:../../common/client-utils
+      '@fluid-internal/presence-definitions':
+        specifier: workspace:~
+        version: link:../presence-definitions
+      '@fluid-internal/presence-utils':
+        specifier: workspace:~
+        version: link:../presence-utils
+      '@fluid-internal/presence-workspace':
+        specifier: workspace:~
+        version: link:../presence-workspace
+      '@fluidframework/core-interfaces':
+        specifier: workspace:~
+        version: link:../../common/core-interfaces
+      '@fluidframework/core-utils':
+        specifier: workspace:~
+        version: link:../../common/core-utils
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.2
+        version: 0.18.2
+      '@biomejs/biome':
+        specifier: ~2.3.11
+        version: 2.3.11
+      '@fluid-internal/mocha-test-setup':
+        specifier: workspace:~
+        version: link:../../test/mocha-test-setup
+      '@fluid-internal/presence-runtime':
+        specifier: workspace:~
+        version: link:../presence-runtime
+      '@fluid-tools/build-cli':
+        specifier: ^0.63.0
+        version: 0.63.0(@types/node@20.19.30)(encoding@0.1.13)(webpack-cli@5.1.4)
+      '@fluidframework/build-common':
+        specifier: ^2.0.3
+        version: 2.0.3
+      '@fluidframework/build-tools':
+        specifier: ^0.63.0
+        version: 0.63.0(@types/node@20.19.30)
+      '@fluidframework/eslint-config-fluid':
+        specifier: workspace:~
+        version: link:../../../common/build/eslint-config-fluid
+      '@fluidframework/test-utils':
+        specifier: workspace:~
+        version: link:../../test/test-utils
       '@microsoft/api-extractor':
         specifier: 7.52.11
         version: 7.52.11(patch_hash=c85b3a060bd0e2928f5892cfe09e062ab940a339dbd9de3a7cafbd309b724069)(@types/node@20.19.30)
+      '@types/mocha':
+        specifier: ^10.0.10
+        version: 10.0.10
+      '@types/node':
+        specifier: ~20.19.30
+        version: 20.19.30
+      '@types/sinon':
+        specifier: ^17.0.3
+        version: 17.0.3
+      c8:
+        specifier: ^10.1.3
+        version: 10.1.3
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
+      copyfiles:
+        specifier: ^2.4.1
+        version: 2.4.1
+      cross-env:
+        specifier: ^10.1.0
+        version: 10.1.0
+      eslint:
+        specifier: ~9.39.1
+        version: 9.39.1(jiti@2.6.1)
+      jiti:
+        specifier: ^2.6.1
+        version: 2.6.1
+      mocha:
+        specifier: ^10.8.2
+        version: 10.8.2
+      mocha-multi-reporters:
+        specifier: ^1.5.1
+        version: 1.5.1(mocha@10.8.2)
+      rimraf:
+        specifier: ^6.1.2
+        version: 6.1.2
+      sinon:
+        specifier: ^18.0.1
+        version: 18.0.1
+      typescript:
+        specifier: ~5.4.5
+        version: 5.4.5
+
+  packages/framework/presence-utils:
+    dependencies:
+      '@fluid-internal/presence-definitions':
+        specifier: workspace:~
+        version: link:../presence-definitions
+      '@fluidframework/core-interfaces':
+        specifier: workspace:~
+        version: link:../../common/core-interfaces
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.2
+        version: 0.18.2
+      '@biomejs/biome':
+        specifier: ~2.3.11
+        version: 2.3.11
+      '@fluid-internal/mocha-test-setup':
+        specifier: workspace:~
+        version: link:../../test/mocha-test-setup
+      '@fluid-tools/build-cli':
+        specifier: ^0.63.0
+        version: 0.63.0(@types/node@20.19.30)(encoding@0.1.13)(webpack-cli@5.1.4)
+      '@fluidframework/build-common':
+        specifier: ^2.0.3
+        version: 2.0.3
+      '@fluidframework/build-tools':
+        specifier: ^0.63.0
+        version: 0.63.0(@types/node@20.19.30)
+      '@fluidframework/eslint-config-fluid':
+        specifier: workspace:~
+        version: link:../../../common/build/eslint-config-fluid
+      '@types/mocha':
+        specifier: ^10.0.10
+        version: 10.0.10
+      '@types/node':
+        specifier: ~20.19.30
+        version: 20.19.30
+      '@types/sinon':
+        specifier: ^17.0.3
+        version: 17.0.3
+      c8:
+        specifier: ^10.1.3
+        version: 10.1.3
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
+      copyfiles:
+        specifier: ^2.4.1
+        version: 2.4.1
+      cross-env:
+        specifier: ^10.1.0
+        version: 10.1.0
+      eslint:
+        specifier: ~9.39.1
+        version: 9.39.1(jiti@2.6.1)
+      jiti:
+        specifier: ^2.6.1
+        version: 2.6.1
+      mocha:
+        specifier: ^10.8.2
+        version: 10.8.2
+      mocha-multi-reporters:
+        specifier: ^1.5.1
+        version: 1.5.1(mocha@10.8.2)
+      rimraf:
+        specifier: ^6.1.2
+        version: 6.1.2
+      sinon:
+        specifier: ^18.0.1
+        version: 18.0.1
+      typescript:
+        specifier: ~5.4.5
+        version: 5.4.5
+
+  packages/framework/presence-workspace:
+    dependencies:
+      '@fluid-internal/presence-definitions':
+        specifier: workspace:~
+        version: link:../presence-definitions
+      '@fluid-internal/presence-utils':
+        specifier: workspace:~
+        version: link:../presence-utils
+      '@fluidframework/core-utils':
+        specifier: workspace:~
+        version: link:../../common/core-utils
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: ^0.18.2
+        version: 0.18.2
+      '@biomejs/biome':
+        specifier: ~2.3.11
+        version: 2.3.11
+      '@fluid-internal/mocha-test-setup':
+        specifier: workspace:~
+        version: link:../../test/mocha-test-setup
+      '@fluid-tools/build-cli':
+        specifier: ^0.63.0
+        version: 0.63.0(@types/node@20.19.30)(encoding@0.1.13)(webpack-cli@5.1.4)
+      '@fluidframework/build-common':
+        specifier: ^2.0.3
+        version: 2.0.3
+      '@fluidframework/build-tools':
+        specifier: ^0.63.0
+        version: 0.63.0(@types/node@20.19.30)
+      '@fluidframework/eslint-config-fluid':
+        specifier: workspace:~
+        version: link:../../../common/build/eslint-config-fluid
       '@types/mocha':
         specifier: ^10.0.10
         version: 10.0.10
@@ -18579,6 +18980,9 @@ packages:
 
   '@fluidframework/ordered-collection@2.82.0':
     resolution: {integrity: sha512-xzqTgs9XINvo339vBz5Je3UKVES1hYTe1dvpMx0m3WIcgK9avZ6+9Al+ymO5NeSlEafOhIuvtr5QCYwG1zXXlA==}
+
+  '@fluidframework/presence@2.82.0':
+    resolution: {integrity: sha512-CC/yAGXG+RMBygAdBGtI++iBMmZZ19tWsnRxEuhfMd16Yywq8AUWXdN8wbTgbnt6huDKCsL7GOhmi4eSB9p1YQ==}
 
   '@fluidframework/protocol-base@0.1036.5002':
     resolution: {integrity: sha512-mlI9okyLeSusGx7qU32NDJ4GJptSzVo3V6tPDhphPIOPtyOVTBuL4EQRFYdceoSLHlxEdVnQprwhyoRiMNw7Kw==}
@@ -31261,6 +31665,20 @@ snapshots:
       '@fluidframework/shared-object-base': 2.82.0
       '@fluidframework/telemetry-utils': 2.82.0
       uuid: 11.1.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@fluidframework/presence@2.82.0':
+    dependencies:
+      '@fluid-internal/client-utils': 2.82.0
+      '@fluidframework/container-definitions': 2.82.0
+      '@fluidframework/container-runtime-definitions': 2.82.0
+      '@fluidframework/core-interfaces': 2.82.0
+      '@fluidframework/core-utils': 2.82.0
+      '@fluidframework/fluid-static': 2.82.0
+      '@fluidframework/id-compressor': 2.82.0
+      '@fluidframework/runtime-definitions': 2.82.0
+      '@fluidframework/telemetry-utils': 2.82.0
     transitivePeerDependencies:
       - supports-color
 

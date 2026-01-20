@@ -1224,6 +1224,7 @@
 				"allow": [
 					"@fluidframework/*/internal{,/**}",
 					"@fluid-experimental/**",
+					"@fluid-internal/**",
 					"*/index.js"
 				]
 			}

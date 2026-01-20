@@ -11,41 +11,25 @@
  * @packageDocumentation
  */
 
-export type { ClientConnectionId } from "./baseTypes.js";
-
+// Re-export from presence-definitions
 export type {
-	NotificationsWorkspace,
-	NotificationsWorkspaceSchema,
-	StatesWorkspace,
-	StatesWorkspaceEntries,
-	StatesWorkspaceSchema,
-	StatesWorkspaceEntry,
-	WorkspaceAddress,
-} from "./types.js";
-
-export {
-	type Attendee,
-	type AttendeesEvents,
-	type AttendeeId,
-	AttendeeStatus,
-	type Presence,
-	type PresenceEvents,
-	type PresenceWithNotifications,
-} from "./presence.js";
-
-export type {
+	Accessor,
+	Attendee,
+	AttendeeId,
+	AttendeesEvents,
 	BroadcastControls,
 	BroadcastControlSettings,
-} from "./broadcastControlsTypes.js";
-
-export {
-	getPresence,
-	getPresenceAlpha,
-	getPresenceFromDataStoreContext,
-} from "./getPresence.js";
-
-export type {
+	ClientConnectionId,
+	InternalTypes,
+	InternalUtilityTypes,
 	KeySchemaValidator,
+	Latest,
+	LatestArguments,
+	LatestArgumentsRaw,
+	LatestClientData,
+	LatestData,
+	LatestEvents,
+	LatestFactory,
 	LatestMap,
 	LatestMapArguments,
 	LatestMapArgumentsRaw,
@@ -56,38 +40,41 @@ export type {
 	LatestMapItemUpdatedClientData,
 	LatestMapRaw,
 	LatestMapRawEvents,
-	StateMap,
-} from "./latestMapTypes.js";
-export type {
-	Latest,
-	LatestArguments,
-	LatestArgumentsRaw,
-	LatestEvents,
-	LatestFactory,
+	LatestMetadata,
 	LatestRaw,
 	LatestRawEvents,
-} from "./latestTypes.js";
-export type {
-	Accessor,
-	LatestClientData,
-	LatestData,
-	LatestMetadata,
-	ProxiedValueAccessor,
-	RawValueAccessor,
-	StateSchemaValidator,
-	ValueAccessor,
-} from "./latestValueTypes.js";
-
-export { Notifications } from "./notificationsManager.js";
-export type {
 	NotificationEmitter,
 	NotificationListenable,
-	NotificationSubscriberSignatures,
 	NotificationsManager,
 	NotificationsManagerEvents,
-} from "./notificationsManagerTypes.js";
+	NotificationSubscriberSignatures,
+	NotificationsWorkspace,
+	NotificationsWorkspaceSchema,
+	Presence,
+	PresenceEvents,
+	PresenceWithNotifications,
+	ProxiedValueAccessor,
+	RawValueAccessor,
+	StateMap,
+	StateSchemaValidator,
+	StatesWorkspace,
+	StatesWorkspaceEntries,
+	StatesWorkspaceEntry,
+	StatesWorkspaceSchema,
+	ValueAccessor,
+	WorkspaceAddress,
+} from "@fluid-internal/presence-definitions";
+export { AttendeeStatus } from "@fluid-internal/presence-definitions";
 
-export { StateFactory } from "./stateFactory.js";
+// Re-export from presence-states
+export {
+	Notifications,
+	StateFactory,
+} from "@fluid-internal/presence-states";
 
-export type { InternalTypes } from "./exposedInternalTypes.js";
-export type { InternalUtilityTypes } from "./exposedUtilityTypes.js";
+// Local exports
+export {
+	getPresence,
+	getPresenceAlpha,
+	getPresenceFromDataStoreContext,
+} from "./getPresence.js";
