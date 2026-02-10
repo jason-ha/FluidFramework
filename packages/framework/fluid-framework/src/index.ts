@@ -61,10 +61,62 @@ export type {
 	Off,
 	/* eslint-enable import-x/export */
 } from "@fluidframework/core-interfaces";
-export type { ErasedBaseType } from "@fluidframework/core-interfaces/internal";
+export type { BrandedType, ErasedBaseType } from "@fluidframework/core-interfaces/internal";
+export type {
+	DeepReadonly,
+	DeepReadonlyOptions,
+	DeepReadonlyRecursionLimit,
+	DeepReadonlySupportedGenericsDefault,
+	// renamed to avoid collision with other similar package exports
+	InternalUtilityTypes as InternalCoreInterfacesUtilityTypes,
+	JsonDeserialized,
+	JsonDeserializedOptions,
+	JsonSerializable,
+	JsonSerializableOptions,
+	JsonTypeWith,
+	NonNullJsonObjectWith,
+	OpaqueJsonDeserialized,
+	OpaqueJsonSerializable,
+	ReadonlyJsonTypeWith,
+	ReadonlySupportedGenerics,
+	SerializationErrorPerNonPublicProperties,
+	SerializationErrorPerUndefinedArrayElement,
+} from "@fluidframework/core-interfaces/internal/exposedUtilityTypes";
 
 // This is an alpha API, but this package doesn't have an alpha entry point so its imported from "internal".
 export { onAssertionFailure } from "@fluidframework/core-utils/internal";
+
+export type {
+	Attendee,
+	AttendeeId,
+	AttendeesEvents,
+	BroadcastControls,
+	BroadcastControlSettings,
+	ClientConnectionId,
+	// renamed to avoid collision with tree export
+	InternalTypes as InternalPresenceTypes,
+	// renamed to avoid collision with other similar package exports
+	InternalUtilityTypes as InternalPresenceUtilityTypes,
+	NotificationEmitter,
+	NotificationListenable,
+	NotificationsManager,
+	NotificationsManagerEvents,
+	NotificationsWorkspace,
+	NotificationsWorkspaceSchema,
+	Presence,
+	PresenceEvents,
+	PresenceWithNotifications,
+	StatesWorkspace,
+	StatesWorkspaceEntries,
+	StatesWorkspaceEntry,
+	StatesWorkspaceSchema,
+	WorkspaceAddress,
+	// eslint-disable-next-line import-x/no-internal-modules -- presence has no /internal export, which would be allowed
+} from "@fluidframework/presence/alpha";
+export {
+	AttendeeStatus,
+	// eslint-disable-next-line import-x/no-internal-modules -- presence has no /internal export, which would be allowed
+} from "@fluidframework/presence/beta";
 
 export type { isFluidHandle } from "@fluidframework/runtime-utils";
 
@@ -89,8 +141,10 @@ import {
 	getPresence as getPresenceDeprecated,
 	// eslint-disable-next-line import-x/no-deprecated -- TODO#59157: relocating to fluid-static
 	getPresenceAlpha as getPresenceAlphaDeprecated,
+	type PresenceWithNotifications,
 	// eslint-disable-next-line import-x/no-internal-modules -- presence has no /internal export, which would be allowed
 } from "@fluidframework/presence/alpha";
+import type { IFluidContainer } from "@fluidframework/fluid-static";
 
 /**
  * {@inheritdoc @fluidframework/presence#getPresence}
@@ -105,11 +159,7 @@ export const getPresence = getPresenceDeprecated;
  *
  * @alpha
  */
-export const getPresenceAlpha: (
-	// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- complicated redeclaration required to satisfy api-extractor
-	fluidContainer: import("@fluidframework/fluid-static").IFluidContainer,
-	// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- complicated redeclaration required to satisfy api-extractor
-) => import("@fluidframework/presence/alpha").PresenceWithNotifications =
+export const getPresenceAlpha: (fluidContainer: IFluidContainer) => PresenceWithNotifications =
 	// eslint-disable-next-line import-x/no-deprecated -- TODO#59157: relocating to fluid-static
 	getPresenceAlphaDeprecated;
 

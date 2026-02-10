@@ -9,7 +9,11 @@
 // Should a customer need access to these types, export should be relocated to
 // index.ts and retagged export from internal.ts may be removed.
 
-export type { DeepReadonly } from "./deepReadonly.js";
+export type {
+	DeepReadonly,
+	DeepReadonlyOptions,
+	DeepReadonlySupportedGenericsDefault,
+} from "./deepReadonly.js";
 export type { JsonDeserialized, JsonDeserializedOptions } from "./jsonDeserialized.js";
 export type { JsonSerializable, JsonSerializableOptions } from "./jsonSerializable.js";
 export type {
@@ -25,6 +29,7 @@ export type { OpaqueJsonDeserialized, OpaqueJsonSerializable } from "./opaqueJso
 export type { ShallowReadonly } from "./shallowReadonly.js";
 
 export type {
+	DeepReadonlyRecursionLimit,
 	InternalUtilityTypes,
 	ReadonlySupportedGenerics,
 } from "./exposedInternalUtilityTypes.js";

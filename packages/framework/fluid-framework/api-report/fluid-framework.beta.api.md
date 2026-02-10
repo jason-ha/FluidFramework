@@ -96,6 +96,55 @@ export enum AttachState {
     Detached = "Detached"
 }
 
+// @beta @sealed
+export interface Attendee<SpecificAttendeeId extends AttendeeId = AttendeeId> {
+    readonly attendeeId: SpecificAttendeeId;
+    getConnectionId(): ClientConnectionId;
+    getConnectionStatus(): AttendeeStatus;
+}
+
+// @beta
+export type AttendeeId = SessionId & {
+    readonly AttendeeId: "AttendeeId";
+};
+
+// @beta @sealed
+export interface AttendeesEvents {
+    // @eventProperty
+    attendeeConnected: (attendee: Attendee) => void;
+    // @eventProperty
+    attendeeDisconnected: (attendee: Attendee) => void;
+}
+
+// @beta
+export const AttendeeStatus: {
+    readonly Connected: "Connected";
+    readonly Disconnected: "Disconnected";
+};
+
+// @beta
+export type AttendeeStatus = (typeof AttendeeStatus)[keyof typeof AttendeeStatus];
+
+// @beta
+export class BrandedType<out Brand> {
+    static [Symbol.hasInstance](value: never): value is never;
+    protected constructor();
+    protected readonly brand: (dummy: never) => Brand;
+}
+
+// @beta @sealed
+export interface BroadcastControls {
+    allowableUpdateLatencyMs: number | undefined;
+}
+
+// @beta
+export interface BroadcastControlSettings {
+    readonly allowableUpdateLatencyMs?: number;
+}
+
+// @beta
+export type ClientConnectionId = string;
+
 // @beta @input
 export interface CodecWriteOptionsBeta {
     readonly minVersionForCollab: MinimumVersionForCollab;
@@ -156,6 +205,28 @@ export interface ContainerSchema {
 
 // @beta
 export function createIndependentTreeBeta<const TSchema extends ImplicitFieldSchema>(options?: ForestOptions): ViewableTree;
+
+// @beta
+export type DeepReadonly<T, Options extends DeepReadonlyOptions = {
+    DeepenedGenerics: DeepReadonlySupportedGenericsDefault;
+    RecurseLimit: "NoLimit";
+}> = InternalCoreInterfacesUtilityTypes.DeepReadonlyImpl<T, Options extends {
+    DeepenedGenerics: unknown;
+} ? Options["DeepenedGenerics"] : DeepReadonlySupportedGenericsDefault, Options extends {
+    RecurseLimit: DeepReadonlyRecursionLimit;
+} ? Options["RecurseLimit"] : "NoLimit">;
+
+// @beta
+export interface DeepReadonlyOptions {
+    DeepenedGenerics?: ReadonlySupportedGenerics;
+    RecurseLimit?: DeepReadonlyRecursionLimit;
+}
+
+// @beta @system
+export type DeepReadonlyRecursionLimit = "NoLimit" | 0 | `+${string}`;
+
+// @beta @system
+export type DeepReadonlySupportedGenericsDefault = Map<unknown, unknown> | Promise<unknown> | Set<unknown> | WeakMap<object, unknown> | WeakSet<object>;
 
 // @public @sealed @system
 interface DefaultProvider extends ErasedType<"@fluidframework/tree.FieldProvider"> {
@@ -292,7 +363,7 @@ export const ForestTypeOptimized: ForestType;
 export const ForestTypeReference: ForestType;
 
 // @beta
-export const getPresence: (fluidContainer: IFluidContainer_2<ContainerSchema_2>) => Presence;
+export const getPresence: (fluidContainer: IFluidContainer<ContainerSchema_2>) => Presence_2;
 
 // @public
 export interface IConnection {
@@ -590,6 +661,372 @@ TSchema
 // @public
 export type InsertableTypedNode<TSchema extends TreeNodeSchema, T = UnionToIntersection<TSchema>> = (T extends TreeNodeSchema<string, NodeKind, TreeNode | TreeLeafValue, never, true> ? NodeBuilderData<T> : never) | (T extends TreeNodeSchema ? Unhydrated<TreeNode extends NodeFromSchema<T> ? never : NodeFromSchema<T>> : never);
 
+// @beta @system
+export namespace InternalCoreInterfacesUtilityTypes {
+    // @system
+    export type AnyOpaqueJsonType = OpaqueJsonSerializable<unknown, any, unknown> | OpaqueJsonDeserialized<unknown, any, unknown>;
+    // @system
+    export type AnyRecord = Record<keyof any, any>;
+    // @system
+    export type DeepenReadonlyInFluidHandleIfEnabled<T, DeepenedGenerics extends ReadonlySupportedGenerics, NoDepthOrRecurseLimit extends "Shallow" | DeepReadonlyRecursionLimit, Else> = T extends Readonly<IFluidHandle<infer V>> ? IFluidHandle<V> extends DeepenedGenerics ? Readonly<IFluidHandle<ReadonlyImpl<V, DeepenedGenerics, NoDepthOrRecurseLimit>>> : Readonly<T> : Else;
+    // @system
+    export type DeepenReadonlyInGenerics<T, DeepenedGenerics extends ReadonlySupportedGenerics, NoDepthOrRecurseLimit extends "Shallow" | DeepReadonlyRecursionLimit, Else> = DeepenReadonlyInMapIfEnabled<T, DeepenedGenerics, NoDepthOrRecurseLimit, DeepenReadonlyInSetIfEnabled<T, DeepenedGenerics, NoDepthOrRecurseLimit, DeepenReadonlyInWeakMapIfEnabled<T, DeepenedGenerics, NoDepthOrRecurseLimit, DeepenReadonlyInWeakSetIfEnabled<T, DeepenedGenerics, NoDepthOrRecurseLimit, DeepenReadonlyInPromiseIfEnabled<T, DeepenedGenerics, NoDepthOrRecurseLimit, DeepenReadonlyInFluidHandleIfEnabled<T, DeepenedGenerics, NoDepthOrRecurseLimit, Else>>>>>>;
+    // @system
+    export type DeepenReadonlyInMapIfEnabled<T, DeepenedGenerics extends ReadonlySupportedGenerics, NoDepthOrRecurseLimit extends "Shallow" | DeepReadonlyRecursionLimit, Else> = T extends ReadonlyMap<infer K, infer V> ? Map<K, V> extends DeepenedGenerics ? ReadonlyMap<ReadonlyImpl<K, DeepenedGenerics, NoDepthOrRecurseLimit>, ReadonlyImpl<V, DeepenedGenerics, NoDepthOrRecurseLimit>> : ReadonlyMap<K, V> : Else;
+    // @system
+    export type DeepenReadonlyInPromiseIfEnabled<T, DeepenedGenerics extends ReadonlySupportedGenerics, NoDepthOrRecurseLimit extends "Shallow" | DeepReadonlyRecursionLimit, Else> = T extends Promise<infer V> ? Promise<V> extends DeepenedGenerics ? Promise<ReadonlyImpl<V, DeepenedGenerics, NoDepthOrRecurseLimit>> : T : Else;
+    // @system
+    export type DeepenReadonlyInSetIfEnabled<T, DeepenedGenerics extends ReadonlySupportedGenerics, NoDepthOrRecurseLimit extends "Shallow" | DeepReadonlyRecursionLimit, Else> = T extends ReadonlySet<infer V> ? Set<V> extends DeepenedGenerics ? ReadonlySet<ReadonlyImpl<V, DeepenedGenerics, NoDepthOrRecurseLimit>> : ReadonlySet<V> : Else;
+    // @system
+    export type DeepenReadonlyInWeakMapIfEnabled<T, DeepenedGenerics extends ReadonlySupportedGenerics, NoDepthOrRecurseLimit extends "Shallow" | DeepReadonlyRecursionLimit, Else> = T extends Omit<WeakMap<infer K, infer V>, "delete" | "set"> ? WeakMap<K, V> extends DeepenedGenerics ? Omit<WeakMap<ReadonlyImpl<K, DeepenedGenerics, NoDepthOrRecurseLimit>, ReadonlyImpl<V, DeepenedGenerics, NoDepthOrRecurseLimit>>, "delete" | "set"> : Omit<WeakMap<K, V>, "delete" | "set"> : Else;
+    // @system
+    export type DeepenReadonlyInWeakSetIfEnabled<T, DeepenedGenerics extends ReadonlySupportedGenerics, NoDepthOrRecurseLimit extends "Shallow" | DeepReadonlyRecursionLimit, Else> = T extends Omit<WeakSet<infer V>, "add" | "delete"> ? WeakSet<V> extends DeepenedGenerics ? Omit<WeakSet<ReadonlyImpl<V, DeepenedGenerics, NoDepthOrRecurseLimit>>, "add" | "delete"> : Omit<WeakSet<V>, "add" | "delete"> : Else;
+    // @system
+    export type DeepReadonlyImpl<T, DeepenedGenerics extends ReadonlySupportedGenerics, RecurseLimit extends DeepReadonlyRecursionLimit> = ReadonlyImpl<T, DeepenedGenerics, RecurseLimit>;
+    // @system
+    export type DeepReadonlyLimitingRecursion<T, DeepenedGenerics extends ReadonlySupportedGenerics, NoDepthOrRecurseLimit extends RecursionLimit> = ReplaceRecursionWithMarkerAndPreserveAllowances<T, RecursionMarker, {
+        AllowExactly: [];
+        AllowExtensionOf: never;
+    }> extends infer TNoRecursionAndOnlyPublics ? IsSameType<TNoRecursionAndOnlyPublics, DeepReadonlyWorker<TNoRecursionAndOnlyPublics, DeepenedGenerics, 0>> extends true ? IfNonPublicProperties<T, {
+        AllowExactly: [];
+        AllowExtensionOf: never;
+    }, "found non-publics", "only publics"> extends "found non-publics" ? DeepReadonlyWorker<T, DeepenedGenerics, Extract<NoDepthOrRecurseLimit, RecursionLimit>> : T : DeepReadonlyWorker<T, DeepenedGenerics, Extract<NoDepthOrRecurseLimit, RecursionLimit>> : never;
+    // @system
+    export type DeepReadonlyRecursingInfinitely<T, DeepenedGenerics extends ReadonlySupportedGenerics> = T extends object ? FilterPreservingFunction<T, T extends readonly ReadonlyJsonTypeWith<infer Alternates>[] ? true extends IfExactTypeInTuple<T, [
+    JsonTypeWith<Alternates>[],
+    readonly ReadonlyJsonTypeWith<Alternates>[]
+    ]> ? readonly ReadonlyJsonTypeWith<DeepReadonlyRecursingInfinitely<Alternates, DeepenedGenerics>>[] : {
+        readonly [K in keyof T]: DeepReadonlyRecursingInfinitely<T[K], DeepenedGenerics>;
+    } : DeepenReadonlyInGenerics<T, DeepenedGenerics, "NoLimit", PreserveErasedTypeOrBrandedPrimitive<T, {
+        readonly [K in keyof T]: DeepReadonlyRecursingInfinitely<T[K], DeepenedGenerics>;
+    }>>> : T;
+    // @system
+    export type DeepReadonlyRecursion<T, DeepenedGenerics extends ReadonlySupportedGenerics, RecurseLimit extends RecursionLimit, TAncestorTypes = T> = T extends TAncestorTypes ? RecurseLimit extends `+${infer RecursionRemainder}` ? DeepReadonlyLimitingRecursion<T, DeepenedGenerics, RecursionRemainder extends RecursionLimit ? RecursionRemainder : 0> : T : DeepReadonlyWorker<T, DeepenedGenerics, RecurseLimit, TAncestorTypes | T>;
+    // @system
+    export type DeepReadonlyWorker<T, DeepenedGenerics extends ReadonlySupportedGenerics, RecurseLimit extends RecursionLimit, TAncestorTypes = T> = T extends object ? FilterPreservingFunction<T, DeepenReadonlyInGenerics<T, DeepenedGenerics, RecurseLimit, PreserveErasedTypeOrBrandedPrimitive<T, {
+        readonly [K in keyof T]: DeepReadonlyRecursion<T[K], DeepenedGenerics, RecurseLimit, TAncestorTypes>;
+    }>>> : T;
+    // @system
+    export interface DeserializedFilterControls extends FilterControlsWithSubstitution {
+        DegenerateNonNullObjectSubstitute: unknown;
+        RecursionMarkerAllowed: unknown;
+    }
+    // @system
+    export type ExcludeExactly<T, U> = IfSameType<T, U, never, T>;
+    // @system
+    export type ExcludeExactlyInTuple<T, TupleOfU extends unknown[]> = IfExactTypeInTuple<T, TupleOfU, never, T>;
+    // @system
+    export type ExtractFunctionFromIntersection<T extends object> = (T extends new (...args: infer A) => infer R ? new (...args: A) => R : unknown) & (T extends (...args: infer A) => infer R ? (...args: A) => R : unknown) extends infer Functional ? {
+        classification: unknown extends Functional ? "no Function" : Functional extends Required<T> ? "exactly Function" : "Function and more";
+        function: Functional;
+    } : never;
+    // @system
+    export interface FilterControls {
+        AllowExactly: unknown[];
+        AllowExtensionOf: unknown;
+    }
+    // @system
+    export interface FilterControlsWithSubstitution extends FilterControls {
+        DegenerateSubstitute: unknown;
+    }
+    // @system
+    export type FilterPreservingFunction<Original extends object, Filtered> = ExtractFunctionFromIntersection<Original> extends {
+        classification: infer TClassification;
+        function: infer TFunction;
+    } ? TClassification extends "exactly Function" ? TFunction : TFunction & Filtered : never;
+    // @system
+    export type FlattenIntersection<T extends AnyRecord> = T extends AnyRecord ? {
+        [K in keyof T]: T[K];
+    } : T;
+    // @system
+    export type IfEnumLike<T extends object, EnumLike = never, NotEnumLike = unknown> = T extends readonly (infer _)[] ? NotEnumLike : T extends Function ? NotEnumLike : T extends {
+        readonly [i: number]: string;
+        readonly [p: string]: number | string;
+        readonly [s: symbol]: never;
+    } ? true extends {
+        [K in keyof T]: T[K] extends never ? true : never;
+    }[keyof T] ? NotEnumLike : EnumLike : NotEnumLike;
+    export type IfExactTypeInTuple<T, Tuple extends unknown[], IfMatch = unknown, IfNoMatch = never> = Tuple extends [infer First, ...infer Rest] ? IfSameType<T, First, IfMatch, IfExactTypeInTuple<T, Rest, IfMatch, IfNoMatch>> : IfNoMatch;
+    // @system
+    export type IfExactTypeInUnion<T, Union, IfMatch = unknown, IfNoMatch = never> = IfSameType<T, never, IfSameType<Union, never, IfMatch, IfNoMatch>, IfSameType<T, Extract<Union, T>, IfMatch, IfNoMatch>>;
+    // @system
+    export type IfIndexOrBrandedKey<T extends keyof AnyRecord, IfIndexOrBranded, Otherwise> = T extends object ? IfIndexOrBranded : IfVariableStringOrNumber<T, IfIndexOrBranded, Otherwise>;
+    // @system
+    export type IfNonPublicProperties<T, Controls extends FilterControls, HasNonPublic = never, OnlyPublics = unknown> = ReplaceAllowancesAndRecursionWithNever<T, Controls> extends T ? OnlyPublics : HasNonPublic;
+    // @system
+    export type IfPossiblyUndefinedProperty<TKey extends keyof AnyRecord, TValue, Result extends {
+        IfPossiblyUndefined: unknown;
+        IfUnknownNonIndexed: unknown;
+        Otherwise: unknown;
+    }> = undefined extends TValue ? unknown extends TValue ? IfIndexOrBrandedKey<TKey, Result["Otherwise"], Result["IfUnknownNonIndexed"]> : Result["IfPossiblyUndefined"] : Result["Otherwise"];
+    // @system
+    export type IfSameType<X, Y, IfSame = unknown, IfDifferent = never> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? IfSame : IfDifferent;
+    // @system
+    export type IfVariableStringOrNumber<T, IfVariable, IfLiteral> = `${string}` extends T ? IfVariable : number extends T ? IfVariable : T extends `${infer first}${infer rest}` ? string extends first ? IfVariable : `${number}` extends first ? IfVariable : IfVariableStringOrNumber<rest, IfVariable, IfLiteral> : IfLiteral;
+    // @system
+    export type IsExactlyObject<T extends object> = IsSameType<T, object>;
+    // @system
+    export type IsSameType<X, Y> = IfSameType<X, Y, true, false>;
+    // @system
+    export type JsonDeserializedFilter<T, Controls extends DeserializedFilterControls, TAncestorTypes extends object[] = [Extract<T, object>]> = boolean extends (T extends never ? true : false) ? Controls["DegenerateSubstitute"] : unknown extends T ? Controls["DegenerateSubstitute"] : T extends null | boolean | number | string | Controls["AllowExtensionOf"] ? T : IfExactTypeInTuple<T, [
+    ...Controls["AllowExactly"],
+    Controls["RecursionMarkerAllowed"]
+    ], true, "not found"> extends true ? T : T extends object ? ExtractFunctionFromIntersection<T> extends {
+        classification: "exactly Function";
+    } ? never : T extends readonly (infer _)[] ? {
+        [K in keyof T]: JsonForDeserializedArrayItem<T[K], Controls, JsonDeserializedRecursion<T[K], Controls, TAncestorTypes>>;
+    } : IsExactlyObject<T> extends true ? Controls["DegenerateNonNullObjectSubstitute"] : IfEnumLike<T> extends never ? T : T extends AnyOpaqueJsonType ? JsonDeserializedOpaqueConversion<T, Controls> : FlattenIntersection<{
+        [K in keyof T as NonSymbolWithDeserializablePropertyOf<T, [
+        ...Controls["AllowExactly"],
+        Controls["RecursionMarkerAllowed"]
+        ], Controls["AllowExtensionOf"], K>]: JsonDeserializedRecursion<T[K], Controls, TAncestorTypes>;
+    } & {
+        [K in keyof T as NonSymbolLiteralWithPossiblyDeserializablePropertyOf<T, [
+        ...Controls["AllowExactly"],
+        Controls["RecursionMarkerAllowed"]
+        ], Controls["AllowExtensionOf"], K>]?: JsonDeserializedRecursion<T[K], Controls, TAncestorTypes>;
+    }> : never;
+    // @system
+    export type JsonDeserializedImpl<T, Options extends Partial<FilterControls>, TypeUnderRecursion extends boolean = false> = {
+        AllowExactly: Options extends {
+            AllowExactly: unknown[];
+        } ? Options["AllowExactly"] : [];
+        AllowExtensionOf: Options extends {
+            AllowExtensionOf: unknown;
+        } ? Options["AllowExtensionOf"] : never;
+        DegenerateSubstitute: JsonTypeWith<(Options extends {
+            AllowExactly: unknown[];
+        } ? TupleToUnion<Options["AllowExactly"]> : never) | (Options extends {
+            AllowExtensionOf: unknown;
+        } ? Options["AllowExtensionOf"] : never)>;
+        DegenerateNonNullObjectSubstitute: NonNullJsonObjectWith<(Options extends {
+            AllowExactly: unknown[];
+        } ? TupleToUnion<Options["AllowExactly"]> : never) | (Options extends {
+            AllowExtensionOf: unknown;
+        } ? Options["AllowExtensionOf"] : never)>;
+        RecursionMarkerAllowed: never;
+    } extends infer Controls ? Controls extends DeserializedFilterControls ? boolean extends (T extends never ? true : false) ? Controls["DegenerateSubstitute"] : ReplaceRecursionWithMarkerAndPreserveAllowances<T, RecursionMarker, {
+        AllowExactly: Controls["AllowExactly"];
+        AllowExtensionOf: Controls["AllowExtensionOf"] | AnyOpaqueJsonType;
+    }> extends infer TNoRecursionAndOnlyPublics ? IsSameType<TNoRecursionAndOnlyPublics, JsonDeserializedFilter<TNoRecursionAndOnlyPublics, {
+        AllowExactly: Controls["AllowExactly"];
+        AllowExtensionOf: Controls["AllowExtensionOf"];
+        DegenerateSubstitute: Controls["DegenerateSubstitute"];
+        DegenerateNonNullObjectSubstitute: Controls["DegenerateNonNullObjectSubstitute"];
+        RecursionMarkerAllowed: RecursionMarker;
+    }>> extends true ? IfNonPublicProperties<T, {
+        AllowExactly: Controls["AllowExactly"];
+        AllowExtensionOf: Controls["AllowExtensionOf"] | AnyOpaqueJsonType;
+    }, "found non-publics", "only publics"> extends "found non-publics" ? TypeUnderRecursion extends false ? JsonDeserializedFilter<T, Controls> : OpaqueJsonDeserialized<T, Controls["AllowExactly"], Controls["AllowExtensionOf"]> : T : TypeUnderRecursion extends false ? JsonDeserializedFilter<T, Controls> : OpaqueJsonDeserialized<T, Controls["AllowExactly"], Controls["AllowExtensionOf"]> : never : never : never;
+    // @system
+    export type JsonDeserializedOpaqueConversion<T extends AnyOpaqueJsonType, Controls extends FilterControls> = T extends OpaqueJsonSerializable<infer TData, any, unknown> | OpaqueJsonDeserialized<infer TData, any, unknown> ? OpaqueJsonDeserialized<TData, Controls["AllowExactly"], Controls["AllowExtensionOf"]> : "internal error: failed to determine OpaqueJson* type";
+    // @system
+    export type JsonDeserializedRecursion<T, Controls extends DeserializedFilterControls, TAncestorTypes extends object[]> = IfExactTypeInTuple<T, TAncestorTypes, true, "no match"> extends true ? JsonDeserializedImpl<T, Controls, true> : T extends object ? IfExactTypeInTuple<T, TAncestorTypes, true, "no match"> extends true ? JsonDeserializedImpl<T, Controls, true> : JsonDeserializedFilter<T, Controls, [
+    ...TAncestorTypes,
+    T
+    ]> : JsonDeserializedFilter<T, Controls, TAncestorTypes>;
+    // @system
+    export type JsonForDeserializedArrayItem<T, Controls extends DeserializedFilterControls, TBlessed> = boolean extends (T extends never ? true : false) ? TBlessed : unknown extends T ? TBlessed : T extends null | boolean | number | string | Controls["AllowExtensionOf"] ? T : IfExactTypeInTuple<T, [
+    ...Controls["AllowExactly"],
+    Controls["RecursionMarkerAllowed"]
+    ], T, T extends undefined | symbol ? null : T extends Function ? ExtractFunctionFromIntersection<T> extends {
+        classification: "exactly Function";
+    } ? null : null | TBlessed : TBlessed>;
+    // @system
+    export type JsonForSerializableArrayItem<T, Controls extends FilterControls, TAncestorTypes extends unknown[], TBlessed> = boolean extends (T extends never ? true : false) ? TBlessed : unknown extends T ? TBlessed : IfExactTypeInTuple<T, TAncestorTypes, T, T extends null | boolean | number | string | Controls["AllowExtensionOf"] ? T : IfExactTypeInTuple<T, Controls["AllowExactly"], T, undefined extends T ? SerializationErrorPerUndefinedArrayElement : TBlessed>>;
+    // @system
+    export type JsonSerializableFilter<T, Controls extends FilterControlsWithSubstitution, TAncestorTypes extends unknown[], TNextAncestor = T> = boolean extends (T extends never ? true : false) ? Controls["DegenerateSubstitute"] : unknown extends T ? Controls["DegenerateSubstitute"] : IfExactTypeInTuple<T, TAncestorTypes, true, "no match"> extends true ? T : T extends null | boolean | number | string | Controls["AllowExtensionOf"] ? T : IfExactTypeInTuple<T, Controls["AllowExactly"], true, "no match"> extends true ? T : Extract<T, Function> extends never ? T extends object ? T extends readonly (infer _)[] ? {
+        [K in keyof T]: JsonForSerializableArrayItem<T[K], Controls, TAncestorTypes, JsonSerializableFilter<T[K], Controls, [
+        TNextAncestor,
+        ...TAncestorTypes
+        ]>>;
+    } : IsExactlyObject<T> extends true ? NonNullJsonObjectWith<TupleToUnion<Controls["AllowExactly"]> | Controls["AllowExtensionOf"]> : IfEnumLike<T> extends never ? T : T extends AnyOpaqueJsonType ? JsonSerializableOpaqueAllowances<T, Controls> : FlattenIntersection<{
+        [K in keyof T as RequiredNonSymbolKeysOf<T, K>]-?: IfPossiblyUndefinedProperty<K, T[K], {
+            IfPossiblyUndefined: {
+                ["error required property may not allow `undefined` value"]: never;
+            };
+            IfUnknownNonIndexed: {
+                ["error required property may not allow `unknown` value"]: never;
+            };
+            Otherwise: JsonSerializableFilter<T[K], Controls, [
+            TNextAncestor,
+            ...TAncestorTypes
+            ]>;
+        }>;
+    } & {
+        [K in keyof T as OptionalNonSymbolKeysOf<T, K>]?: JsonSerializableFilter<T[K], Controls, [
+        TNextAncestor,
+        ...TAncestorTypes
+        ]>;
+    } & {
+        [K in keyof T & symbol]: never;
+    }> : never : never;
+    // @system
+    export type JsonSerializableImpl<T, Options extends Partial<FilterControls> & {
+        IgnoreInaccessibleMembers?: "ignore-inaccessible-members";
+    }, TAncestorTypes extends unknown[] = [], TNextAncestor = T> = {
+        AllowExactly: Options extends {
+            AllowExactly: unknown[];
+        } ? Options["AllowExactly"] : [];
+        AllowExtensionOf: Options extends {
+            AllowExtensionOf: unknown;
+        } ? Options["AllowExtensionOf"] : never;
+        DegenerateSubstitute: JsonTypeWith<(Options extends {
+            AllowExactly: unknown[];
+        } ? TupleToUnion<Options["AllowExactly"]> : never) | (Options extends {
+            AllowExtensionOf: unknown;
+        } ? Options["AllowExtensionOf"] : never)> | OpaqueJsonSerializable<unknown, Options extends {
+            AllowExactly: unknown[];
+        } ? Options["AllowExactly"] : [], Options extends {
+            AllowExtensionOf: unknown;
+        } ? Options["AllowExtensionOf"] : never>;
+    } extends infer Controls ? Controls extends FilterControlsWithSubstitution ? boolean extends (T extends never ? true : false) ? Controls["DegenerateSubstitute"] : Options extends {
+        IgnoreInaccessibleMembers: "ignore-inaccessible-members";
+    } ? JsonSerializableFilter<T, Controls, TAncestorTypes, TNextAncestor> : IfNonPublicProperties<T, {
+        AllowExactly: Controls["AllowExactly"];
+        AllowExtensionOf: Controls["AllowExtensionOf"] | boolean | number | string | AnyOpaqueJsonType;
+    }, "found non-publics", "only publics"> extends "found non-publics" ? T extends readonly (infer _)[] ? {
+        [K in keyof T]: JsonSerializableImpl<T[K], Controls, [
+        TNextAncestor,
+        ...TAncestorTypes
+        ]>;
+    } : T extends boolean | number | string ? T : SerializationErrorPerNonPublicProperties : JsonSerializableFilter<T, Controls, TAncestorTypes, TNextAncestor> : never : never;
+    // @system
+    export type JsonSerializableOpaqueAllowances<T extends AnyOpaqueJsonType, Controls extends FilterControlsWithSubstitution> = T extends OpaqueJsonSerializable<infer TData, any, unknown> | OpaqueJsonDeserialized<infer TData, any, unknown> ? T extends OpaqueJsonSerializable<TData, any, unknown> & OpaqueJsonDeserialized<TData, any, unknown> ? OpaqueJsonSerializable<TData, Controls["AllowExactly"], Controls["AllowExtensionOf"]> & OpaqueJsonDeserialized<TData, Controls["AllowExactly"], Controls["AllowExtensionOf"]> : T extends OpaqueJsonSerializable<TData, any, unknown> ? OpaqueJsonSerializable<TData, Controls["AllowExactly"], Controls["AllowExtensionOf"]> : T extends OpaqueJsonDeserialized<TData, any, unknown> ? OpaqueJsonDeserialized<TData, Controls["AllowExactly"], Controls["AllowExtensionOf"]> : "internal error: failed to determine OpaqueJson* type" : never;
+    // @system
+    export type NonSymbolLiteralWithPossiblyDeserializablePropertyOf<T extends object, TExactExceptions extends unknown[], TExtendsException, Keys extends keyof T = keyof T> = Exclude<{
+        [K in Keys]: IfIndexOrBrandedKey<K, never, ExcludeExactlyInTuple<Exclude<T[K], TExtendsException>, OmitExactlyFromTuple<TExactExceptions, unknown>> extends infer PossibleTypeLessAllowed ? Extract<IfSameType<PossibleTypeLessAllowed, unknown, undefined, PossibleTypeLessAllowed>, undefined | symbol | Function> extends never ? never : TestDeserializabilityOf<T[K], OmitExactlyFromTuple<TExactExceptions, unknown>, TExtendsException, {
+            WhenSomethingDeserializable: K;
+            WhenNeverDeserializable: never;
+        }> : never>;
+    }[Keys], undefined | symbol> extends infer Result ? IfSameType<Keys, Result, Keys, Extract<Result, string | number>> : never;
+    // @system
+    export type NonSymbolWithDeserializablePropertyOf<T extends object, TExactExceptions extends unknown[], TExtendsException, Keys extends keyof T = keyof T> = Exclude<{
+        [K in Keys]: ExcludeExactlyInTuple<Exclude<T[K], TExtendsException>, OmitExactlyFromTuple<TExactExceptions, unknown>> extends infer PossibleTypeLessAllowed ? IfSameType<PossibleTypeLessAllowed, unknown, IfIndexOrBrandedKey<K, K, never>, Extract<PossibleTypeLessAllowed, undefined | symbol | Function> extends never ? IfSameType<PossibleTypeLessAllowed, bigint, never, T[K] extends never ? never : K> : TestDeserializabilityOf<T[K], OmitExactlyFromTuple<TExactExceptions, unknown>, TExtendsException, {
+            WhenSomethingDeserializable: IfIndexOrBrandedKey<K, K, never>;
+            WhenNeverDeserializable: never;
+        }>> : never;
+    }[Keys], undefined | symbol> extends infer Result ? IfSameType<Keys, Result, Keys, Extract<Result, string | number>> : never;
+    // @system
+    export type OmitExactlyFromTuple<Tuple extends unknown[], U, Accumulated extends unknown[] = []> = Tuple extends [infer First, ...infer Rest] ? OmitExactlyFromTuple<Rest, U, IfSameType<First, U, Accumulated, [...Accumulated, First]>> : Accumulated;
+    // @system
+    export type OmitFromTuple<Tuple extends unknown[], U, Accumulated extends unknown[] = []> = Tuple extends [infer First, ...infer Rest] ? OmitFromTuple<Rest, U, First extends U ? Accumulated : [...Accumulated, First]> : Accumulated;
+    // @system
+    export type OptionalNonSymbolKeysOf<T extends object, Keys extends keyof T = keyof T> = Exclude<{
+        [K in Keys]: T extends Record<K, T[K]> ? never : K;
+    }[Keys], undefined | symbol> extends infer Result ? IfSameType<Keys, Result, Keys, Extract<Result, string | number>> : never;
+    // @system
+    export type PreserveErasedTypeOrBrandedPrimitive<T extends object, Else> = T extends ErasedType<infer _> ? T : T extends infer Brand & (boolean | number | string | symbol | bigint) ? T extends Brand & infer Primitive ? /* [potentially] branded type => "as-is" */ Primitive & Brand : T : Else;
+    // @system
+    export type ReadonlyImpl<T, DeepenedGenerics extends ReadonlySupportedGenerics, NoDepthOrRecurseLimit extends "Shallow" | DeepReadonlyRecursionLimit> = NoDepthOrRecurseLimit extends "Shallow" ? ShallowReadonlyImpl<T, DeepenedGenerics> : NoDepthOrRecurseLimit extends "NoLimit" ? DeepReadonlyRecursingInfinitely<T, DeepenedGenerics> : DeepReadonlyLimitingRecursion<T, DeepenedGenerics, Extract<NoDepthOrRecurseLimit, RecursionLimit>>;
+    // @system
+    export type RecursionLimit = `+${string}` | 0;
+    // @system
+    export interface RecursionMarker {
+        // (undocumented)
+        [RecursionMarkerSymbol]: typeof RecursionMarkerSymbol;
+    }
+    // @system
+    export type ReplaceAllowancesAndRecursionWithNever<T, Controls extends FilterControls, TAncestorTypes extends unknown[] = [], TNextAncestor = T> = IfExactTypeInTuple<T, TAncestorTypes, true, "no match"> extends true ? never : T extends Controls["AllowExtensionOf"] ? never : IfExactTypeInTuple<T, Controls["AllowExactly"], true, "no match"> extends true ? never : IfExactTypeInTuple<T, TAncestorTypes, true, "no match"> extends true ? never : T extends object ? FilterPreservingFunction<T, {
+        [K in keyof T]: ReplaceAllowancesAndRecursionWithNever<T[K], Controls, [
+        TNextAncestor,
+        ...TAncestorTypes
+        ]>;
+    }> : T;
+    // @system
+    export type ReplaceRecursionWithMarkerAndPreserveAllowances<T, TRecursionMarker, Controls extends FilterControls, TAncestorTypes extends unknown[] = [], TNextAncestor = T> = IfExactTypeInTuple<T, TAncestorTypes, true, "no match"> extends true ? TRecursionMarker : T extends infer _ ? IfExactTypeInTuple<T, TAncestorTypes, true, "no match"> extends true ? TRecursionMarker : T extends Controls["AllowExtensionOf"] ? T : IfExactTypeInTuple<T, Controls["AllowExactly"], true, "no match"> extends true ? T : T extends object ? FilterPreservingFunction<T, {
+        [K in keyof T]: ReplaceRecursionWithMarkerAndPreserveAllowances<T[K], TRecursionMarker, Controls, [
+        TNextAncestor,
+        ...TAncestorTypes
+        ]>;
+    }> : T : never;
+    // @system
+    export type RequiredNonSymbolKeysOf<T extends object, Keys extends keyof T = keyof T> = Exclude<{
+        [K in Keys]: T extends Record<K, T[K]> ? K : never;
+    }[Keys], undefined | symbol> extends infer Result ? IfSameType<Keys, Result, Keys, Extract<Result, string | number>> : never;
+    // @system
+    export type ShallowReadonlyImpl<T, DeepenedGenerics extends ReadonlySupportedGenerics> = T extends object ? FilterPreservingFunction<T, DeepenReadonlyInGenerics<T, DeepenedGenerics, "Shallow", PreserveErasedTypeOrBrandedPrimitive<T, /* basic type => */ Readonly<T>>>> : T;
+    // @system
+    export type TestDeserializabilityOf<T, TExactExceptions extends unknown[], TExtendsException, Result extends {
+        WhenSomethingDeserializable: unknown;
+        WhenNeverDeserializable: never;
+    } | {
+        WhenSomethingDeserializable: never;
+        WhenNeverDeserializable: unknown;
+    }> = T extends never ? Result["WhenNeverDeserializable"] : T extends TExtendsException ? Result["WhenSomethingDeserializable"] : IfExactTypeInTuple<T, TExactExceptions, Result["WhenSomethingDeserializable"], T extends bigint | symbol | undefined ? Result["WhenNeverDeserializable"] : T extends Function ? ExtractFunctionFromIntersection<T> extends {
+        classification: "exactly Function";
+    } ? Result["WhenNeverDeserializable"] : Result["WhenSomethingDeserializable"] : Result["WhenSomethingDeserializable"]>;
+    // @system
+    export type TupleToUnion<T extends unknown[]> = T[number];
+        {};
+}
+
+// @beta @system
+export namespace InternalPresenceTypes {
+    // @system
+    export type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<unknown>, TManager> = {
+        instanceBase: new (...args: any[]) => unknown;
+    } & ((key: TKey, datastoreHandle: StateDatastoreHandle<TKey, TValue>) => {
+        initialData?: {
+            value: TValue;
+            allowableUpdateLatencyMs: number | undefined;
+        };
+        manager: StateValue<TManager>;
+    });
+    // @system
+    export interface MapValueState<T, Keys extends string> {
+        // (undocumented)
+        items: {
+            [name in Keys]: ValueOptionalState<T>;
+        };
+        // (undocumented)
+        rev: number;
+    }
+    // @system
+    export interface NotificationType {
+        // (undocumented)
+        args: unknown[];
+        // (undocumented)
+        name: string;
+    }
+    // @system
+    export class StateDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<unknown>> {
+    }
+    // @system
+    export type StateValue<T> = T & StateValueBrand<T>;
+    // @system
+    export class StateValueBrand<T> {
+    }
+    // @system
+    export interface ValueDirectory<T> {
+        // (undocumented)
+        items: {
+            [name: string | number]: ValueOptionalState<T> | ValueDirectory<T>;
+        };
+        // (undocumented)
+        rev: number;
+    }
+    // @system
+    export type ValueDirectoryOrState<T> = ValueRequiredState<T> | ValueDirectory<T>;
+    // @system
+    export interface ValueOptionalState<TValue> extends ValueStateMetadata {
+        // (undocumented)
+        value?: OpaqueJsonDeserialized<TValue>;
+    }
+    // @system
+    export interface ValueRequiredState<TValue> extends ValueStateMetadata {
+        // (undocumented)
+        value: OpaqueJsonDeserialized<TValue>;
+    }
+    // @system
+    export interface ValueStateMetadata {
+        // (undocumented)
+        rev: number;
+        // (undocumented)
+        timestamp: number;
+    }
+}
+
 // @public @sealed
 export interface InternalTreeNode extends ErasedType<"@fluidframework/tree.InternalTreeNode"> {
 }
@@ -677,6 +1114,36 @@ export type JsonCompatibleObject<TExtra = never> = {
     [P in string]?: JsonCompatible<TExtra>;
 };
 
+// @beta
+export type JsonDeserialized<T, Options extends JsonDeserializedOptions = {
+    AllowExactly: [];
+    AllowExtensionOf: never;
+}> = InternalCoreInterfacesUtilityTypes.JsonDeserializedImpl<T, Options>;
+
+// @beta
+export interface JsonDeserializedOptions {
+    AllowExactly?: unknown[];
+    AllowExtensionOf?: unknown;
+}
+
+// @beta
+export type JsonSerializable<T, Options extends JsonSerializableOptions = {
+    AllowExactly: [];
+    AllowExtensionOf: never;
+}> = InternalCoreInterfacesUtilityTypes.JsonSerializableImpl<T, Options>;
+
+// @beta
+export interface JsonSerializableOptions {
+    AllowExactly?: unknown[];
+    AllowExtensionOf?: unknown;
+    IgnoreInaccessibleMembers?: "ignore-inaccessible-members";
+}
+
+// @beta
+export type JsonTypeWith<T> = null | boolean | number | string | T | {
+    [key: string | number]: JsonTypeWith<T>;
+} | JsonTypeWith<T>[];
+
 // @beta @input
 export enum KeyEncodingOptions {
     allStoredKeys = "allStoredKeys",
@@ -756,6 +1223,11 @@ export interface NodeSchemaOptions<out TCustomMetadata = unknown> {
     readonly metadata?: NodeSchemaMetadata<TCustomMetadata> | undefined;
 }
 
+// @beta
+export type NonNullJsonObjectWith<T> = {
+    [key: string | number]: JsonTypeWith<T>;
+} | JsonTypeWith<T>[];
+
 // @public @system
 export type NumberKeys<T, Transformed = {
     readonly [Property in keyof T as number extends Property ? never : Property]: Property;
@@ -774,12 +1246,67 @@ export interface ObjectSchemaOptions<TCustomMetadata = unknown> extends NodeSche
 // @public
 export type Off = () => void;
 
+// @beta @sealed
+export class OpaqueJsonDeserialized<T, in out Option_AllowExactly extends unknown[] = [], out Option_AllowExtensionOf = never> extends BrandedType<"JsonDeserialized"> {
+    // (undocumented)
+    protected readonly JsonDeserialized: {
+        Type: T;
+        Options: {
+            AllowExactly: Option_AllowExactly;
+            AllowExtensionOf: Option_AllowExtensionOf;
+        };
+    };
+    // (undocumented)
+    protected readonly Option_AllowExactly_Invariance: (Option_AllowExactly: Option_AllowExactly) => void;
+}
+
+// @beta @sealed
+export class OpaqueJsonSerializable<T, in out Option_AllowExactly extends unknown[] = [], out Option_AllowExtensionOf = never> extends BrandedType<"JsonSerializable"> {
+    // (undocumented)
+    protected readonly JsonSerializable: {
+        Type: T;
+        Options: {
+            AllowExactly: Option_AllowExactly;
+            AllowExtensionOf: Option_AllowExtensionOf;
+        };
+    };
+    // (undocumented)
+    protected readonly Option_AllowExactly_Invariance: (Option_AllowExactly: Option_AllowExactly) => void;
+}
+
 // @beta @system
 export type PopUnion<Union, AsOverloadedFunction = UnionToIntersection<Union extends unknown ? (f: Union) => void : never>> = AsOverloadedFunction extends (a: infer First) => void ? First : never;
+
+// @beta @sealed
+export interface Presence {
+    readonly attendees: {
+        readonly events: Listenable<AttendeesEvents>;
+        getAttendees(): ReadonlySet<Attendee>;
+        getAttendee(clientId: ClientConnectionId | AttendeeId): Attendee;
+        getMyself(): Attendee;
+    };
+    readonly events: Listenable<PresenceEvents>;
+    readonly states: {
+        getWorkspace<StatesSchema extends StatesWorkspaceSchema>(workspaceAddress: WorkspaceAddress, requestedStates: StatesSchema, controls?: BroadcastControlSettings): StatesWorkspace<StatesSchema>;
+    };
+}
+
+// @beta @sealed
+export interface PresenceEvents {
+    workspaceActivated: (workspaceAddress: WorkspaceAddress, type: "States" | "Notifications" | "Unknown") => void;
+}
 
 // @public @sealed @system
 export interface ReadonlyArrayNode<out T = TreeNode | TreeLeafValue> extends ReadonlyArray<T>, Awaited<TreeNode & WithType<string, NodeKind.Array>> {
 }
+
+// @beta
+export type ReadonlyJsonTypeWith<TReadonlyAlternates> = null | boolean | number | string | TReadonlyAlternates | {
+    readonly [key: string | number]: ReadonlyJsonTypeWith<TReadonlyAlternates>;
+} | readonly ReadonlyJsonTypeWith<TReadonlyAlternates>[];
+
+// @beta
+export type ReadonlySupportedGenerics = IFluidHandle | Map<unknown, unknown> | Promise<unknown> | Set<unknown> | WeakMap<object, unknown> | WeakSet<object>;
 
 // @beta @system
 export type RecordNodeInsertableData<T extends ImplicitAllowedTypes> = RestrictiveStringRecord<InsertableTreeNodeFromImplicitAllowedTypes<T>>;
@@ -933,6 +1460,16 @@ export class SchemaUpgrade {
 // @public @system
 type ScopedSchemaName<TScope extends string | undefined, TName extends number | string> = TScope extends undefined ? `${TName}` : `${TScope}.${TName}`;
 
+// @beta @system
+export type SerializationErrorPerNonPublicProperties = {
+    "object serialization error": "non-public properties are not supported";
+};
+
+// @beta @system
+export type SerializationErrorPerUndefinedArrayElement = {
+    "array serialization error": "undefined elements are not supported";
+};
+
 // @public @sealed
 export interface SharedObjectKind<out TSharedObject = unknown> extends ErasedType<readonly ["SharedObjectKind", TSharedObject]> {
     is(value: IFluidLoadable): value is IFluidLoadable & TSharedObject;
@@ -954,6 +1491,30 @@ export interface SimpleNodeSchemaBase<out TNodeKind extends NodeKind, out TCusto
 export function singletonSchema<TScope extends string, TName extends string | number>(factory: SchemaFactory<TScope, TName>, name: TName): TreeNodeSchemaClass<ScopedSchemaName<TScope, TName>, NodeKind.Object, TreeNode & {
     readonly value: TName;
 }, Record<string, never>, true, Record<string, never>, undefined>;
+
+// @beta @sealed
+export interface StatesWorkspace<TSchema extends StatesWorkspaceSchema, TManagerConstraints = unknown> {
+    add<TKey extends string, TValue extends InternalPresenceTypes.ValueDirectoryOrState<unknown>, TManager extends TManagerConstraints>(key: TKey, manager: InternalPresenceTypes.ManagerFactory<TKey, TValue, TManager>): asserts this is StatesWorkspace<TSchema & Record<TKey, InternalPresenceTypes.ManagerFactory<TKey, TValue, TManager>>, TManagerConstraints>;
+    readonly controls: BroadcastControls;
+    readonly presence: Presence;
+    readonly states: StatesWorkspaceEntries<TSchema>;
+}
+
+// @beta @sealed
+export type StatesWorkspaceEntries<TSchema extends StatesWorkspaceSchema> = {
+    /**
+    * Registered State objects.
+    */
+    readonly [Key in keyof TSchema]: ReturnType<TSchema[Key]>["manager"] extends InternalPresenceTypes.StateValue<infer TManager> ? TManager : never;
+};
+
+// @beta
+export type StatesWorkspaceEntry<TKey extends string, TValue extends InternalPresenceTypes.ValueDirectoryOrState<unknown>, TManager = unknown> = InternalPresenceTypes.ManagerFactory<TKey, TValue, TManager>;
+
+// @beta
+export interface StatesWorkspaceSchema {
+    [key: string]: StatesWorkspaceEntry<typeof key, InternalPresenceTypes.ValueDirectoryOrState<unknown>>;
+}
 
 // @beta @system
 export namespace System_TableSchema {
@@ -1466,5 +2027,8 @@ export interface WithType<out TName extends string = string, out TKind extends N
     get [typeNameSymbol](): TName;
     get [typeSchemaSymbol](): TreeNodeSchemaClass<TName, TKind, TreeNode, never, boolean, TInfo>;
 }
+
+// @beta
+export type WorkspaceAddress = `${string}:${string}`;
 
 ```
