@@ -363,7 +363,7 @@ export const ForestTypeOptimized: ForestType;
 export const ForestTypeReference: ForestType;
 
 // @beta
-export const getPresence: (fluidContainer: IFluidContainer<ContainerSchema_2>) => Presence_2;
+export const getPresence: (fluidContainer: IFluidContainer) => Presence;
 
 // @public
 export interface IConnection {

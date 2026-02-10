@@ -141,6 +141,7 @@ import {
 	getPresence as getPresenceDeprecated,
 	// eslint-disable-next-line import-x/no-deprecated -- TODO#59157: relocating to fluid-static
 	getPresenceAlpha as getPresenceAlphaDeprecated,
+	type Presence,
 	type PresenceWithNotifications,
 	// eslint-disable-next-line import-x/no-internal-modules -- presence has no /internal export, which would be allowed
 } from "@fluidframework/presence/alpha";
@@ -151,8 +152,9 @@ import type { IFluidContainer } from "@fluidframework/fluid-static";
  *
  * @beta
  */
-// eslint-disable-next-line unicorn/prefer-export-from, import-x/no-deprecated -- TODO#59157: relocating to fluid-static
-export const getPresence = getPresenceDeprecated;
+export const getPresence: (fluidContainer: IFluidContainer) => Presence =
+	// eslint-disable-next-line import-x/no-deprecated -- TODO#59157: relocating to fluid-static
+	getPresenceDeprecated;
 
 /**
  * {@inheritdoc @fluidframework/presence#getPresenceAlpha}
