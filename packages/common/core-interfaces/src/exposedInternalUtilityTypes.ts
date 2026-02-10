@@ -20,7 +20,7 @@ import type { OpaqueJsonDeserialized, OpaqueJsonSerializable } from "./opaqueJso
 const RecursionMarkerSymbol: unique symbol = Symbol("recursion here");
 
 /**
- * Union of types that {@link DeepReadonly} and {@link ShallowReadonly}
+ * Union of types that {@link DeepReadonly} and {@link @fluidframework/core-interfaces#ShallowReadonly}
  * recognize to generate immutable form and optionally can alter their
  * type parameters.
  *
@@ -551,7 +551,7 @@ export namespace InternalUtilityTypes {
 	 * @typeParam IfNoMatch - Type to return if no match is found.
 	 *
 	 * @remarks
-	 * In a recursive context, use {@link InternalUtilityTypes.IfExactTypeInTuple} to manage ancestry.
+	 * In a recursive context, use {@link @fluidframework/core-interfaces#InternalUtilityTypes.IfExactTypeInTuple|InternalUtilityTypes.IfExactTypeInTuple} to manage ancestry.
 	 *
 	 * @privateRemarks
 	 * Perhaps it is a Typescript defect but a simple check that `T` is `never`
@@ -989,7 +989,7 @@ export namespace InternalUtilityTypes {
 	/* eslint-enable @typescript-eslint/no-explicit-any */
 
 	/**
-	 * Helper for {@link JsonSerializableFilter} to determine if a property may
+	 * Helper for {@link @fluidframework/core-interfaces#JsonSerializableFilter} to determine if a property may
 	 * be `undefined` and selects from options for result.
 	 * Since `unknown` is a superset of `undefined`, it is given a special case.
 	 * Additionally since index signatures are inherently optional, `unknown` typed
@@ -1248,7 +1248,7 @@ export namespace InternalUtilityTypes {
 		: never /* unreachable else for infer */;
 
 	/**
-	 * Recurses `T` applying {@link InternalUtilityTypes.JsonDeserializedFilter} up until
+	 * Recurses `T` applying {@link @fluidframework/core-interfaces#InternalUtilityTypes.JsonDeserializedFilter} up until
 	 * `T` is found to be a match of an ancestor type. At that point `T` is wrapped in
 	 * {@link OpaqueJsonDeserialized} to avoid further immediate processing, if
 	 * modification is needed. Caller will need to unwrap the type to continue processing.
@@ -1592,7 +1592,7 @@ export namespace InternalUtilityTypes {
 			: Else;
 
 	/**
-	 * De-multiplexing implementation of {@link DeepReadonly} and {@link ShallowReadonly}
+	 * De-multiplexing implementation of {@link DeepReadonly} and {@link @fluidframework/core-interfaces#ShallowReadonly}
 	 * selecting behavior based on `NoDepthOrRecurseLimit`.
 	 *
 	 * @privateRemarks
@@ -1619,7 +1619,7 @@ export namespace InternalUtilityTypes {
 	// #region ShallowReadonly implementation
 
 	/**
-	 * Outer implementation of {@link ShallowReadonly}.
+	 * Outer implementation of {@link @fluidframework/core-interfaces#ShallowReadonly}.
 	 *
 	 * @privateRemarks
 	 * This utility can be reentrant when generics are deepened.
@@ -1760,7 +1760,7 @@ export namespace InternalUtilityTypes {
 		: /* unreachable else for infer */ never;
 
 	/**
-	 * Recurses `T` applying {@link InternalUtilityTypes.DeepReadonlyWorker} up to `RecurseLimit` times.
+	 * Recurses `T` applying {@link @fluidframework/core-interfaces#InternalUtilityTypes.DeepReadonlyWorker} up to `RecurseLimit` times.
 	 *
 	 * @system
 	 */
@@ -1783,7 +1783,7 @@ export namespace InternalUtilityTypes {
 		: DeepReadonlyWorker<T, DeepenedGenerics, RecurseLimit, TAncestorTypes | T>;
 
 	/**
-	 * Core implementation of {@link InternalUtilityTypes.DeepReadonlyLimitingRecursion}.
+	 * Core implementation of {@link @fluidframework/core-interfaces#InternalUtilityTypes.DeepReadonlyLimitingRecursion}.
 	 *
 	 * @system
 	 */
