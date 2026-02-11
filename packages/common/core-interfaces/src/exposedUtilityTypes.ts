@@ -7,7 +7,7 @@
 // system level but externally exposed version of utilities are needed.
 // Import via /internal when use is not exposed externally.
 // Should a customer need access to these types, export should be relocated to
-// index.ts and retagged export from internal.ts may be removed.
+// index.ts and the re-tagged export from internal.ts may be removed.
 
 export type {
 	DeepReadonly,
@@ -26,7 +26,11 @@ export type {
 	ReadonlyJsonTypeWith,
 } from "./jsonType.js";
 export type { OpaqueJsonDeserialized, OpaqueJsonSerializable } from "./opaqueJson.js";
-export type { ShallowReadonly } from "./shallowReadonly.js";
+export type {
+	ShallowReadonly,
+	ShallowReadonlyOptions,
+	ShallowReadonlySupportedGenericsDefault,
+} from "./shallowReadonly.js";
 
 export type {
 	DeepReadonlyRecursionLimit,
