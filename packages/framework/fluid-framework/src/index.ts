@@ -67,8 +67,7 @@ export type {
 	DeepReadonlyOptions,
 	DeepReadonlyRecursionLimit,
 	DeepReadonlySupportedGenericsDefault,
-	// renamed to avoid collision with other similar package exports
-	InternalUtilityTypes as InternalCoreInterfacesUtilityTypes,
+	InternalCoreInterfacesUtilityTypes,
 	JsonDeserialized,
 	JsonDeserializedOptions,
 	JsonSerializable,
