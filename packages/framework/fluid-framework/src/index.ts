@@ -92,10 +92,8 @@ export type {
 	BroadcastControls,
 	BroadcastControlSettings,
 	ClientConnectionId,
-	// renamed to avoid collision with tree export
-	InternalTypes as InternalPresenceTypes,
-	// renamed to avoid collision with other similar package exports
-	InternalUtilityTypes as InternalPresenceUtilityTypes,
+	InternalPresenceTypes,
+	InternalPresenceUtilityTypes,
 	NotificationEmitter,
 	NotificationListenable,
 	NotificationsManager,
