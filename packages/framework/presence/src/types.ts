@@ -28,7 +28,7 @@ import type { Presence, PresenceWithNotifications } from "./presence.js";
 export type WorkspaceAddress = `${string}:${string}`;
 
 /**
- * Single entry in {@link StatesWorkspaceSchema} or  {@link NotificationsWorkspaceSchema}.
+ * Single entry in {@link StatesWorkspaceSchema} or  {@link @fluidframework/presence#NotificationsWorkspaceSchema}.
  *
  * @beta
  */

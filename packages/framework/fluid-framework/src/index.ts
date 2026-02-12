@@ -93,23 +93,15 @@ export type {
 	BroadcastControlSettings,
 	ClientConnectionId,
 	InternalPresenceTypes,
-	InternalPresenceUtilityTypes,
-	NotificationEmitter,
-	NotificationListenable,
-	NotificationsManager,
-	NotificationsManagerEvents,
-	NotificationsWorkspace,
-	NotificationsWorkspaceSchema,
 	Presence,
 	PresenceEvents,
-	PresenceWithNotifications,
 	StatesWorkspace,
 	StatesWorkspaceEntries,
 	StatesWorkspaceEntry,
 	StatesWorkspaceSchema,
 	WorkspaceAddress,
 	// eslint-disable-next-line import-x/no-internal-modules -- presence has no /internal export, which would be allowed
-} from "@fluidframework/presence/alpha";
+} from "@fluidframework/presence/beta";
 export {
 	AttendeeStatus,
 	// eslint-disable-next-line import-x/no-internal-modules -- presence has no /internal export, which would be allowed
@@ -136,12 +128,9 @@ export * from "@fluidframework/tree/alpha";
 import {
 	// eslint-disable-next-line import-x/no-deprecated -- TODO#59157: relocating to fluid-static
 	getPresence as getPresenceDeprecated,
-	// eslint-disable-next-line import-x/no-deprecated -- TODO#59157: relocating to fluid-static
-	getPresenceAlpha as getPresenceAlphaDeprecated,
 	type Presence,
-	type PresenceWithNotifications,
 	// eslint-disable-next-line import-x/no-internal-modules -- presence has no /internal export, which would be allowed
-} from "@fluidframework/presence/alpha";
+} from "@fluidframework/presence/beta";
 import type { IFluidContainer } from "@fluidframework/fluid-static";
 
 /**
@@ -152,15 +141,6 @@ import type { IFluidContainer } from "@fluidframework/fluid-static";
 export const getPresence: (fluidContainer: IFluidContainer) => Presence =
 	// eslint-disable-next-line import-x/no-deprecated -- TODO#59157: relocating to fluid-static
 	getPresenceDeprecated;
-
-/**
- * {@inheritdoc @fluidframework/presence#getPresenceAlpha}
- *
- * @alpha
- */
-export const getPresenceAlpha: (fluidContainer: IFluidContainer) => PresenceWithNotifications =
-	// eslint-disable-next-line import-x/no-deprecated -- TODO#59157: relocating to fluid-static
-	getPresenceAlphaDeprecated;
 
 import type { SharedObjectKind } from "@fluidframework/shared-object-base";
 import type { ITree } from "@fluidframework/tree";

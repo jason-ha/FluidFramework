@@ -52,7 +52,7 @@ export type ClientConnectionId = string;
 // @beta @deprecated
 export const getPresence: (fluidContainer: IFluidContainer) => Presence;
 
-// @alpha @deprecated
+// @alpha
 export function getPresenceAlpha(fluidContainer: IFluidContainer): PresenceWithNotifications;
 
 // @alpha @legacy

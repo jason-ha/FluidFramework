@@ -171,9 +171,12 @@ export const getPresence: (fluidContainer: IFluidContainer) => Presence = getPre
  * @param fluidContainer - Fluid Container to acquire the map from
  * @returns the {@link PresenceWithNotifications}
  *
- * @alpha
+ * @remarks
+ * Notice! This export will be removed in the 2.100.0 release. It will be resurfaced
+ * via `@fluidframework/fluid-static/alpha` prior to removal. Since this is an `@alpha`
+ * API be sure that package dependencies are using exact or minor only (~) range spec.
  *
- * @deprecated Import from `fluid-framework/alpha` instead. This export will be removed in the 2.100.0 release.
+ * @alpha
  */
 export function getPresenceAlpha(fluidContainer: IFluidContainer): PresenceWithNotifications {
 	assert(

@@ -589,9 +589,6 @@ export function getJsonSchema(schema: ImplicitAllowedTypes, options: Required<Tr
 export const getPresence: (fluidContainer: IFluidContainer) => Presence;
 
 // @alpha
-export const getPresenceAlpha: (fluidContainer: IFluidContainer) => PresenceWithNotifications;
-
-// @alpha
 export function getSimpleSchema(schema: ImplicitFieldSchema): SimpleTreeSchema<SchemaType.View>;
 
 // @alpha
@@ -1301,32 +1298,6 @@ export namespace InternalPresenceTypes {
     }
 }
 
-// @alpha @system
-export namespace InternalPresenceUtilityTypes {
-    // @system
-    export type IfNotificationParametersSignature<Event, IfParametersValid, Else> = Event extends (...args: infer P) => void ? InternalCoreInterfacesUtilityTypes.IfSameType<P, JsonSerializable<P>, IfParametersValid, Else> : Else;
-    // @system
-    export type IfNotificationSubscriberSignature<Event, IfSubscriber, Else> = Event extends (sender: Attendee, ...args: infer P) => void ? InternalCoreInterfacesUtilityTypes.IfSameType<P, JsonSerializable<P>, IfSubscriber, Else> : Else;
-    // @system
-    export type JsonDeserializedParameters<T extends (...args: any[]) => unknown> = T extends (...args: infer P) => unknown ? JsonDeserialized<P> : never;
-    // @system
-    export type JsonSerializableParameters<T extends (...args: any[]) => unknown> = T extends (...args: infer P) => unknown ? JsonSerializable<P> : never;
-    // @system
-    export type NotificationListeners<E> = {
-        [P in keyof E as IfNotificationParametersSignature<E[P], P, never>]: E[P];
-    };
-    // @system
-    export type NotificationListenersFromSubscriberSignatures<E extends NotificationListenersWithSubscriberSignatures<E>> = {
-        [K in keyof NotificationListenersWithSubscriberSignatures<E>]: NotificationParametersSignatureFromSubscriberSignature<E[K]>;
-    } extends infer TListeners ? NotificationListeners<TListeners> : never;
-    // @system
-    export type NotificationListenersWithSubscriberSignatures<E> = {
-        [P in keyof E as IfNotificationSubscriberSignature<E[P], P, never>]: E[P];
-    };
-    // @system
-    export type NotificationParametersSignatureFromSubscriberSignature<Event> = Event extends (sender: Attendee, ...args: infer P) => void ? (...args: P) => void : never;
-}
-
 // @public @sealed
 export interface InternalTreeNode extends ErasedType<"@fluidframework/tree.InternalTreeNode"> {
 }
@@ -1687,45 +1658,6 @@ export type NonNullJsonObjectWith<T> = {
 // @alpha
 export function normalizeAllowedTypes(types: ImplicitAllowedTypes): AllowedTypesFull;
 
-// @alpha @sealed
-export interface NotificationEmitter<E extends InternalPresenceUtilityTypes.NotificationListeners<E>> {
-    broadcast<K extends keyof InternalPresenceUtilityTypes.NotificationListeners<E>>(notificationName: K, ...args: Parameters<E[K]>): void;
-    unicast<K extends keyof InternalPresenceUtilityTypes.NotificationListeners<E>>(notificationName: K, targetAttendee: Attendee, ...args: Parameters<E[K]>): void;
-}
-
-// @alpha @sealed
-export interface NotificationListenable<TListeners extends InternalPresenceUtilityTypes.NotificationListeners<TListeners>> {
-    off<K extends keyof InternalPresenceUtilityTypes.NotificationListeners<TListeners>>(notificationName: K, listener: (sender: Attendee, ...args: InternalPresenceUtilityTypes.JsonDeserializedParameters<TListeners[K]>) => void): void;
-    on<K extends keyof InternalPresenceUtilityTypes.NotificationListeners<TListeners>>(notificationName: K, listener: (sender: Attendee, ...args: InternalPresenceUtilityTypes.JsonDeserializedParameters<TListeners[K]>) => void): Off;
-}
-
-// @alpha @sealed
-export interface NotificationsManager<T extends InternalPresenceUtilityTypes.NotificationListeners<T>> {
-    readonly emit: NotificationEmitter<T>;
-    readonly events: Listenable<NotificationsManagerEvents>;
-    readonly notifications: NotificationListenable<T>;
-    readonly presence: PresenceWithNotifications;
-}
-
-// @alpha @sealed (undocumented)
-export interface NotificationsManagerEvents {
-    // @eventProperty
-    unattendedNotification: (name: string, sender: Attendee, ...content: unknown[]) => void;
-}
-
-// @alpha @sealed
-export interface NotificationsWorkspace<TSchema extends NotificationsWorkspaceSchema> {
-    add<TKey extends string, TValue extends InternalPresenceTypes.ValueDirectoryOrState<unknown>, TManager extends NotificationsManager<InternalPresenceUtilityTypes.NotificationListeners<unknown>>>(key: TKey, manager: InternalPresenceTypes.ManagerFactory<TKey, TValue, TManager>): asserts this is NotificationsWorkspace<TSchema & Record<TKey, InternalPresenceTypes.ManagerFactory<TKey, TValue, TManager>>>;
-    readonly notifications: StatesWorkspaceEntries<TSchema>;
-    readonly presence: PresenceWithNotifications;
-}
-
-// @alpha
-export interface NotificationsWorkspaceSchema {
-    // (undocumented)
-    [key: string]: InternalPresenceTypes.ManagerFactory<typeof key, InternalPresenceTypes.ValueRequiredState<InternalPresenceTypes.NotificationType>, NotificationsManager<InternalPresenceUtilityTypes.NotificationListeners<unknown>>>;
-}
-
 // @public @system
 export type NumberKeys<T, Transformed = {
     readonly [Property in keyof T as number extends Property ? never : Property]: Property;
@@ -1818,14 +1750,6 @@ export interface Presence {
 // @beta @sealed
 export interface PresenceEvents {
     workspaceActivated: (workspaceAddress: WorkspaceAddress, type: "States" | "Notifications" | "Unknown") => void;
-}
-
-// @alpha @sealed
-export interface PresenceWithNotifications extends Presence {
-    // (undocumented)
-    readonly notifications: {
-        getWorkspace<NotificationsSchema extends NotificationsWorkspaceSchema>(notificationsId: WorkspaceAddress, requestedNotifications: NotificationsSchema): NotificationsWorkspace<NotificationsSchema>;
-    };
 }
 
 // @alpha @system
