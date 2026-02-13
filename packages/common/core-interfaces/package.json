@@ -63,7 +63,7 @@
 	"scripts": {
 		"api": "fluid-build . --task api",
 		"api-extractor:commonjs": "flub generate entrypoints --outFileLegacyBeta legacy --outFileLegacyAlpha legacy.alpha --outDir ./dist",
-		"api-extractor:esnext": "flub generate entrypoints --outFileLegacyBeta legacy --outFileLegacyAlpha legacy.alpha --outDir ./lib --node10TypeCompat",
+		"api-extractor:esnext": "flub generate entrypoints --outFileLegacyBeta legacy --outFileLegacyAlpha legacy.alpha --outDir ./lib && npm run build:entrypoints:node10",
 		"build": "fluid-build . --task build",
 		"build:api-reports": "concurrently \"npm:build:api-reports:*\"",
 		"build:api-reports:current": "api-extractor run --local --config api-extractor/api-extractor.current.json",
@@ -71,6 +71,7 @@
 		"build:commonjs": "fluid-build . --task commonjs",
 		"build:compile": "fluid-build . --task compile",
 		"build:docs": "api-extractor run --local",
+		"build:entrypoints:node10": "flub generate node10Entrypoints",
 		"build:esnext": "tsc --project ./tsconfig.json",
 		"build:test": "npm run build:test:esm && npm run build:test:cjs && npm run build:test:esm:no-exactOptionalPropertyTypes",
 		"build:test:cjs": "fluid-tsc commonjs --project ./src/test/tsconfig.cjs.json",
