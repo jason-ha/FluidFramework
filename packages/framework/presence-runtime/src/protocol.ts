@@ -7,8 +7,8 @@ import type {
 	AttendeeId,
 	ClientConnectionId,
 	WorkspaceAddress,
-} from "@fluid-internal/presence-definitions";
-import type { ClientUpdateEntry } from "@fluid-internal/presence-workspace";
+} from "@fluid-internal/presence-definitions/internal";
+import type { ClientUpdateEntry } from "@fluid-internal/presence-definitions/internal/workspace-runtime";
 import type {
 	OutboundExtensionMessage,
 	VerifiedInboundExtensionMessage,

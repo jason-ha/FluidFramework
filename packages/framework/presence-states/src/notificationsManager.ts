@@ -17,8 +17,8 @@ import type {
 	PresenceWithNotifications as Presence,
 	ValueManager,
 } from "@fluid-internal/presence-definitions/internal";
+import type { StateDatastore } from "@fluid-internal/presence-definitions/internal/workspace-states";
 import { brandIVM, revealOpaqueJson, toOpaqueJson } from "@fluid-internal/presence-utils";
-import type { StateDatastore } from "@fluid-internal/presence-workspace";
 import { datastoreFromHandle } from "@fluid-internal/presence-workspace";
 import type { Listeners } from "@fluidframework/core-interfaces";
 import type { JsonTypeWith } from "@fluidframework/core-interfaces/internal";

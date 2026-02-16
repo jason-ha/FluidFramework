@@ -11,23 +11,25 @@ import type {
 	InternalTypes,
 	NotificationsWorkspace,
 	NotificationsWorkspaceSchema,
-	PostUpdateAction,
 	PresenceWithNotifications as Presence,
 	PresenceEvents,
 	StatesWorkspace,
 	StatesWorkspaceSchema,
+	WorkspaceAddress,
+} from "@fluid-internal/presence-definitions";
+import type {
+	PostUpdateAction,
 	ValidatableOptionalState,
 	ValidatableValueDirectory,
 	ValidatableValueStructure,
-	WorkspaceAddress,
 } from "@fluid-internal/presence-definitions/internal";
-import { objectEntries, TimerManager } from "@fluid-internal/presence-utils";
 import type {
 	ClientUpdateEntry,
 	PresenceStatesInternal,
 	RuntimeLocalUpdateOptions,
 	ValueElementMap,
-} from "@fluid-internal/presence-workspace";
+} from "@fluid-internal/presence-definitions/internal/workspace-runtime";
+import { objectEntries, TimerManager } from "@fluid-internal/presence-utils";
 import {
 	createPresenceStates,
 	mergeUntrackedDatastore,

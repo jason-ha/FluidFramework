@@ -26,6 +26,7 @@ import type {
 	ValueAccessor,
 	ValueManager,
 } from "@fluid-internal/presence-definitions/internal";
+import type { StateDatastore } from "@fluid-internal/presence-definitions/internal/workspace-states";
 import {
 	asDeeplyReadonly,
 	asDeeplyReadonlyDeserializedJson,
@@ -36,7 +37,6 @@ import {
 	OptionalBroadcastControl,
 	toOpaqueJson,
 } from "@fluid-internal/presence-utils";
-import type { StateDatastore } from "@fluid-internal/presence-workspace";
 import { datastoreFromHandle } from "@fluid-internal/presence-workspace";
 import type { IEmitter } from "@fluidframework/core-interfaces/internal";
 import type {
