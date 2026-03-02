@@ -150,10 +150,9 @@ function shallowCloneNullableObject<T extends object | null>(value: T): T {
 /**
  * Factory for creating a {@link Latest} or {@link LatestRaw} State object.
  */
-export const latest: LatestFactory = <T extends object | null, Key extends string = string>(
+export const latest: LatestFactory = <T extends object | null>(
 	args: FlattenUnionWithOptionals<LatestArguments<T> | LatestArgumentsRaw<T>>,
 ): InternalTypes.ManagerFactory<
-	Key,
 	InternalTypes.ValueRequiredState<T>,
 	LatestRaw<T> & Latest<T>
 > => {
@@ -167,17 +166,18 @@ export const latest: LatestFactory = <T extends object | null, Key extends strin
 		value: shallowCloneNullableObject(opaqueLocal),
 	};
 	const factory = (
-		key: Key,
-		datastoreHandle: InternalTypes.StateDatastoreHandle<
-			Key,
-			InternalTypes.ValueRequiredState<T>
-		>,
+		key: string,
+		datastoreHandle: InternalTypes.StateDatastoreHandle<InternalTypes.ValueRequiredState<T>>,
 	): {
 		initialData: { value: typeof value; allowableUpdateLatencyMs: number | undefined };
 		manager: InternalTypes.StateValue<LatestRaw<T> & Latest<T>>;
 	} => ({
 		initialData: { value, allowableUpdateLatencyMs: settings?.allowableUpdateLatencyMs },
-		manager: brandIVM<LatestValueManagerImpl<T, Key>, T, InternalTypes.ValueRequiredState<T>>(
+		manager: brandIVM<
+			LatestValueManagerImpl<T, string>,
+			T,
+			InternalTypes.ValueRequiredState<T>
+		>(
 			new LatestValueManagerImpl(
 				key,
 				datastoreFromHandle(datastoreHandle),

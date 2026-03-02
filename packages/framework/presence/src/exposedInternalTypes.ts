@@ -108,11 +108,8 @@ export namespace InternalTypes {
 	 *
 	 * @system
 	 */
-	export declare class StateDatastoreHandle<
-		TKey,
-		TValue extends ValueDirectoryOrState<unknown>,
-	> {
-		private readonly StateDatastoreHandle: StateDatastoreHandle<TKey, TValue>;
+	export declare class StateDatastoreHandle<TValue extends ValueDirectoryOrState<unknown>> {
+		private readonly StateDatastoreHandle: StateDatastoreHandle<TValue>;
 	}
 
 	/**
@@ -147,13 +144,11 @@ export namespace InternalTypes {
 	 *
 	 * @system
 	 */
-	export type ManagerFactory<
-		TKey extends string,
-		TValue extends ValueDirectoryOrState<unknown>,
-		TManager,
-	> = { instanceBase: new (...args: any[]) => unknown } & ((
-		key: TKey,
-		datastoreHandle: StateDatastoreHandle<TKey, TValue>,
+	export type ManagerFactory<TValue extends ValueDirectoryOrState<unknown>, TManager> = {
+		instanceBase: new (...args: any[]) => unknown;
+	} & ((
+		key: string,
+		datastoreHandle: StateDatastoreHandle<TValue>,
 	) => {
 		initialData?: { value: TValue; allowableUpdateLatencyMs: number | undefined };
 		manager: StateValue<TManager>;

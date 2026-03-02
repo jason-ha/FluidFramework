@@ -427,9 +427,9 @@ class PresenceStatesImpl<TSchema extends StatesWorkspaceSchema>
 		TValueManager,
 	>(
 		key: TKey,
-		nodeFactory: InternalTypes.ManagerFactory<TKey, TValue, TValueManager>,
+		nodeFactory: InternalTypes.ManagerFactory<TValue, TValueManager>,
 	): asserts this is StatesWorkspace<
-		TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TValueManager>>
+		TSchema & Record<TKey, InternalTypes.ManagerFactory<TValue, TValueManager>>
 	> {
 		assert(!(key in this.nodes), 0xa3c /* Already have entry for key in map */);
 		const nodeData = nodeFactory(key, handleFromDatastore(this));

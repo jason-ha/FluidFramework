@@ -168,8 +168,7 @@ export interface LatestArguments<T extends object | null> extends LatestArgument
 export type LatestConfiguration<
 	// eslint-disable-next-line @rushstack/no-new-null -- undefined is not a valid replacement for null
 	T extends object | null,
-	Key extends string,
-> = InternalTypes.ManagerFactory<Key, InternalTypes.ValueRequiredState<T>, Latest<T>>;
+> = InternalTypes.ManagerFactory<InternalTypes.ValueRequiredState<T>, Latest<T>>;
 
 /**
  * Type alias for the return type of {@link LatestFactory} when called with
@@ -185,8 +184,7 @@ export type LatestConfiguration<
 export type LatestRawConfiguration<
 	// eslint-disable-next-line @rushstack/no-new-null -- undefined is not a valid replacement for null
 	T extends object | null,
-	Key extends string,
-> = InternalTypes.ManagerFactory<Key, InternalTypes.ValueRequiredState<T>, LatestRaw<T>>;
+> = InternalTypes.ManagerFactory<InternalTypes.ValueRequiredState<T>, LatestRaw<T>>;
 
 /**
  * Factory for creating a {@link Latest} or {@link LatestRaw} State object.
@@ -202,9 +200,7 @@ export interface LatestFactory {
 	 * This overload is used when called with {@link LatestArguments}.
 	 * That is, if a validator function is provided.
 	 */
-	<T extends object | null, Key extends string = string>(
-		args: LatestArguments<T>,
-	): LatestConfiguration<T, Key>;
+	<T extends object | null>(args: LatestArguments<T>): LatestConfiguration<T>;
 
 	/**
 	 * Factory for creating a {@link LatestRaw} State object.
@@ -213,7 +209,5 @@ export interface LatestFactory {
 	 * This overload is used when called with {@link LatestArgumentsRaw}.
 	 * That is, if a validator function is _not_ provided.
 	 */
-	<T extends object | null, Key extends string = string>(
-		args: LatestArgumentsRaw<T>,
-	): LatestRawConfiguration<T, Key>;
+	<T extends object | null>(args: LatestArgumentsRaw<T>): LatestRawConfiguration<T>;
 }

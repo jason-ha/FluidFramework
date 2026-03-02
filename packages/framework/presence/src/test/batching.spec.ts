@@ -824,13 +824,9 @@ describe("Presence", () => {
 
 				notificationsWorkspace.add(
 					"testEvents",
-					Notifications<
-						// Below explicit generic specification should not be required.
-						{
-							newId: (id: number) => void;
-						},
-						"testEvents"
-					>(
+					Notifications<{
+						newId: (id: number) => void;
+					}>(
 						// A default handler is not required
 						{},
 					),
@@ -944,13 +940,9 @@ describe("Presence", () => {
 
 				notificationsWorkspace.add(
 					"testEvents",
-					Notifications<
-						// Below explicit generic specification should not be required.
-						{
-							newId: (id: number) => void;
-						},
-						"testEvents"
-					>(
+					Notifications<{
+						newId: (id: number) => void;
+					}>(
 						// A default handler is not required
 						{},
 					),

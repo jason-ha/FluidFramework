@@ -388,12 +388,7 @@ export interface LatestMapArguments<T, Keys extends string = string>
  * @beta
  * @sealed
  */
-export type LatestMapConfiguration<
-	T,
-	Keys extends string,
-	RegistrationKey extends string,
-> = InternalTypes.ManagerFactory<
-	RegistrationKey,
+export type LatestMapConfiguration<T, Keys extends string> = InternalTypes.ManagerFactory<
 	InternalTypes.MapValueState<T, Keys>,
 	LatestMap<T, Keys>
 >;
@@ -409,12 +404,7 @@ export type LatestMapConfiguration<
  * @beta
  * @sealed
  */
-export type LatestMapRawConfiguration<
-	T,
-	Keys extends string,
-	RegistrationKey extends string,
-> = InternalTypes.ManagerFactory<
-	RegistrationKey,
+export type LatestMapRawConfiguration<T, Keys extends string> = InternalTypes.ManagerFactory<
 	InternalTypes.MapValueState<T, Keys>,
 	LatestMapRaw<T, Keys>
 >;
@@ -433,9 +423,9 @@ export interface LatestMapFactory {
 	 * This overload is used when called with {@link LatestMapArguments}.
 	 * That is, if a validator function is provided.
 	 */
-	<T, Keys extends string = string, RegistrationKey extends string = string>(
+	<T, Keys extends string = string>(
 		args: LatestMapArguments<T, Keys>,
-	): LatestMapConfiguration<T, Keys, RegistrationKey>;
+	): LatestMapConfiguration<T, Keys>;
 
 	/**
 	 * Factory for creating a {@link LatestMapRaw} State object.
@@ -444,9 +434,9 @@ export interface LatestMapFactory {
 	 * This overload is used when called with {@link LatestMapArgumentsRaw}.
 	 * That is, if a validator function is _not_ provided.
 	 */
-	<T, Keys extends string = string, RegistrationKey extends string = string>(
+	<T, Keys extends string = string>(
 		args?: LatestMapArgumentsRaw<T, Keys>,
-	): LatestMapRawConfiguration<T, Keys, RegistrationKey>;
+	): LatestMapRawConfiguration<T, Keys>;
 }
 
 // #endregion

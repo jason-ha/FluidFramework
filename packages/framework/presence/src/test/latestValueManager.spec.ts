@@ -155,6 +155,8 @@ describe("Presence", () => {
  * Check that the code compiles.
  */
 export function checkCompiles(): void {
+	const latestCountConfiguration = StateFactory.latest({ local: { count: 0 } });
+
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	const presence = {} as Presence;
 	const statesWorkspace = presence.states.getWorkspace("name:testStatesWorkspaceWithLatest", {
@@ -165,6 +167,8 @@ export function checkCompiles(): void {
 			local: { num: 22 },
 			validator: (data: unknown) => data as { num: number },
 		}),
+		count0: latestCountConfiguration,
+		count1: latestCountConfiguration,
 	});
 	// Workaround ts(2775): Assertions require every name in the call target to be declared with an explicit type annotation.
 	const workspace: typeof statesWorkspace = statesWorkspace;
@@ -239,6 +243,10 @@ export function checkCompiles(): void {
 
 	// This line correctly compiles because logRemoteValue expects a ProxiedValueAccessor
 	logRemoteValue({ attendee: attendee2, value: latestData.value });
+
+	// Adding captured LatestConfigurations's to workspace
+	workspace.add("myCount", latestCountConfiguration);
+	workspace.add("otherCount", latestCountConfiguration);
 }
 
 /* eslint-enable unicorn/no-null */

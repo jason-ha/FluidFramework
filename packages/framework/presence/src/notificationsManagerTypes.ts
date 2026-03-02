@@ -162,9 +162,7 @@ export interface NotificationsManager<
  */
 export type NotificationsConfiguration<
 	T extends InternalUtilityTypes.NotificationListeners<T>,
-	Key extends string,
 > = InternalTypes.ManagerFactory<
-	Key,
 	InternalTypes.ValueRequiredState<InternalTypes.NotificationType>,
 	NotificationsManager<T>
 >;
@@ -182,9 +180,7 @@ export type NotificationsConfiguration<
 export type NotificationsWithSubscriptionsConfiguration<
 	TSubscriptions extends
 		InternalUtilityTypes.NotificationListenersWithSubscriberSignatures<TSubscriptions>,
-	Key extends string,
 > = InternalTypes.ManagerFactory<
-	Key,
 	InternalTypes.ValueRequiredState<InternalTypes.NotificationType>,
 	NotificationsManager<
 		InternalUtilityTypes.NotificationListenersFromSubscriberSignatures<TSubscriptions>

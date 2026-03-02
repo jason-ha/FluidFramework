@@ -112,6 +112,8 @@ type TestMapData =
  * Check that the code compiles.
  */
 export function checkCompiles(): void {
+	const fixedMapConfiguration = StateFactory.latestMap<TestMapData>();
+
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	const presence = {} as Presence;
 	const statesWorkspace = presence.states.getWorkspace(
@@ -130,6 +132,8 @@ export function checkCompiles(): void {
 				},
 				validator: (data) => data as TestMapData,
 			}),
+			otherMap: fixedMapConfiguration,
+			anotherMap: fixedMapConfiguration,
 		},
 	);
 	// Workaround ts(2775): Assertions require every name in the call target to be declared with an explicit type annotation.
@@ -286,4 +290,7 @@ export function checkCompiles(): void {
 	localPrimitiveMap.set("key3", "value");
 	// @ts-expect-error value of type value is not assignable
 	localPrimitiveMap.set("null", { value: "value" });
+
+	// Adding captured LatestMapConfigurations's to workspace
+	workspace.add("otherMap", fixedMapConfiguration);
 }

@@ -33,10 +33,9 @@ export type WorkspaceAddress = `${string}:${string}`;
  * @beta
  */
 export type StatesWorkspaceEntry<
-	TKey extends string,
 	TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
 	TManager = unknown,
-> = InternalTypes.ManagerFactory<TKey, TValue, TManager>;
+> = InternalTypes.ManagerFactory<TValue, TManager>;
 
 // #region StatesWorkspace
 
@@ -51,10 +50,7 @@ export interface StatesWorkspaceSchema {
 	/**
 	 * Key-value pairs of State objects registered with the {@link StatesWorkspace}.
 	 */
-	[key: string]: StatesWorkspaceEntry<
-		typeof key,
-		InternalTypes.ValueDirectoryOrState<unknown>
-	>;
+	[key: string]: StatesWorkspaceEntry<InternalTypes.ValueDirectoryOrState<unknown>>;
 }
 
 /**
@@ -100,9 +96,9 @@ export interface StatesWorkspace<
 		TManager extends TManagerConstraints,
 	>(
 		key: TKey,
-		configuration: InternalTypes.ManagerFactory<TKey, TValue, TManager>,
+		configuration: InternalTypes.ManagerFactory<TValue, TManager>,
 	): asserts this is StatesWorkspace<
-		TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>,
+		TSchema & Record<TKey, InternalTypes.ManagerFactory<TValue, TManager>>,
 		TManagerConstraints
 	>;
 
@@ -135,7 +131,6 @@ export interface StatesWorkspace<
  */
 export interface NotificationsWorkspaceSchema {
 	[key: string]: InternalTypes.ManagerFactory<
-		typeof key,
 		InternalTypes.ValueRequiredState<InternalTypes.NotificationType>,
 		NotificationsManager<InternalUtilityTypes.NotificationListeners<unknown>>
 	>;
@@ -166,9 +161,9 @@ export interface NotificationsWorkspace<TSchema extends NotificationsWorkspaceSc
 		TManager extends NotificationsManager<InternalUtilityTypes.NotificationListeners<unknown>>,
 	>(
 		key: TKey,
-		manager: InternalTypes.ManagerFactory<TKey, TValue, TManager>,
+		manager: InternalTypes.ManagerFactory<TValue, TManager>,
 	): asserts this is NotificationsWorkspace<
-		TSchema & Record<TKey, InternalTypes.ManagerFactory<TKey, TValue, TManager>>
+		TSchema & Record<TKey, InternalTypes.ManagerFactory<TValue, TManager>>
 	>;
 
 	/**

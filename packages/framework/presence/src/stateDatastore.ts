@@ -85,13 +85,12 @@ export function handleFromDatastore<
 	// Constraining TSchema would be great, but it seems nested types (at least with undefined) cause trouble.
 	// TSchema as `unknown` still provides some type safety.
 	// TSchema extends StateDatastoreSchema,
-	TKey extends string /* & keyof TSchema */,
+	// TKey extends string & keyof TSchema,
 	TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
 >(
-	datastore: StateDatastore<TKey, TValue>,
-): InternalTypes.StateDatastoreHandle<TKey, Exclude<TValue, undefined>> {
+	datastore: StateDatastore<string, TValue>,
+): InternalTypes.StateDatastoreHandle<Exclude<TValue, undefined>> {
 	return datastore as unknown as InternalTypes.StateDatastoreHandle<
-		TKey,
 		Exclude<TValue, undefined>
 	>;
 }
@@ -102,6 +101,6 @@ export function handleFromDatastore<
 export function datastoreFromHandle<
 	TKey extends string,
 	TValue extends InternalTypes.ValueDirectoryOrState<unknown>,
->(handle: InternalTypes.StateDatastoreHandle<TKey, TValue>): StateDatastore<TKey, TValue> {
+>(handle: InternalTypes.StateDatastoreHandle<TValue>): StateDatastore<TKey, TValue> {
 	return handle as unknown as StateDatastore<TKey, TValue>;
 }

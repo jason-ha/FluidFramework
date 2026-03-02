@@ -42,14 +42,11 @@ describe("Presence", () => {
 	});
 });
 
-declare function createValueManager<T, Key extends string>(
-	initial: JsonSerializable<T>,
-): { instanceBase: new () => unknown } & ((
-	key: Key,
-	datastoreHandle: InternalTypes.StateDatastoreHandle<
-		Key,
-		InternalTypes.ValueRequiredState<T>
-	>,
+declare function createValueManager<T>(initial: JsonSerializable<T>): {
+	instanceBase: new () => unknown;
+} & ((
+	key: string,
+	datastoreHandle: InternalTypes.StateDatastoreHandle<InternalTypes.ValueRequiredState<T>>,
 ) => {
 	value: InternalTypes.ValueRequiredState<T>;
 	manager: InternalTypes.StateValue<JsonDeserialized<T>>;
@@ -107,8 +104,5 @@ export function checkCompiles(): void {
 		// @ts-expect-error should error on exact optional property
 		createValueManager<{ undef?: number }, "optionalUndefined">({ undef: undefined }),
 	);
-	states.add(
-		"optionalUndefinedPreferred",
-		createValueManager<{ undef?: number }, "optionalUndefinedPreferred">({}),
-	);
+	states.add("optionalUndefinedPreferred", createValueManager<{ undef?: number }>({}));
 }

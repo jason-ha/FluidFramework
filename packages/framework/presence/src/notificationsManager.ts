@@ -143,12 +143,9 @@ class NotificationsManagerImpl<
  * This overload requires explicit specification of the notification listener
  * types. It is useful when a schema is separately defined.
  */
-export function Notifications<
-	T extends InternalUtilityTypes.NotificationListeners<T>,
-	Key extends string = string,
->(
+export function Notifications<T extends InternalUtilityTypes.NotificationListeners<T>>(
 	initialSubscriptions: Partial<NotificationSubscriberSignatures<T>>,
-): NotificationsConfiguration<T, Key>;
+): NotificationsConfiguration<T>;
 /**
  * Factory for creating a {@link NotificationsManager}.
  *
@@ -161,10 +158,9 @@ export function Notifications<
 export function Notifications<
 	TSubscriptions extends
 		InternalUtilityTypes.NotificationListenersWithSubscriberSignatures<TSubscriptions>,
-	Key extends string = string,
 >(
 	initialSubscriptions: Partial<TSubscriptions>,
-): NotificationsWithSubscriptionsConfiguration<TSubscriptions, Key>;
+): NotificationsWithSubscriptionsConfiguration<TSubscriptions>;
 
 /**
  * Factory for creating a {@link NotificationsManager}.
@@ -173,27 +169,24 @@ export function Notifications<
  */
 export function Notifications<
 	T extends InternalUtilityTypes.NotificationListeners<T>,
-	Key extends string = string,
 	TSubscriptions extends
 		NotificationSubscriberSignatures<T> = NotificationSubscriberSignatures<T>,
 >(
 	initialSubscriptions: Partial<TSubscriptions>,
 ): InternalTypes.ManagerFactory<
-	Key,
 	InternalTypes.ValueRequiredState<InternalTypes.NotificationType>,
 	NotificationsManager<T>
 > {
 	const factory = (
-		key: Key,
+		key: string,
 		datastoreHandle: InternalTypes.StateDatastoreHandle<
-			Key,
 			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
 		>,
 	): {
 		manager: InternalTypes.StateValue<NotificationsManager<T>>;
 	} => ({
 		manager: brandIVM<
-			NotificationsManagerImpl<T, Key>,
+			NotificationsManagerImpl<T, string>,
 			InternalTypes.NotificationType,
 			InternalTypes.ValueRequiredState<InternalTypes.NotificationType>
 		>(

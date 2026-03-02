@@ -366,14 +366,9 @@ export interface LatestMapArguments<T, Keys extends string = string>
 /**
  * Factory for creating a {@link LatestMap} or {@link LatestMapRaw} State object.
  */
-export const latestMap: LatestMapFactory = <
-	T,
-	Keys extends string = string,
-	RegistrationKey extends string = string,
->(
+export const latestMap: LatestMapFactory = <T, Keys extends string = string>(
 	args?: Partial<LatestMapArguments<T, Keys>>,
 ): InternalTypes.ManagerFactory<
-	RegistrationKey,
 	InternalTypes.MapValueState<T, Keys>,
 	LatestMapRaw<T, Keys> & LatestMap<T, Keys>
 > => {
@@ -401,18 +396,15 @@ export const latestMap: LatestMapFactory = <
 		}
 	}
 	const factory = (
-		key: RegistrationKey,
-		datastoreHandle: InternalTypes.StateDatastoreHandle<
-			RegistrationKey,
-			InternalTypes.MapValueState<T, Keys>
-		>,
+		key: string,
+		datastoreHandle: InternalTypes.StateDatastoreHandle<InternalTypes.MapValueState<T, Keys>>,
 	): {
 		initialData: { value: typeof value; allowableUpdateLatencyMs: number | undefined };
 		manager: InternalTypes.StateValue<LatestMapRaw<T, Keys> & LatestMap<T, Keys>>;
 	} => ({
 		initialData: { value, allowableUpdateLatencyMs: settings?.allowableUpdateLatencyMs },
 		manager: brandIVM<
-			LatestMapValueManagerImpl<T, RegistrationKey, Keys>,
+			LatestMapValueManagerImpl<T, string, Keys>,
 			T,
 			InternalTypes.MapValueState<T, Keys>
 		>(

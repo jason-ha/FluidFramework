@@ -55,9 +55,9 @@ export const getPresence: (fluidContainer: IFluidContainer) => Presence;
 // @beta @system
 export namespace InternalPresenceTypes {
     // @system
-    export type ManagerFactory<TKey extends string, TValue extends ValueDirectoryOrState<unknown>, TManager> = {
+    export type ManagerFactory<TValue extends ValueDirectoryOrState<unknown>, TManager> = {
         instanceBase: new (...args: any[]) => unknown;
-    } & ((key: TKey, datastoreHandle: StateDatastoreHandle<TKey, TValue>) => {
+    } & ((key: string, datastoreHandle: StateDatastoreHandle<TValue>) => {
         initialData?: {
             value: TValue;
             allowableUpdateLatencyMs: number | undefined;
@@ -81,7 +81,7 @@ export namespace InternalPresenceTypes {
         name: string;
     }
     // @system
-    export class StateDatastoreHandle<TKey, TValue extends ValueDirectoryOrState<unknown>> {
+    export class StateDatastoreHandle<TValue extends ValueDirectoryOrState<unknown>> {
     }
     // @system
     export type StateValue<T> = T & StateValueBrand<T>;
@@ -150,7 +150,7 @@ export interface LatestClientData<T, TValueAccessor extends ValueAccessor<T> = P
 }
 
 // @beta @sealed
-export type LatestConfiguration<T extends object | null, Key extends string> = InternalPresenceTypes.ManagerFactory<Key, InternalPresenceTypes.ValueRequiredState<T>, Latest<T>>;
+export type LatestConfiguration<T extends object | null> = InternalPresenceTypes.ManagerFactory<InternalPresenceTypes.ValueRequiredState<T>, Latest<T>>;
 
 // @beta @sealed
 export interface LatestData<T, TValueAccessor extends ValueAccessor<T>> {
@@ -170,8 +170,8 @@ export interface LatestEvents<T, TRemoteValueAccessor extends ValueAccessor<T> =
 
 // @beta @sealed
 export interface LatestFactory {
-    <T extends object | null, Key extends string = string>(args: LatestArguments<T>): LatestConfiguration<T, Key>;
-    <T extends object | null, Key extends string = string>(args: LatestArgumentsRaw<T>): LatestRawConfiguration<T, Key>;
+    <T extends object | null>(args: LatestArguments<T>): LatestConfiguration<T>;
+    <T extends object | null>(args: LatestArgumentsRaw<T>): LatestRawConfiguration<T>;
 }
 
 // @beta @sealed
@@ -206,7 +206,7 @@ export interface LatestMapClientData<T, Keys extends string, TValueAccessor exte
 }
 
 // @beta @sealed
-export type LatestMapConfiguration<T, Keys extends string, RegistrationKey extends string> = InternalPresenceTypes.ManagerFactory<RegistrationKey, InternalPresenceTypes.MapValueState<T, Keys>, LatestMap<T, Keys>>;
+export type LatestMapConfiguration<T, Keys extends string> = InternalPresenceTypes.ManagerFactory<InternalPresenceTypes.MapValueState<T, Keys>, LatestMap<T, Keys>>;
 
 // @beta @sealed
 export interface LatestMapEvents<T, K extends string, TRemoteValueAccessor extends ValueAccessor<T> = ProxiedValueAccessor<T>> {
@@ -229,8 +229,8 @@ export interface LatestMapEvents<T, K extends string, TRemoteValueAccessor exten
 
 // @beta @sealed
 export interface LatestMapFactory {
-    <T, Keys extends string = string, RegistrationKey extends string = string>(args: LatestMapArguments<T, Keys>): LatestMapConfiguration<T, Keys, RegistrationKey>;
-    <T, Keys extends string = string, RegistrationKey extends string = string>(args?: LatestMapArgumentsRaw<T, Keys>): LatestMapRawConfiguration<T, Keys, RegistrationKey>;
+    <T, Keys extends string = string>(args: LatestMapArguments<T, Keys>): LatestMapConfiguration<T, Keys>;
+    <T, Keys extends string = string>(args?: LatestMapArgumentsRaw<T, Keys>): LatestMapRawConfiguration<T, Keys>;
 }
 
 // @beta @sealed
@@ -249,7 +249,7 @@ export interface LatestMapItemUpdatedClientData<T, K extends string, TValueAcces
 export type LatestMapRaw<T, Keys extends string = string> = LatestMap<T, Keys, RawValueAccessor<T>>;
 
 // @beta @sealed
-export type LatestMapRawConfiguration<T, Keys extends string, RegistrationKey extends string> = InternalPresenceTypes.ManagerFactory<RegistrationKey, InternalPresenceTypes.MapValueState<T, Keys>, LatestMapRaw<T, Keys>>;
+export type LatestMapRawConfiguration<T, Keys extends string> = InternalPresenceTypes.ManagerFactory<InternalPresenceTypes.MapValueState<T, Keys>, LatestMapRaw<T, Keys>>;
 
 // @beta @sealed
 export type LatestMapRawEvents<T, K extends string> = LatestMapEvents<T, K, RawValueAccessor<T>>;
@@ -264,7 +264,7 @@ export interface LatestMetadata {
 export type LatestRaw<T> = Latest<T, RawValueAccessor<T>>;
 
 // @beta @sealed
-export type LatestRawConfiguration<T extends object | null, Key extends string> = InternalPresenceTypes.ManagerFactory<Key, InternalPresenceTypes.ValueRequiredState<T>, LatestRaw<T>>;
+export type LatestRawConfiguration<T extends object | null> = InternalPresenceTypes.ManagerFactory<InternalPresenceTypes.ValueRequiredState<T>, LatestRaw<T>>;
 
 // @beta @sealed
 export type LatestRawEvents<T> = LatestEvents<T, RawValueAccessor<T>>;
@@ -328,7 +328,7 @@ unvalidatedData: unknown) => JsonDeserialized<T> | undefined;
 
 // @beta @sealed
 export interface StatesWorkspace<TSchema extends StatesWorkspaceSchema, TManagerConstraints = unknown> {
-    add<TKey extends string, TValue extends InternalPresenceTypes.ValueDirectoryOrState<unknown>, TManager extends TManagerConstraints>(key: TKey, configuration: InternalPresenceTypes.ManagerFactory<TKey, TValue, TManager>): asserts this is StatesWorkspace<TSchema & Record<TKey, InternalPresenceTypes.ManagerFactory<TKey, TValue, TManager>>, TManagerConstraints>;
+    add<TKey extends string, TValue extends InternalPresenceTypes.ValueDirectoryOrState<unknown>, TManager extends TManagerConstraints>(key: TKey, configuration: InternalPresenceTypes.ManagerFactory<TValue, TManager>): asserts this is StatesWorkspace<TSchema & Record<TKey, InternalPresenceTypes.ManagerFactory<TValue, TManager>>, TManagerConstraints>;
     readonly controls: BroadcastControls;
     readonly presence: Presence;
     readonly states: StatesWorkspaceEntries<TSchema>;
@@ -343,11 +343,11 @@ export type StatesWorkspaceEntries<TSchema extends StatesWorkspaceSchema> = {
 };
 
 // @beta
-export type StatesWorkspaceEntry<TKey extends string, TValue extends InternalPresenceTypes.ValueDirectoryOrState<unknown>, TManager = unknown> = InternalPresenceTypes.ManagerFactory<TKey, TValue, TManager>;
+export type StatesWorkspaceEntry<TValue extends InternalPresenceTypes.ValueDirectoryOrState<unknown>, TManager = unknown> = InternalPresenceTypes.ManagerFactory<TValue, TManager>;
 
 // @beta
 export interface StatesWorkspaceSchema {
-    [key: string]: StatesWorkspaceEntry<typeof key, InternalPresenceTypes.ValueDirectoryOrState<unknown>>;
+    [key: string]: StatesWorkspaceEntry<InternalPresenceTypes.ValueDirectoryOrState<unknown>>;
 }
 
 // @beta @system
