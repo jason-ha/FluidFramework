@@ -70,3 +70,6 @@ export {
 } from "./testContainerRuntimeFactoryWithDefaultDataStore.js";
 
 export { TestFluidObjectInternal } from "./testFluidObjectInternal.js";
+
+// eslint-disable-next-line no-restricted-syntax, @typescript-eslint/consistent-type-exports -- has no real exports, loaded for side effects
+export * as InstallTestTimeout from "./installTestTimeout.js";

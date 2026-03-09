@@ -10,7 +10,10 @@
 	},
 	"license": "MIT",
 	"author": "Microsoft and contributors",
-	"sideEffects": false,
+	"sideEffects": [
+		"./lib/installTestTimeout.js",
+		"./dist/installTestTimeout.js"
+	],
 	"type": "module",
 	"exports": {
 		".": {

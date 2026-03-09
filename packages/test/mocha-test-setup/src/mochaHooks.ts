@@ -19,10 +19,12 @@ Error.stackTraceLimit = Number.POSITIVE_INFINITY;
 const testVariant = process.env.FLUID_TEST_VARIANT;
 const envLoggerProps =
 	process.env.FLUID_LOGGER_PROPS != null
-		? JSON.parse(process.env.FLUID_LOGGER_PROPS)
+		? (JSON.parse(process.env.FLUID_LOGGER_PROPS) as Record<string, unknown> & {
+				hostName?: string;
+			})
 		: undefined;
 
-const _global: any = global;
+const _global: NodeJS.Global & { getTestLogger?: () => FluidTestRunLogger } = global;
 
 /**
  * A logger that adds context about the current test run to all events logged through it, like the test variant being
@@ -95,7 +97,8 @@ const AFTER_FLUSH_DELAY_MS = 1250;
  * @internal
  */
 export const mochaHooks = {
-	async beforeAll() {
+	async beforeAll(): Promise<void> {
+		console.error("Mocha hooks beforeAll: initializing test logger");
 		// Code in our tests will call the global `getTestLogger` function to get a logger to use.
 
 		// First we call the version of that function that was (potentially) injected dynamicaly to get the logger that it
@@ -128,7 +131,7 @@ export const mochaHooks = {
 		// it will run before the `beforeEach` hook in this file which sets that.
 		_global.getTestLogger = () => testLogger;
 	},
-	beforeEach(this: Mocha.Context) {
+	beforeEach(this: Mocha.Context): void {
 		// If not in verbose mode, suppress console output while the current test runs.
 		if (process.env.FLUID_TEST_VERBOSE === undefined) {
 			console.log = () => {};
@@ -152,7 +155,7 @@ export const mochaHooks = {
 			eventName: "fluid:telemetry:Test_start",
 		});
 	},
-	afterEach(this: Mocha.Context) {
+	afterEach(this: Mocha.Context): void {
 		ensureTestRunLoggerIsInitialized(testLogger);
 		testLogger.send({
 			category: "generic",
@@ -173,7 +176,7 @@ export const mochaHooks = {
 		// test (e.g. during a `before` or `after` hook), it doesn't log events with the name of the last test that ran.
 		testLogger.clearCurrentTest();
 	},
-	async afterAll(this: Mocha.Context) {
+	async afterAll(this: Mocha.Context): Promise<void> {
 		// Allow 5 seconds for the logger to flush.
 		this.timeout(5000);
 		// After all tests ran, flush the logger to ensure all events are sent before the process exits.
@@ -181,6 +184,7 @@ export const mochaHooks = {
 	},
 };
 
+console.error("Setting getMochaModule");
 globalThis.getMochaModule = () => {
 	return mochaModule;
 };
