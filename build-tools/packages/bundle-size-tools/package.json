@@ -44,7 +44,7 @@
 		"fflate": "^0.8.2",
 		"jszip": "^3.10.1",
 		"msgpack-lite": "^0.1.26",
-		"typescript": "~5.4.5",
+		"typescript": "~5.8.2",
 		"webpack": "^5.103.0"
 	},
 	"devDependencies": {
