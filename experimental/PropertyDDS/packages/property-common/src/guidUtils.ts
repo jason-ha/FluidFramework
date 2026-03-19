@@ -11,7 +11,8 @@
 
 import base64js from "base64-js";
 
-import { generateRandomUInt32Array } from "../platform-dependent";
+// eslint-disable-next-line import-x/no-internal-modules
+import { generateRandomUInt32Array } from "./platform-dependent/server.js";
 const UINT_32HASH_PRIME = 16777619;
 
 /**

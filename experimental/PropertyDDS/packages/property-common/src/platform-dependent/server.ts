@@ -3,19 +3,19 @@
  * Licensed under the MIT License.
  */
 
-const crypto = require("crypto");
+// eslint-disable-next-line import-x/no-nodejs-modules
+import * as crypto from "node:crypto";
+
 /**
  * Create an array with random uint32 values
  *
  * @param {number} length - size of a new array
- * @return {number[]} - an array with random values
+ * @return {readonly number[] | Uint32Array} - an array with random values
  */
-function generateRandomUInt32Array(length) {
+function generateRandomUInt32Array(length: number): readonly number[] | Uint32Array {
 	const buffer = Buffer.alloc(length * 4);
 	crypto.randomFillSync(buffer);
 	return Array.from({ length }, (_, i) => buffer.readUIntBE(i * 4, 4));
 }
 
-module.exports = {
-	generateRandomUInt32Array,
-};
+export { generateRandomUInt32Array };
