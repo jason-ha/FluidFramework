@@ -277,12 +277,6 @@ export class TypeValidationTask extends LeafWithFileStatDoneFileTask {
 			// Casting as any is a workaround because the typeValidation-related types are in build-cli.
 			// Eventually the common stuff will be split into a shared package; tracked by AB#13197.
 			if (!((this.node.pkg.packageJson as any).typeValidation?.disabled === true)) {
-				// TODO: depend on all of input to product tsc, which impacts the API.
-				// This task is effectively a TscDependentTask with additional input,
-				// but some packages build tests including type tests as part of
-				// production build, which would create a dependency cycle.
-				// AB#7318 would make sure type tests are separate.
-
 				// The package.json file of prior package is a pretty good representative
 				// for exposed types of prior package. If this is missing, task won't be
 				// incremental. That is okay because task will also fail.
