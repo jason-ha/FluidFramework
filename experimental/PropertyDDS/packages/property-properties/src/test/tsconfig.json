@@ -4,7 +4,7 @@
 	"compilerOptions": {
 		"strict": false,
 		"allowJs": true,
-		"checkJs": false,
+		"checkJs": true,
 
 		"rootDir": "./",
 		"outDir": "invalid use tsconfig.esm.json or tsconfig.cjs.json to build",

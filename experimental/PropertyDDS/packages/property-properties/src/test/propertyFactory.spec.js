@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-/* globals sinon */
+/* globals expect, sinon */
 
 import { constants, GuidUtils } from "@fluid-experimental/property-common";
 const { MSG } = constants;
@@ -3500,6 +3500,12 @@ describe("Template registration", function () {
 		myPropertyFactory = new PropertyFactory.constructor();
 	});
 
+	/** @returns {number} */
+	function consoleWarnCallCount() {
+		// @ts-expect-error - sinon adds the callCount property to the stubbed function
+		return console.warn.callCount;
+	}
+
 	afterEach(function () {
 		this.sinon.restore();
 	});
@@ -3511,7 +3517,7 @@ describe("Template registration", function () {
 	it("should print a warning when registering an existing template that is not different from what is in the registry", function () {
 		myPropertyFactory.register(ColorID["1-0-0"].original);
 		myPropertyFactory.register(ColorID["1-0-0"].original);
-		expect(console.warn.callCount).to.equal(1);
+		expect(consoleWarnCallCount()).to.equal(1);
 	});
 
 	it("should accept registering a different template from what is in the registry if it is semantically equivalent", function () {
@@ -3587,19 +3593,19 @@ describe("Template registration", function () {
 		myPropertyFactory.register(ColorID["1-0-0"].original);
 		myPropertyFactory.register(ColorID["1-0-1"].goodSemver);
 
-		expect(console.warn.callCount).to.equal(0);
+		expect(consoleWarnCallCount()).to.equal(0);
 	});
 
 	it("should register a new template with the PATCH version updated", function () {
 		myPropertyFactory.register(ColorID["1-0-0"].original);
 		myPropertyFactory.register(ColorID["1-0-1"].goodSemver);
-		expect(console.warn.callCount).to.equal(0);
+		expect(consoleWarnCallCount()).to.equal(0);
 	});
 
 	it("should register a new template with the MINOR version updated", function () {
 		myPropertyFactory.register(ColorID["1-0-0"].original);
 		myPropertyFactory.register(ColorID["1-1-0"].goodSemver);
-		expect(console.warn.callCount).to.equal(0);
+		expect(consoleWarnCallCount()).to.equal(0);
 	});
 
 	it("should print a warning when registering a new template with the wrong version updated", function () {
@@ -3618,13 +3624,13 @@ describe("Template registration", function () {
 		myPropertyFactory.register(ColorID["1-1-0"].badSemver2);
 		myPropertyFactory._registerRemoteTemplate(ColorID["1-0-0"].original, generateGUID());
 
-		expect(console.warn.callCount).to.equal(4);
+		expect(consoleWarnCallCount()).to.equal(4);
 	});
 
 	it("should register a new template with the MAJOR version updated", function () {
 		myPropertyFactory.register(ColorID["1-0-0"].original);
 		myPropertyFactory.register(ColorID["2-0-0"]);
-		expect(console.warn.callCount).to.equal(0);
+		expect(consoleWarnCallCount()).to.equal(0);
 	});
 
 	it("should register a versioned remote template", function () {
@@ -3643,7 +3649,7 @@ describe("Template registration", function () {
 
 			myPropertyFactory._registerRemoteTemplate(ColorID["1-0-0"].original, generateGUID());
 			myPropertyFactory.register(ColorID["1-0-0"].original);
-			expect(console.warn.callCount).to.equal(0);
+			expect(consoleWarnCallCount()).to.equal(0);
 		},
 	);
 
@@ -3680,7 +3686,7 @@ describe("Template registration", function () {
 
 		myPropertyFactory._registerRemoteTemplate(ColorID["1-1-0"].goodSemver, scope);
 		myPropertyFactory._registerRemoteTemplate(ColorID["1-0-1"].goodSemver, scope);
-		expect(console.warn.callCount).to.equal(0);
+		expect(consoleWarnCallCount()).to.equal(0);
 	});
 
 	it("should register a local template even when there are other versions of the same template in the remote registry", function () {
@@ -3688,7 +3694,10 @@ describe("Template registration", function () {
 		var scope2 = generateGUID();
 		myPropertyFactory._registerRemoteTemplate(ColorID["1-1-0"].goodSemver, scope);
 		myPropertyFactory._registerRemoteTemplate(ColorID["1-0-1"].goodSemver, scope);
-		myPropertyFactory._registerRemoteTemplate(require("./validation/goodPointId.js").default, scope2);
+		myPropertyFactory._registerRemoteTemplate(
+			require("./validation/goodPointId.js").default,
+			scope2,
+		);
 		myPropertyFactory._registerRemoteTemplate(
 			require("./validation/goodColorPalette.js").default,
 			scope2,
@@ -3697,7 +3706,7 @@ describe("Template registration", function () {
 		myPropertyFactory.register(ColorID["1-0-0"].original);
 		myPropertyFactory.register(ColorID["2-0-0"]);
 
-		expect(console.warn.callCount).to.equal(0);
+		expect(consoleWarnCallCount()).to.equal(0);
 	});
 
 	it("`registered` event is triggered when registering a template", function (done) {
@@ -3952,7 +3961,9 @@ describe("Async validation", function () {
 			hasSchemaAsync: hasSchemaAsync,
 		});
 
-		var templatePrevious = JSON.parse(JSON.stringify(require("./validation/goodPointId.js").default));
+		var templatePrevious = JSON.parse(
+			JSON.stringify(require("./validation/goodPointId.js").default),
+		);
 		var template = JSON.parse(JSON.stringify(templatePrevious));
 		template.typeid = "TeamLeoValidation2:PointID-0.9.9";
 		return templateValidator.validateAsync(template, templatePrevious).then(function (result) {

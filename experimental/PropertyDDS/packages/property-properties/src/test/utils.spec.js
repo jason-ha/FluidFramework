@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-/* globals assert */
+/* globals assert, expect */
 
 /**
  * @fileoverview In this file, we will test the utils described in /src/utils.js
@@ -16,8 +16,6 @@ import _ from "lodash";
 
 import { PropertyFactory } from "../index.js";
 import { BaseProperty } from "../index.js";
-// eslint-disable-next-line unused-imports/no-unused-imports -- preserving imports as-is during migration to module format
-import { NodeProperty } from "../properties/nodeProperty.js";
 
 describe("Utils", function () {
 	before(function () {
@@ -1813,15 +1811,17 @@ describe("Utils", function () {
 										new Map([
 											[
 												"__hidden",
-												new Map([
-													[
-														"myCallback",
-														function () {
-															return "hello";
-														},
-													],
-													["myValue", 1],
-												]),
+												new Map(
+													/** @type {Array<[string, any]>} */ ([
+														[
+															"myCallback",
+															function () {
+																return "hello";
+															},
+														],
+														["myValue", 1],
+													]),
+												),
 											],
 										]),
 									],
@@ -3057,7 +3057,11 @@ describe("Utils", function () {
 		};
 
 		it("should exclude single given path", () => {
-			let res = Utils.excludePathsFromChangeSet(changeset, "assets[Prop3]");
+			let res = Utils.excludePathsFromChangeSet(
+				changeset,
+				// @ts-expect-error - testing the case when in_paths argument is a string instead of an array
+				"assets[Prop3]",
+			);
 			expect(res).to.be.deep.equal(singleExclusion);
 		});
 
@@ -3077,8 +3081,17 @@ describe("Utils", function () {
 		});
 
 		it("should not exclude if no paths are passed", () => {
-			expect(Utils.excludePathsFromChangeSet(changeset)).to.be.deep.equal(changeset);
-			expect(Utils.excludePathsFromChangeSet(changeset, "")).to.be.deep.equal(changeset);
+			expect(
+				// @ts-expect-error - testing the case when in_paths argument is not passed
+				Utils.excludePathsFromChangeSet(changeset),
+			).to.be.deep.equal(changeset);
+			expect(
+				Utils.excludePathsFromChangeSet(
+					changeset,
+					// @ts-expect-error - testing the case when in_paths argument is an empty string
+					"",
+				),
+			).to.be.deep.equal(changeset);
 			expect(Utils.excludePathsFromChangeSet(changeset, [])).to.be.deep.equal(changeset);
 		});
 

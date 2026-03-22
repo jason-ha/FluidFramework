@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-/* globals assert */
+/* globals assert, expect */
 
 /**
  * @fileoverview In this file, we will test the map property object described in /src/properties/namedNodeProperty.js
@@ -14,8 +14,6 @@ const { isGUID } = GuidUtils;
 
 import { PropertyFactory } from "../../index.js";
 import { ContainerProperty } from "../../index.js";
-// eslint-disable-next-line unused-imports/no-unused-imports -- preserving imports as-is during migration to module format
-import { NamedNodeProperty } from "../../properties/namedNodeProperty.js";
 
 describe("NamedNodeProperty", function () {
 	before(function () {

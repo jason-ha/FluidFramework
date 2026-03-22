@@ -612,7 +612,7 @@ describe("BaseProperty", function () {
 	describe("Ancestry relations should be resolved correctly", function () {
 		/**
 		 * creates a workspace
-		 * @return {property-properties.Workspace} workspace
+		 * @return {Promise<import("@fluid-experimental/property-properties").Workspace>} workspace
 		 */
 		function createRootProperty() {
 			return Promise.resolve(PropertyFactory.create("NodeProperty"));
