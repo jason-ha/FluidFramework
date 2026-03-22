@@ -10,16 +10,19 @@
  * described in /src/properties/baseProperty.js
  */
 
-const { ChangeSet } = require("@fluid-experimental/property-changeset");
-const { MSG } = require("@fluid-experimental/property-common").constants;
-const {
+import { ChangeSet } from "@fluid-experimental/property-changeset";
+import {
+	constants,
 	DeterministicRandomGenerator,
+	// eslint-disable-next-line unused-imports/no-unused-imports -- preserving imports as-is during migration to module format
 	HashCalculator,
-} = require("@fluid-experimental/property-common");
+} from "@fluid-experimental/property-common";
+const { MSG } = constants;
+import _ from "lodash";
 
-_ = require("lodash");
-const { PropertyFactory } = require("../..");
-const { BaseProperty } = require("../..");
+import { PropertyFactory } from "../../index.js";
+import { BaseProperty } from "../../index.js";
+
 const deepCopy = _.cloneDeep;
 const { PATH_TOKENS } = BaseProperty;
 

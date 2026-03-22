@@ -9,14 +9,15 @@
  * @fileoverview In this file, we will test the utils described in /src/utils.js
  */
 
-const { ChangeSet } = require("@fluid-experimental/property-changeset");
-const { Utils } = require("@fluid-experimental/property-changeset");
-const { MSG } = require("@fluid-experimental/property-common").constants;
-const _ = require("lodash");
+import { ChangeSet, Utils } from "@fluid-experimental/property-changeset";
+import { constants } from "@fluid-experimental/property-common";
+const { MSG } = constants;
+import _ from "lodash";
 
-const { PropertyFactory } = require("..");
-const { BaseProperty } = require("..");
-const { NodeProperty } = require("../properties/nodeProperty");
+import { PropertyFactory } from "../index.js";
+import { BaseProperty } from "../index.js";
+// eslint-disable-next-line unused-imports/no-unused-imports -- preserving imports as-is during migration to module format
+import { NodeProperty } from "../properties/nodeProperty.js";
 
 describe("Utils", function () {
 	before(function () {
