@@ -18,14 +18,14 @@ import type { ITelemetryBaseLogger, LogLevel } from "@fluidframework/core-interf
 import type { ScopeType } from "@fluidframework/driver-definitions/legacy";
 import type { ContainerSchema, IFluidContainer } from "@fluidframework/fluid-static";
 import {
-	getPresence,
 	type Attendee,
 	type Presence,
 	StateFactory,
 	type LatestRaw,
 	type LatestMapRaw,
 	type StatesWorkspace,
-} from "@fluidframework/presence/beta";
+} from "@fluidframework/presence";
+import { getPresence } from "@fluidframework/presence/beta";
 import { InsecureTokenProvider } from "@fluidframework/test-runtime-utils/internal";
 import { timeoutPromise } from "@fluidframework/test-utils/internal";
 
