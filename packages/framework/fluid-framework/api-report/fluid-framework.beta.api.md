@@ -304,6 +304,9 @@ export const ForestTypeOptimized: ForestType;
 export const ForestTypeReference: ForestType;
 
 // @public
+export const getPresence: (fluidContainer: IFluidContainer) => Presence;
+
+// @public
 export interface IConnection {
     readonly id: string;
     readonly mode: "write" | "read";
