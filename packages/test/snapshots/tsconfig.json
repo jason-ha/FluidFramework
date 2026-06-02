@@ -1,12 +1,10 @@
 {
 	"extends": "../../../common/build/build-common/tsconfig.node16.json",
-	"include": ["src/**/*"],
-	"exclude": ["src/test/**/*"],
+	// gen-version is very particular and will only allow generation to `src/packageVersion.ts`
+	// There is no production level code in this package. It is all test and tooling (run via mocha).
+	"include": ["src/packageVersion.ts"],
 	"compilerOptions": {
 		"rootDir": "./src",
-		"outDir": "./lib",
-		"types": ["node"],
-		// container-runtime does not respect exactOptionalPropertyTypes
-		"skipLibCheck": true
+		"outDir": "./lib"
 	},
 }

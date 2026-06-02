@@ -11,8 +11,9 @@ import { ReplayArgs, ReplayTool } from "@fluid-internal/replay-tool";
 import { Deferred } from "@fluidframework/core-utils/internal";
 import { ISequencedDocumentMessage } from "@fluidframework/driver-definitions/internal";
 
+import { pkgVersion } from "../packageVersion.js";
+
 import { getMetadata, writeMetadataFile } from "./metadata.js";
-import { pkgVersion } from "./packageVersion.js";
 import { getTestContent } from "./testContent.js";
 import { validateSnapshots } from "./validateSnapshots.js";
 

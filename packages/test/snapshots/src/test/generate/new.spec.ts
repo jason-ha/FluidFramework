@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import { Mode, processContent } from "../../replayMultipleFiles.js";
+import { Mode, processContent } from "../replayMultipleFiles.js";
 
 describe("Create snapshots", function () {
 	this.timeout(300000);

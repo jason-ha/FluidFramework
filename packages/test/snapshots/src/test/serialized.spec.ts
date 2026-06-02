@@ -34,7 +34,7 @@ import {
 	TestFluidObjectFactory,
 } from "@fluidframework/test-utils/internal";
 
-import { getTestContent, skipOrFailIfTestContentMissing } from "../testContent.js";
+import { getTestContent, skipOrFailIfTestContentMissing } from "./testContent.js";
 
 describe(`Container Serialization Backwards Compatibility`, () => {
 	const loaderContainerTracker = new LoaderContainerTracker();
