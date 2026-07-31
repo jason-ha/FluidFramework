@@ -111,7 +111,7 @@
 	"fluidBuild": {
 		"tasks": {
 			"build:test:esm": [
-				"^build:esnext",
+				"^build:esm",
 				"^build:entrypoints:esm",
 				"@fluidframework/id-compressor#build:test:esm",
 				"@fluidframework/sequence#build:test:esm",

@@ -58,13 +58,14 @@
 	"types": "lib/public.d.ts",
 	"scripts": {
 		"build": "fluid-build . --task build",
+		"build:cjs": "fluid-tsc commonjs --project ./tsconfig.cjs.json && npm run place:cjs:package-stub",
 		"build:commonjs": "fluid-build . --task commonjs",
 		"build:compile": "fluid-build . --task compile",
 		"build:docs": "api-extractor run --local",
 		"build:entrypoints": "fluid-build . --task build:entrypoints",
 		"build:entrypoints:cjs": "flub generate entrypoints --resolutionConditions require --outDir ./dist",
 		"build:entrypoints:esm": "flub generate entrypoints --outDir ./lib --node10TypeCompat",
-		"build:esnext": "tsc --project ./tsconfig.json",
+		"build:esm": "tsc --project ./tsconfig.json",
 		"build:genver": "gen-version",
 		"build:test": "concurrently npm:build:test:esm npm:build:test:cjs",
 		"build:test:cjs": "fluid-tsc commonjs --project ./src/test/tsconfig.cjs.json",
@@ -98,7 +99,6 @@
 		"test:mocha:cjs": "cross-env FLUID_TEST_MODULE_SYSTEM=CJS mocha",
 		"test:mocha:esm": "mocha",
 		"test:verbose": "cross-env FLUID_TEST_VERBOSE=1 npm run test:mocha --",
-		"tsc": "fluid-tsc commonjs --project ./tsconfig.cjs.json && npm run place:cjs:package-stub",
 		"tsc:watch": "npm run place:cjs:package-stub && fluid-tsc commonjs --project ./tsconfig.cjs.json --watch",
 		"typetests:gen": "flub generate typetests --dir . -v"
 	},

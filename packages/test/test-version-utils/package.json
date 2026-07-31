@@ -24,7 +24,7 @@
 		"build": "fluid-build . --task build",
 		"build:compile": "fluid-build . --task compile",
 		"build:docs": "api-extractor run --local",
-		"build:esnext": "tsc --project ./tsconfig.json",
+		"build:esm": "tsc --project ./tsconfig.json",
 		"build:genver": "gen-version",
 		"build:test": "npm run build:test:esm",
 		"build:test:esm": "tsc --project ./src/test/tsconfig.json",
@@ -137,7 +137,7 @@
 	"fluidBuild": {
 		"tasks": {
 			"check:exports:index": [
-				"build:esnext"
+				"build:esm"
 			]
 		}
 	},

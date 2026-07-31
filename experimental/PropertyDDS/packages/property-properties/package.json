@@ -20,9 +20,10 @@
 	],
 	"scripts": {
 		"build": "fluid-build . --task build",
+		"build:cjs": "tsc",
 		"build:commonjs": "fluid-build . --task commonjs",
 		"build:compile": "fluid-build . --task compile",
-		"build:esnext": "tsc --project ./tsconfig.esnext.json",
+		"build:esm": "tsc --project ./tsconfig.esnext.json",
 		"build:test": "npm run build:test:cjs",
 		"build:test:cjs": "tsc --project ./src/test/tsconfig.json",
 		"check:biome": "biome check .",
@@ -39,8 +40,7 @@
 		"test:coverage": "c8 npm test",
 		"test:mocha": "npm run test:mocha:cjs",
 		"test:mocha:cjs": "cross-env FLUID_TEST_MODULE_SYSTEM=CJS \"MOCHA_SPEC=dist/test/**/*.spec.*js\" mocha",
-		"test:mocha:verbose": "cross-env FLUID_TEST_VERBOSE=1 npm run test:mocha",
-		"tsc": "tsc"
+		"test:mocha:verbose": "cross-env FLUID_TEST_VERBOSE=1 npm run test:mocha"
 	},
 	"c8": {
 		"all": true,
@@ -98,9 +98,9 @@
 	"fluidBuild": {
 		"_tasks_comment": "This package does not have a proper ESM build. It depends on CommonJS from property-changeset.",
 		"tasks": {
-			"build:esnext": [
+			"build:esm": [
 				"...",
-				"@fluid-experimental/property-changeset#tsc"
+				"@fluid-experimental/property-changeset#build:cjs"
 			]
 		}
 	},
