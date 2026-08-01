@@ -28,7 +28,7 @@
 		"jiti": "^2.6.1",
 		"puppeteer": "^23.6.0",
 		"rimraf": "^6.1.3",
-		"typescript": "~5.4.5",
+		"typescript": "~6.0.3",
 		"webpack-dev-server": "~5.2.6"
 	},
 	"typeValidation": {
