@@ -114,7 +114,7 @@ export interface TreeMapNode<T extends ImplicitAllowedTypes = ImplicitAllowedTyp
 	 * Note: no guarantees are made regarding the order of the keys returned.
 	 * If your usage scenario depends on consistent ordering, you will need to sort these yourself.
 	 */
-	keys(): IterableIterator<string>;
+	keys(): MapIterator<string>;
 
 	/**
 	 * Returns an iterable of values in the map.
@@ -123,7 +123,7 @@ export interface TreeMapNode<T extends ImplicitAllowedTypes = ImplicitAllowedTyp
 	 * Note: no guarantees are made regarding the order of the values returned.
 	 * If your usage scenario depends on consistent ordering, you will need to sort these yourself.
 	 */
-	values(): IterableIterator<TreeNodeFromImplicitAllowedTypes<T>>;
+	values(): MapIterator<TreeNodeFromImplicitAllowedTypes<T>>;
 
 	/**
 	 * Returns an iterable of key, value pairs for every entry in the map.
@@ -132,7 +132,7 @@ export interface TreeMapNode<T extends ImplicitAllowedTypes = ImplicitAllowedTyp
 	 * Note: no guarantees are made regarding the order of the entries returned.
 	 * If your usage scenario depends on consistent ordering, you will need to sort these yourself.
 	 */
-	entries(): IterableIterator<[string, TreeNodeFromImplicitAllowedTypes<T>]>;
+	entries(): MapIterator<[string, TreeNodeFromImplicitAllowedTypes<T>]>;
 
 	/**
 	 * Executes the provided function once per each key/value pair in this map.
@@ -200,7 +200,7 @@ abstract class CustomMapNodeBase<const T extends ImplicitAllowedTypes> extends T
 		super(input ?? []);
 	}
 
-	public [Symbol.iterator](): IterableIterator<[string, TreeNodeFromImplicitAllowedTypes<T>]> {
+	public [Symbol.iterator](): MapIterator<[string, TreeNodeFromImplicitAllowedTypes<T>]> {
 		return this.entries();
 	}
 
@@ -217,7 +217,7 @@ abstract class CustomMapNodeBase<const T extends ImplicitAllowedTypes> extends T
 		const field = this.innerNode.getBoxed(brand(key));
 		this.editor(key).set(undefined, field.length === 0);
 	}
-	public *entries(): IterableIterator<[string, TreeNodeFromImplicitAllowedTypes<T>]> {
+	public *entries(): MapIterator<[string, TreeNodeFromImplicitAllowedTypes<T>]> {
 		const node = this.innerNode;
 		for (const key of node.keys()) {
 			yield [
@@ -234,9 +234,9 @@ abstract class CustomMapNodeBase<const T extends ImplicitAllowedTypes> extends T
 	public has(key: string): boolean {
 		return this.innerNode.tryGetField(brand(key)) !== undefined;
 	}
-	public keys(): IterableIterator<string> {
+	public *keys(): MapIterator<string> {
 		const node = this.innerNode;
-		return node.keys();
+		yield* node.keys();
 	}
 	public set(key: string, value: InsertableTreeNodeFromImplicitAllowedTypes<T>): this {
 		const kernel = getKernel(this);
@@ -264,7 +264,7 @@ abstract class CustomMapNodeBase<const T extends ImplicitAllowedTypes> extends T
 	public get size(): number {
 		return count(this.innerNode.keys());
 	}
-	public *values(): IterableIterator<TreeNodeFromImplicitAllowedTypes<T>> {
+	public *values(): MapIterator<TreeNodeFromImplicitAllowedTypes<T>> {
 		for (const [, value] of this.entries()) {
 			yield value;
 		}

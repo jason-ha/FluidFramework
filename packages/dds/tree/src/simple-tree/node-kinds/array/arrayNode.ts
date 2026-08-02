@@ -463,7 +463,7 @@ export interface TreeArrayNode<
 	/**
 	 * Returns a custom IterableIterator which throws usage errors if concurrent editing and iteration occurs.
 	 */
-	values(): IterableIterator<T>;
+	values(): ArrayIterator<T>;
 }
 
 /**
@@ -1383,7 +1383,7 @@ abstract class CustomArrayNodeBase<const T extends ImplicitAllowedTypes>
 		}
 	}
 
-	public values(): IterableIterator<TreeNodeFromImplicitAllowedTypes<T>> {
+	public values(): ArrayIterator<TreeNodeFromImplicitAllowedTypes<T>> {
 		return this.generateValues(getKernel(this).generationNumber);
 	}
 	private *generateValues(
