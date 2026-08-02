@@ -2022,6 +2022,9 @@ export interface StagedSchemaUpgradePolicyFactory {
     readonly restrictive: StagedSchemaUpgradePolicy;
 }
 
+// @alpha @sealed @system
+export type StringSchema = LeafSchema<"string", string> & SimpleLeafNodeSchema;
+
 // @beta @system
 export namespace System_TableSchema {
     // @sealed @system
