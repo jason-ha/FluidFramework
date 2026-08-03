@@ -46,9 +46,11 @@ export interface IValueChanged {
 export interface IDirectory
 	// TODO: Use `unknown` instead (breaking change).
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	extends Map<string, any>,
+	extends FluidMap<string, any>,
 		IEventProvider<IDirectoryEvents>,
 		Partial<IDisposable> {
+	clear(): void;
+
 	/**
 	 * The absolute path of the directory.
 	 */

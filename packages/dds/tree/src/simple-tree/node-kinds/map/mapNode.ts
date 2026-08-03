@@ -3,7 +3,10 @@
  * Licensed under the MIT License.
  */
 
-import type { FluidReadonlyMap } from "@fluidframework/core-interfaces/internal";
+import type {
+	FluidIterableIterator,
+	FluidReadonlyMap,
+} from "@fluidframework/core-interfaces/internal";
 import { assert, Lazy } from "@fluidframework/core-utils/internal";
 import { UsageError } from "@fluidframework/telemetry-utils/internal";
 
@@ -78,7 +81,7 @@ import type {
  * @sealed @public
  */
 export interface TreeMapNode<T extends ImplicitAllowedTypes = ImplicitAllowedTypes>
-	extends ReadonlyMap<string, TreeNodeFromImplicitAllowedTypes<T>>,
+	extends FluidReadonlyMap<string, TreeNodeFromImplicitAllowedTypes<T>>,
 		TreeNode {
 	/**
 	 * Adds or updates an entry in the map with a specified `key` and a `value`.
@@ -114,7 +117,7 @@ export interface TreeMapNode<T extends ImplicitAllowedTypes = ImplicitAllowedTyp
 	 * Note: no guarantees are made regarding the order of the keys returned.
 	 * If your usage scenario depends on consistent ordering, you will need to sort these yourself.
 	 */
-	keys(): IterableIterator<string>;
+	keys(): FluidIterableIterator<string>;
 
 	/**
 	 * Returns an iterable of values in the map.
@@ -123,7 +126,7 @@ export interface TreeMapNode<T extends ImplicitAllowedTypes = ImplicitAllowedTyp
 	 * Note: no guarantees are made regarding the order of the values returned.
 	 * If your usage scenario depends on consistent ordering, you will need to sort these yourself.
 	 */
-	values(): IterableIterator<TreeNodeFromImplicitAllowedTypes<T>>;
+	values(): FluidIterableIterator<TreeNodeFromImplicitAllowedTypes<T>>;
 
 	/**
 	 * Returns an iterable of key, value pairs for every entry in the map.
@@ -132,7 +135,7 @@ export interface TreeMapNode<T extends ImplicitAllowedTypes = ImplicitAllowedTyp
 	 * Note: no guarantees are made regarding the order of the entries returned.
 	 * If your usage scenario depends on consistent ordering, you will need to sort these yourself.
 	 */
-	entries(): IterableIterator<[string, TreeNodeFromImplicitAllowedTypes<T>]>;
+	entries(): FluidIterableIterator<[string, TreeNodeFromImplicitAllowedTypes<T>]>;
 
 	/**
 	 * Executes the provided function once per each key/value pair in this map.
@@ -145,7 +148,7 @@ export interface TreeMapNode<T extends ImplicitAllowedTypes = ImplicitAllowedTyp
 		callbackfn: (
 			value: TreeNodeFromImplicitAllowedTypes<T>,
 			key: string,
-			map: ReadonlyMap<string, TreeNodeFromImplicitAllowedTypes<T>>,
+			map: FluidReadonlyMap<string, TreeNodeFromImplicitAllowedTypes<T>>,
 		) => void,
 		// Typing inherited from `ReadonlyMap`.
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -264,7 +267,7 @@ abstract class CustomMapNodeBase<const T extends ImplicitAllowedTypes> extends T
 	public get size(): number {
 		return count(this.innerNode.keys());
 	}
-	public *values(): IterableIterator<TreeNodeFromImplicitAllowedTypes<T>> {
+	public *values(): FluidIterableIterator<TreeNodeFromImplicitAllowedTypes<T>> {
 		for (const [, value] of this.entries()) {
 			yield value;
 		}

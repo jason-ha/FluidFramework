@@ -29,8 +29,10 @@ export interface ICreateInfo {
 }
 
 // @public @sealed @legacy
-export interface IDirectory extends Map<string, any>, IEventProvider<IDirectoryEvents>, Partial<IDisposable> {
+export interface IDirectory extends FluidMap<string, any>, IEventProvider<IDirectoryEvents>, Partial<IDisposable> {
     readonly absolutePath: string;
+    // (undocumented)
+    clear(): void;
     countSubDirectory?(): number;
     createSubDirectory(subdirName: string): IDirectory;
     deleteSubDirectory(subdirName: string): boolean;
