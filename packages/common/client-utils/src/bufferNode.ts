@@ -10,7 +10,7 @@
  *
  * @internal
  */
-export declare class Buffer extends Uint8Array {
+export declare class Buffer extends Uint8Array<ArrayBuffer> {
 	// eslint-disable-next-line unicorn/text-encoding-identifier-case -- this value is supported, just discouraged
 	public toString(encoding?: "utf8" | "utf-8" | "base64"): string;
 
