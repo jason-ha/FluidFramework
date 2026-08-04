@@ -5,7 +5,11 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-import { bufferToString, stringToBuffer } from "@fluid-internal/client-utils";
+import {
+	bufferToString,
+	stringToBuffer,
+	Uint8ArrayToArrayBufferLike,
+} from "@fluid-internal/client-utils";
 import {
 	IChannelAttributes,
 	IChannelFactory,
@@ -40,7 +44,7 @@ export abstract class CompressedPropertyTreeFactory implements IChannelFactory {
 					const changeSetStr = JSON.stringify(change.changeSet);
 					const unzipped = new TextEncoder().encode(changeSetStr);
 					const zipped: Buffer = encodeFn(unzipped);
-					const zippedStr = bufferToString(zipped, "base64");
+					const zippedStr = bufferToString(Uint8ArrayToArrayBufferLike(zipped), "base64");
 					if (zippedStr.length < changeSetStr.length) {
 						// eslint-disable-next-line @typescript-eslint/dot-notation
 						change["isZipped"] = "1";

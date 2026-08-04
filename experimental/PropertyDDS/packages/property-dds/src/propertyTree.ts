@@ -13,7 +13,12 @@ import {
 	NodeProperty,
 	PropertyFactory,
 } from "@fluid-experimental/property-properties";
-import { IsoBuffer, bufferToString, stringToBuffer } from "@fluid-internal/client-utils";
+import {
+	IsoBuffer,
+	Uint8ArrayToArrayBufferLike,
+	bufferToString,
+	stringToBuffer,
+} from "@fluid-internal/client-utils";
 import { AttachState } from "@fluidframework/container-definitions";
 import {
 	IChannelAttributes,
@@ -551,7 +556,7 @@ export class SharedPropertyTree extends SharedObject {
 	 * @param blob - The binary representation of the blob.
 	 * @returns The encoded representation of the blob.
 	 */
-	private encodeSummaryBlob(blob: ArrayBuffer): any {
+	private encodeSummaryBlob(blob: ArrayBufferLike): any {
 		return bufferToString(blob, "base64");
 	}
 
@@ -591,7 +596,7 @@ export class SharedPropertyTree extends SharedObject {
 			const serializedSummary = this.encodeSummary(summary);
 			for (let pos = 0, i = 0; pos < serializedSummary.length; pos += chunkSize, i++) {
 				const summaryBlob = this.encodeSummaryBlob(
-					serializedSummary.slice(pos, pos + chunkSize),
+					Uint8ArrayToArrayBufferLike(serializedSummary.slice(pos, pos + chunkSize)),
 				);
 				// eslint-disable-next-line @typescript-eslint/dot-notation
 				totalBlobsSize += summaryBlob["length"];

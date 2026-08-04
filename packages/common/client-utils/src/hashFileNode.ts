@@ -22,7 +22,7 @@ import type { IsoBuffer } from "./bufferNode.js";
  * @internal
  */
 export async function hashFile(
-	file: IsoBuffer,
+	file: IsoBuffer<ArrayBuffer>,
 	algorithm: "SHA-1" | "SHA-256" = "SHA-1",
 	hashEncoding: "hex" | "base64" = "hex",
 ): Promise<string> {

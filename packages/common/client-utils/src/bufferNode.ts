@@ -10,7 +10,9 @@
  *
  * @internal
  */
-export declare class Buffer extends Uint8Array<ArrayBuffer> {
+export declare class Buffer<
+	TArrayBuffer extends ArrayBufferLike = ArrayBufferLike,
+> extends Uint8Array<TArrayBuffer> {
 	// eslint-disable-next-line unicorn/text-encoding-identifier-case -- this value is supported, just discouraged
 	public toString(encoding?: "utf8" | "utf-8" | "base64"): string;
 
@@ -23,7 +25,11 @@ export declare class Buffer extends Uint8Array<ArrayBuffer> {
 	 *
 	 * @privateRemarks TODO: Use actual types
 	 */
-	public static from(value: unknown, encodingOrOffset?: unknown, length?: unknown): IsoBuffer;
+	public static from(
+		value: unknown,
+		encodingOrOffset?: unknown,
+		length?: unknown,
+	): IsoBuffer<ArrayBuffer>;
 	public static isBuffer(obj: unknown): obj is Buffer;
 }
 
@@ -35,7 +41,8 @@ export const IsoBuffer = Buffer;
 /**
  * @internal
  */
-export type IsoBuffer = Buffer;
+export type IsoBuffer<TArrayBuffer extends ArrayBufferLike = ArrayBufferLike> =
+	Buffer<TArrayBuffer>;
 
 /**
  * Converts a Uint8Array to a string of the provided encoding.
