@@ -91,9 +91,9 @@ import {
 	type WithBreakable,
 } from "../util/index.js";
 
+import { exportSimpleSchema } from "./exportSimpleSchema.js";
 import { canInitialize, initialize, initializerFromChunk } from "./schematizeTree.js";
-import { exportSimpleSchema } from "./sharedTree.js";
-import { type CheckoutBase, TreeCheckout } from "./treeCheckout.js";
+import type { CheckoutBase } from "./treeCheckout.js";
 
 /**
  * Gets the {@link TreeContextAlpha.unknownFieldSchemas | unknown field schemas} of `viewSchema` in `storedSchema`.
@@ -735,7 +735,7 @@ export class SchematizingSimpleTreeView<
 
 	@throwIfBroken
 	public rewindTo(revision: string): void {
-		if (!(this.checkout instanceof TreeCheckout)) {
+		if (!this.checkout.isView()) {
 			throw new UsageError(
 				"Rewinding is not supported on a branch created by `tree.forkBranch()` or `branch.fork()`, or on its views. Consider `revertTo` instead.",
 			);
